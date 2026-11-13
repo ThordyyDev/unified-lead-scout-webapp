@@ -599,17 +599,45 @@ def apify_fetch_recent_runs(actor_id, token, max_runs=2):
     return all_items, latest_age
 
 
-def apify_run(actor_id, run_input, token, max_wait_s=600):
+class ScanCancelled(ScanError):
+    pass
+
+
+def apify_abort_run(run_id, token):
+    if not run_id or not token:
+        return
+    try:
+        http_request(
+            f"{APIFY_BASE}/actor-runs/{run_id}/abort",
+            method="POST",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=10,
+        )
+    except ScanError:
+        pass
+
+
+def apify_run(actor_id, run_input, token, max_wait_s=600, ctx=None):
+    if ctx and ctx.is_cancelled():
+        raise ScanCancelled("Cancelled by user.")
     act = actor_id.replace("/", "~")
     headers = {"Authorization": f"Bearer {token}"}
-    run = http_request(f"{APIFY_BASE}/acts/{act}/runs?waitForFinish=60", "POST",
-                       body=run_input, headers=headers, timeout=90).get("data", {})
+    run = http_request(f"{APIFY_BASE}/acts/{act}/runs?waitForFinish=5", "POST",
+                       body=run_input, headers=headers, timeout=30).get("data", {})
+    run_id = run.get("id")
+    if ctx and run_id:
+        ctx.register_apify_run(run_id, token)
     deadline = time.time() + max_wait_s
     while run.get("status") in ("READY", "RUNNING", "TIMING-OUT", "ABORTING"):
+        if ctx and ctx.is_cancelled():
+            apify_abort_run(run_id, token)
+            raise ScanCancelled("Cancelled by user.")
         if time.time() > deadline:
-            raise ScanError(f"{actor_id} still running after {max_wait_s}s (run {run.get('id')}); skipped.")
-        run = http_request(f"{APIFY_BASE}/actor-runs/{run['id']}?waitForFinish=60",
-                           headers=headers, timeout=90).get("data", {})
+            raise ScanError(f"{actor_id} still running after {max_wait_s}s (run {run_id}); skipped.")
+        run = http_request(f"{APIFY_BASE}/actor-runs/{run_id}?waitForFinish=5",
+                           headers=headers, timeout=30).get("data", {})
+    if ctx and ctx.is_cancelled():
+        raise ScanCancelled("Cancelled by user.")
     if run.get("status") != "SUCCEEDED":
         raise ScanError(f"{actor_id} finished with status {run.get('status')}: "
                         f"{_short(run.get('statusMessage') or '')}")
@@ -624,13 +652,30 @@ def apify_run(actor_id, run_input, token, max_wait_s=600):
 # =====================================================================
 
 class ScanContext:
-    def __init__(self, config, query="", location="Cebu", max_age_days=7, intents=None, trigger="manual"):
+    def __init__(self, config, query="", location="Cebu", max_age_days=7, intents=None,
+                 trigger="manual", cancel_event=None):
         self.settings = get_settings(config)
         self.query = (query or "").strip()
         self.location = location or "Any"
         self.max_age_days = max(1, int(max_age_days or 7))
         self.intents = set(intents or ["seeker", "employer"])
         self.trigger = trigger
+        self.cancel_event = cancel_event or threading.Event()
+        self._apify_lock = threading.Lock()
+        self._apify_runs = []
+
+    def is_cancelled(self):
+        return self.cancel_event.is_set()
+
+    def register_apify_run(self, run_id, token):
+        with self._apify_lock:
+            self._apify_runs.append((run_id, token))
+
+    def abort_active_apify_runs(self):
+        with self._apify_lock:
+            runs = list(self._apify_runs)
+        for run_id, token in runs:
+            apify_abort_run(run_id, token)
 
     def since_phrase(self):
         return "1 day" if self.max_age_days == 1 else f"{self.max_age_days} days"
@@ -919,6 +964,8 @@ def _scan_public_social(platform, label, dork_prefixes, ctx):
     now_ts = get_reference_now()
 
     for dork in queries[:3]:
+        if ctx.is_cancelled():
+            return result("cancelled", "Cancelled by user.", items, fetched)
         hits, errs = _search_public_index(dork, max_age_days=ctx.max_age_days, platform=platform)
         errors.extend(errs)
         for h in hits:
@@ -1297,11 +1344,18 @@ def adapter_facebook(ctx):
             "onlyPostsNewerThan": ctx.since_phrase()}))
 
     for actor, page_mode, run_input in jobs:
+        if ctx.is_cancelled():
+            return result("cancelled", "Cancelled by user.", items, fetched)
         try:
-            data = apify_run(actor, run_input, token)
+            data = apify_run(actor, run_input, token, ctx=ctx)
             ingest_fb_posts(data, page_mode=page_mode)
+        except ScanCancelled:
+            return result("cancelled", "Cancelled by user.", items, fetched)
         except ScanError as e:
             errors.append(str(e))
+
+    if ctx.is_cancelled():
+        return result("cancelled", "Cancelled by user.", items, fetched)
 
     # 3. Only ingest comments whose parent thread is in `threads` (from the currently configured groups)
     by_url = {t["url"]: t for t in threads}
@@ -1317,12 +1371,12 @@ def adapter_facebook(ctx):
 
     unscraped_threads = [t for t in threads if t["url"] not in {pick(c, "inputUrl", "facebookUrl", "postUrl") for c in cached_comments}]
     unscraped_threads = unscraped_threads[: s["comment_threads_per_platform"]]
-    if unscraped_threads:
+    if unscraped_threads and not ctx.is_cancelled():
         try:
             data = apify_run(APIFY_ACTORS["facebook_comments"], {
                 "startUrls": [{"url": t["url"]} for t in unscraped_threads],
                 "resultsLimit": s["comments_per_thread"], "includeNestedComments": True,
-                "viewOption": "RANKED_UNFILTERED"}, token)
+                "viewOption": "RANKED_UNFILTERED"}, token, ctx=ctx)
             for c in data:
                 parent = by_url.get(pick(c, "inputUrl", "facebookUrl", "postUrl")) or \
                     (unscraped_threads[0] if len(unscraped_threads) == 1 else None)
@@ -1330,6 +1384,8 @@ def adapter_facebook(ctx):
                 if ci:
                     fetched += 1
                     items.append(ci)
+        except ScanCancelled:
+            return result("cancelled", "Cancelled by user.", items, fetched)
         except ScanError as e:
             errors.append(f"comments: {e}")
 
@@ -1375,10 +1431,14 @@ def adapter_instagram(ctx):
     items, errors, fetched, threads = [], [], 0, []
     try:
         data, age_s = apify_fetch_recent_runs(APIFY_ACTORS["instagram_hashtags"], token, max_runs=1)
+        if ctx.is_cancelled():
+            return result("cancelled", "Cancelled by user.", items, fetched)
         if not data or age_s > 600:
             data = apify_run(APIFY_ACTORS["instagram_hashtags"], {
                 "hashtags": s["instagram_hashtags"], "resultsLimit": s["results_per_source"],
-                "resultsType": "posts", "onlyPostsNewerThan": ctx.since_phrase()}, token)
+                "resultsType": "posts", "onlyPostsNewerThan": ctx.since_phrase()}, token, ctx=ctx)
+    except ScanCancelled:
+        return result("cancelled", "Cancelled by user.", items, fetched)
     except ScanError as e:
         return result("error", str(e))
 
@@ -1454,8 +1514,12 @@ def adapter_tiktok(ctx):
     items, errors, fetched, threads = [], [], 0, []
     try:
         data, age_s = apify_fetch_recent_runs(APIFY_ACTORS["tiktok_search"], token, max_runs=2)
+        if ctx.is_cancelled():
+            return result("cancelled", "Cancelled by user.", items, fetched)
         if not data or age_s > 600:
-            data = apify_run(APIFY_ACTORS["tiktok_search"], run_input, token)
+            data = apify_run(APIFY_ACTORS["tiktok_search"], run_input, token, ctx=ctx)
+    except ScanCancelled:
+        return result("cancelled", "Cancelled by user.", items, fetched)
     except ScanError as e:
         return result("error", str(e))
     for v in data:
@@ -1532,6 +1596,8 @@ def adapter_public_web(ctx):
     loc_q = "Philippines" if ctx.location.lower() == "any" else ctx.location
     q_expr = ctx.query if ctx.query else "hiring OR job"
     for site_domain in ("mynimo.com", "jobstreet.com.ph", "ph.indeed.com", "onlinejobs.ph"):
+        if ctx.is_cancelled():
+            return result("cancelled", "Cancelled by user.", items, fetched)
         dork = f"site:{site_domain} {loc_q} {q_expr}"
         hits, errs = _search_public_index(dork, max_age_days=ctx.max_age_days, platform="web")
         errors.extend(errs)
@@ -1553,16 +1619,21 @@ def adapter_public_web(ctx):
 class ScanManager:
     def __init__(self):
         self._lock = threading.Lock()
+        self._scan_seq = 0
+        self._cancel_event = None
+        self._active_ctx = None
         self.last_finished_epoch = 0.0
-        self.state = {"running": False, "finished_at": None, "adapters": {}, "new_total": 0,
-                      "matched_total": 0}
+        self.state = {"running": False, "cancelled": False, "finished_at": None, "adapters": {},
+                      "new_total": 0, "matched_total": 0}
 
     def status(self):
         with self._lock:
             return json.loads(json.dumps(self.state))
 
-    def _update(self, key=None, **fields):
+    def _update(self, key=None, seq=None, **fields):
         with self._lock:
+            if seq is not None and seq != self._scan_seq:
+                return
             target = self.state["adapters"][key] if key else self.state
             target.update(fields)
 
@@ -1571,25 +1642,57 @@ class ScanManager:
         with self._lock:
             if self.state.get("running"):
                 return False
+            self._scan_seq += 1
+            seq = self._scan_seq
+            self._cancel_event = threading.Event()
+            cancel_ev = self._cancel_event
             self.state = {
-                "running": True, "trigger": trigger, "started_at": utc_now_sql(), "finished_at": None,
+                "running": True, "cancelled": False, "trigger": trigger,
+                "started_at": utc_now_sql(), "finished_at": None,
                 "params": {k: params.get(k) for k in ("query", "location", "max_age_days", "intents")},
                 "adapters": {k: {"label": PLATFORM_ADAPTERS[k]["label"], "status": "queued",
                                  "message": "", "fetched": 0, "matched": 0, "new": 0} for k in platforms},
                 "new_total": 0, "matched_total": 0,
             }
-        threading.Thread(target=self._run, args=(config, params, platforms), daemon=True).start()
+        threading.Thread(target=self._run, args=(config, params, platforms, seq, cancel_ev), daemon=True).start()
         return True
 
-    def _run(self, config, params, platforms):
+    def cancel(self):
+        with self._lock:
+            if not self.state.get("running"):
+                return False
+            self._scan_seq += 1
+            if self._cancel_event:
+                self._cancel_event.set()
+            ctx = self._active_ctx
+            self.state["running"] = False
+            self.state["cancelled"] = True
+            self.state["finished_at"] = utc_now_sql()
+            for a in self.state["adapters"].values():
+                if a.get("status") in ("queued", "running"):
+                    a["status"] = "cancelled"
+                    a["message"] = "Cancelled by user."
+        if ctx:
+            threading.Thread(target=ctx.abort_active_apify_runs, daemon=True).start()
+        print("[scan] Cancelled by user.")
+        return True
+
+    def _run(self, config, params, platforms, seq, cancel_ev):
         ctx = ScanContext(config, params.get("query", ""), params.get("location", "Cebu"),
                           params.get("max_age_days", 7), params.get("intents"),
-                          trigger=self.state.get("trigger", "manual"))
+                          trigger=self.state.get("trigger", "manual"), cancel_event=cancel_ev)
+        with self._lock:
+            if seq == self._scan_seq:
+                self._active_ctx = ctx
 
         def run_one(key):
-            self._update(key, status="running")
+            if cancel_ev.is_set():
+                return key, result("cancelled", "Cancelled by user.")
+            self._update(key, seq=seq, status="running")
             try:
                 return key, PLATFORM_ADAPTERS[key]["handler"](ctx)
+            except ScanCancelled:
+                return key, result("cancelled", "Cancelled by user.")
             except Exception as e:
                 return key, result("error", f"Unexpected error: {e}")
 
@@ -1597,9 +1700,13 @@ class ScanManager:
             with ThreadPoolExecutor(max_workers=max(1, len(platforms))) as pool:
                 for fut in as_completed([pool.submit(run_one, k) for k in platforms]):
                     key, res = fut.result()
+                    if cancel_ev.is_set() or seq != self._scan_seq:
+                        continue
                     matched = new = 0
                     seen = set()
                     for raw in res["items"]:
+                        if cancel_ev.is_set():
+                            break
                         lead = evaluate_item(raw, ctx)
                         if not lead or lead["external_id"] in seen:
                             continue
@@ -1609,13 +1716,14 @@ class ScanManager:
                             matched += 1
                             if is_saved:
                                 new += 1
-                    self._update(key, status=res["status"], message=res["message"],
+                    self._update(key, seq=seq, status=res["status"], message=res["message"],
                                  fetched=res["fetched"], matched=matched, new=new)
                     with self._lock:
-                        self.state["new_total"] += new
-                        self.state["matched_total"] += matched
+                        if seq == self._scan_seq:
+                            self.state["new_total"] += new
+                            self.state["matched_total"] += matched
                     if res["status"] in ("error", "partial"):
                         print(f"[scan] {key}: {res['message']}")
         finally:
             self.last_finished_epoch = time.time()
-            self._update(running=False, finished_at=utc_now_sql())
+            self._update(seq=seq, running=False, finished_at=utc_now_sql())

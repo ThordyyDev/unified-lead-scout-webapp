@@ -563,60 +563,70 @@
           </select>
         </div>
 
-        <!-- Primary Facet Light Pill CTA -->
-        <button
-          onclick="triggerLiveSearch()"
-          id="btnLiveSearch"
-          class="btn-facet-primary px-5 flex items-center justify-center gap-2 whitespace-nowrap shrink-0"
-        >
-          <i class="fa-solid fa-bolt text-[11px]" id="searchBtnIcon"></i>
-          <span>Scan &amp; Search</span>
-        </button>
+        <!-- Primary Facet Light Pill CTA + Cancel Pill (shown while scanning) -->
+        <div class="flex items-center gap-2 shrink-0">
+          <button
+            onclick="triggerLiveSearch()"
+            id="btnLiveSearch"
+            class="btn-facet-primary px-5 flex items-center justify-center gap-2 whitespace-nowrap shrink-0 flex-1 lg:flex-initial"
+          >
+            <i class="fa-solid fa-bolt text-[11px]" id="searchBtnIcon"></i>
+            <span>Scan &amp; Search</span>
+          </button>
+          <button
+            onclick="cancelLiveSearch()"
+            id="btnCancelSearch"
+            class="hidden h-[38px] px-4 rounded-[6px] bg-rose-500/15 hover:bg-rose-500/25 text-rose-200 border border-rose-400/35 text-[12.5px] font-medium flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0 transition"
+          >
+            <i class="fa-solid fa-xmark text-[11px]"></i>
+            <span>Cancel</span>
+          </button>
+        </div>
       </div>
 
       <!-- Platform Toggles & Quick Try Row -->
       <div class="pt-3 border-t border-white/[0.06] flex flex-col xl:flex-row xl:items-center justify-between gap-3">
-        <!-- Platform Toggle Chips -->
-        <div class="flex flex-wrap items-center gap-2">
+        <!-- Platform Toggle Chips (unchecked on load; manually select to scan) -->
+        <div id="platformPillsRow" class="flex flex-wrap items-center gap-2 rounded-xl transition">
           <span class="facet-eyebrow mr-1">Platforms</span>
 
-          <label class="platform-pill is-active">
-            <input type="checkbox" id="plat_reddit_posts" value="reddit_posts" checked onchange="syncPlatformPills(); loadLeads()" class="plat-cb sr-only">
+          <label class="platform-pill">
+            <input type="checkbox" id="plat_reddit_posts" value="reddit_posts" onchange="syncPlatformPills(); loadLeads()" class="plat-cb sr-only">
             <span class="plat-dot"></span>
             <i class="fa-brands fa-reddit text-white/70 text-xs"></i>
             <span>Reddit Posts</span>
           </label>
 
-          <label class="platform-pill is-active">
-            <input type="checkbox" id="plat_reddit_comments" value="reddit_comments" checked onchange="syncPlatformPills(); loadLeads()" class="plat-cb sr-only">
+          <label class="platform-pill">
+            <input type="checkbox" id="plat_reddit_comments" value="reddit_comments" onchange="syncPlatformPills(); loadLeads()" class="plat-cb sr-only">
             <span class="plat-dot"></span>
             <i class="fa-regular fa-comments text-[#b9abff] text-xs"></i>
             <span>Reddit Comments</span>
           </label>
 
-          <label class="platform-pill is-active">
-            <input type="checkbox" id="plat_facebook" value="facebook" checked onchange="syncPlatformPills(); loadLeads()" class="plat-cb sr-only">
+          <label class="platform-pill">
+            <input type="checkbox" id="plat_facebook" value="facebook" onchange="syncPlatformPills(); loadLeads()" class="plat-cb sr-only">
             <span class="plat-dot"></span>
             <i class="fa-brands fa-facebook text-white/70 text-xs"></i>
             <span>Facebook</span>
           </label>
 
-          <label class="platform-pill is-active">
-            <input type="checkbox" id="plat_tiktok" value="tiktok" checked onchange="syncPlatformPills(); loadLeads()" class="plat-cb sr-only">
+          <label class="platform-pill">
+            <input type="checkbox" id="plat_tiktok" value="tiktok" onchange="syncPlatformPills(); loadLeads()" class="plat-cb sr-only">
             <span class="plat-dot"></span>
             <i class="fa-brands fa-tiktok text-white/70 text-xs"></i>
             <span>TikTok</span>
           </label>
 
-          <label class="platform-pill is-active">
-            <input type="checkbox" id="plat_instagram" value="instagram" checked onchange="syncPlatformPills(); loadLeads()" class="plat-cb sr-only">
+          <label class="platform-pill">
+            <input type="checkbox" id="plat_instagram" value="instagram" onchange="syncPlatformPills(); loadLeads()" class="plat-cb sr-only">
             <span class="plat-dot"></span>
             <i class="fa-brands fa-instagram text-white/70 text-xs"></i>
             <span>Instagram</span>
           </label>
 
-          <label class="platform-pill is-active">
-            <input type="checkbox" id="plat_public_web" value="public_web" checked onchange="syncPlatformPills(); loadLeads()" class="plat-cb sr-only">
+          <label class="platform-pill">
+            <input type="checkbox" id="plat_public_web" value="public_web" onchange="syncPlatformPills(); loadLeads()" class="plat-cb sr-only">
             <span class="plat-dot"></span>
             <i class="fa-solid fa-globe text-white/70 text-xs"></i>
             <span>Public Web</span>
@@ -652,11 +662,17 @@
 
       <!-- Live Scan Progress & Per-Adapter Status Bar -->
       <div id="scanProgressPanel" class="hidden pt-3 border-t border-white/[0.06]">
-        <div class="flex items-center justify-between text-xs mb-2">
-          <div id="searchStatusText" class="text-white/80 font-medium flex items-center gap-2"></div>
-          <button onclick="resetSearch()" class="btn-facet-ghost h-[28px] px-3 rounded-[6px] text-[11.5px]">
-            Reset Filters
-          </button>
+        <div class="flex items-center justify-between gap-2 text-xs mb-2">
+          <div id="searchStatusText" class="text-white/80 font-medium flex items-center gap-2 min-w-0"></div>
+          <div class="flex items-center gap-2 shrink-0">
+            <button onclick="cancelLiveSearch()" id="btnCancelPanel" class="hidden h-[28px] px-3 rounded-[6px] bg-rose-500/15 hover:bg-rose-500/25 text-rose-200 border border-rose-400/35 text-[11.5px] font-medium flex items-center gap-1.5 transition">
+              <i class="fa-solid fa-xmark text-[10px]"></i>
+              <span>Cancel Search</span>
+            </button>
+            <button onclick="resetSearch()" class="btn-facet-ghost h-[28px] px-3 rounded-[6px] text-[11.5px]">
+              Reset Filters
+            </button>
+          </div>
         </div>
         <div id="adapterStatusGrid" class="flex flex-wrap gap-1.5"></div>
       </div>
@@ -845,6 +861,7 @@
     let currentOutreachLead = null;
     let currentConfig = {};
     let pollTimer = null;
+    let activeSearchController = null;
 
     // Track pointer coordinates (--mx, --my) across slabs & cards for Facet lavender emission + rim iridescence
     if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -931,11 +948,51 @@
         checkBackendVersion(data.adapters);
         renderStats(data.stats);
         renderLeads(data.leads);
-        if (data.scan && (data.scan.running || Object.keys(data.scan.adapters || {}).length > 0)) {
+        if (data.scan && (data.scan.running || data.scan.cancelled || Object.keys(data.scan.adapters || {}).length > 0)) {
           renderScanState(data.scan);
+          if (data.scan.running && !pollTimer) startPollingScan();
         }
       } catch (err) {
         console.error("Failed to load leads", err);
+      }
+    }
+
+    function setScanningUiState(isScanning) {
+      const btnSearch = document.getElementById('btnLiveSearch');
+      const btnScan = document.getElementById('btnScan');
+      const icon = document.getElementById('searchBtnIcon');
+      const scanIcon = document.getElementById('scanIcon');
+      const btnCancelSearch = document.getElementById('btnCancelSearch');
+      const btnCancelPanel = document.getElementById('btnCancelPanel');
+
+      if (btnSearch) {
+        btnSearch.disabled = isScanning;
+        btnSearch.classList.toggle('is-scanning', isScanning);
+      }
+      if (btnScan) btnScan.classList.toggle('is-scanning', isScanning);
+      if (icon) icon.className = isScanning ? "fa-solid fa-spinner fa-spin text-[11px]" : "fa-solid fa-bolt text-[11px]";
+      if (scanIcon) scanIcon.classList.toggle('fa-spin', isScanning);
+      if (btnCancelSearch) btnCancelSearch.classList.toggle('hidden', !isScanning);
+      if (btnCancelPanel) btnCancelPanel.classList.toggle('hidden', !isScanning);
+    }
+
+    function showPlatformSelectHint(message) {
+      const panel = document.getElementById('scanProgressPanel');
+      const text = document.getElementById('searchStatusText');
+      const grid = document.getElementById('adapterStatusGrid');
+      const row = document.getElementById('platformPillsRow');
+
+      setScanningUiState(false);
+      if (panel) panel.classList.remove('hidden');
+      if (grid) grid.innerHTML = '';
+      if (text) {
+        text.innerHTML = `<span class="micro-dot bg-[#d4a359]"></span> <span class="text-[12px] text-white/75">${escapeHtml(message)}</span>`;
+      }
+      if (row) {
+        row.classList.add('ring-1', 'ring-[#b9abff]/40', 'rounded-xl', 'p-1', '-m-1', 'transition');
+        setTimeout(() => {
+          row.classList.remove('ring-1', 'ring-[#b9abff]/40', 'rounded-xl', 'p-1', '-m-1');
+        }, 1600);
       }
     }
 
@@ -943,17 +1000,15 @@
       const panel = document.getElementById('scanProgressPanel');
       const text = document.getElementById('searchStatusText');
       const grid = document.getElementById('adapterStatusGrid');
-      const btnSearch = document.getElementById('btnLiveSearch');
-      const btnScan = document.getElementById('btnScan');
       panel.classList.remove('hidden');
 
+      setScanningUiState(Boolean(scan.running));
+
       if (scan.running) {
-        if (btnSearch) btnSearch.classList.add('is-scanning');
-        if (btnScan) btnScan.classList.add('is-scanning');
         text.innerHTML = `<span class="micro-dot bg-[#36d67e] animate-pulse"></span> <span class="text-[12px] text-white/75">Scanning live platforms&hellip; (<strong class="text-white font-medium">${scan.matched_total || 0}</strong> matched, <strong class="text-[#36d67e] font-medium">${scan.new_total || 0}</strong> new)</span>`;
+      } else if (scan.cancelled) {
+        text.innerHTML = `<span class="micro-dot bg-rose-400"></span> <span class="text-[12px] text-white/70">Scan cancelled by user. <span class="text-white/45">&middot; ${scan.matched_total || 0} matched (${scan.new_total || 0} saved before cancel)</span></span>`;
       } else {
-        if (btnSearch) btnSearch.classList.remove('is-scanning');
-        if (btnScan) btnScan.classList.remove('is-scanning');
         text.innerHTML = `<span class="micro-dot bg-[#36d67e]"></span> <span class="text-[12px] text-white/65">Scan complete &middot; <strong class="text-white/90 font-medium">${scan.matched_total || 0}</strong> matched (<strong class="text-white/90 font-medium">${scan.new_total || 0}</strong> new leads saved)</span>`;
       }
 
@@ -963,6 +1018,8 @@
           ? 'bg-[#36d67e]'
           : a.status === 'running' || a.status === 'queued'
           ? 'bg-[#d4a359] animate-pulse'
+          : a.status === 'cancelled'
+          ? 'bg-rose-400/80'
           : 'bg-rose-400';
         const pill = document.createElement('div');
         pill.className = 'glass-tag text-[11px] py-1 px-2.5';
@@ -994,29 +1051,31 @@
       const intents = getSelectedIntents();
 
       if (platforms.length === 0) {
-        alert("Please select at least one platform pill.");
+        showPlatformSelectHint("Select at least one platform pill above before running a live scan.");
         return;
       }
 
-      const btn = document.getElementById('btnLiveSearch');
-      const btnScan = document.getElementById('btnScan');
-      const icon = document.getElementById('searchBtnIcon');
-      const scanIcon = document.getElementById('scanIcon');
-      btn.disabled = true;
-      btn.classList.add('is-scanning');
-      if (btnScan) btnScan.classList.add('is-scanning');
-      icon.className = "fa-solid fa-spinner fa-spin text-[11px]";
-      scanIcon.classList.add('fa-spin');
+      if (activeSearchController) {
+        activeSearchController.abort();
+      }
+      activeSearchController = new AbortController();
+      const controller = activeSearchController;
+
+      setScanningUiState(true);
 
       const panel = document.getElementById('scanProgressPanel');
       const statusText = document.getElementById('searchStatusText');
+      const grid = document.getElementById('adapterStatusGrid');
       panel.classList.remove('hidden');
+      if (grid) grid.innerHTML = '';
       statusText.innerHTML = `<span class="micro-dot bg-[#36d67e] animate-pulse"></span> <span class="text-[12px] text-white/75">Scanning live platforms (${platforms.join(', ')})&hellip;</span>`;
 
+      let isPolling = false;
       try {
         const res = await fetch('/api/search', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
           body: JSON.stringify({
             query: query,
             platforms: platforms,
@@ -1032,15 +1091,55 @@
         renderLeads(data.leads);
         if (data.scan) {
           renderScanState(data.scan);
-          if (data.scan.running) startPollingScan();
+          if (data.scan.running) {
+            isPolling = true;
+            startPollingScan();
+          }
         }
       } catch (err) {
+        if (err && err.name === 'AbortError') {
+          return;
+        }
         console.error("Live search error", err);
         loadLeads();
       } finally {
-        btn.disabled = false;
-        icon.className = "fa-solid fa-bolt text-[11px]";
-        scanIcon.classList.remove('fa-spin');
+        if (activeSearchController === controller) {
+          activeSearchController = null;
+        }
+        if (!isPolling) {
+          setScanningUiState(false);
+        }
+      }
+    }
+
+    async function cancelLiveSearch() {
+      if (activeSearchController) {
+        activeSearchController.abort();
+        activeSearchController = null;
+      }
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+      setScanningUiState(false);
+
+      const panel = document.getElementById('scanProgressPanel');
+      const statusText = document.getElementById('searchStatusText');
+      if (panel) panel.classList.remove('hidden');
+      if (statusText) {
+        statusText.innerHTML = `<span class="micro-dot bg-rose-400"></span> <span class="text-[12px] text-white/70">Cancelling active scan&hellip;</span>`;
+      }
+
+      try {
+        const res = await fetch('/api/scan/cancel', { method: 'POST' });
+        const data = await res.json();
+        if (data.stats) renderStats(data.stats);
+        if (data.scan) renderScanState(data.scan);
+      } catch (err) {
+        console.error("Cancel scan error", err);
+      } finally {
+        setScanningUiState(false);
+        loadLeads();
       }
     }
 
@@ -1056,6 +1155,7 @@
           if (!data.scan || !data.scan.running) {
             clearInterval(pollTimer);
             pollTimer = null;
+            setScanningUiState(false);
             await loadLeads();
           }
         } catch (e) {
@@ -1071,6 +1171,11 @@
       } else {
         autoSyncCategoryForQuery(keyword);
       }
+      if (getSelectedPlatforms().length === 0) {
+        loadLeads();
+        showPlatformSelectHint("Filtered saved leads. Select a platform pill above to also run a live scan.");
+        return;
+      }
       triggerLiveSearch();
     }
 
@@ -1083,7 +1188,7 @@
     function resetSearch() {
       document.getElementById('searchQuery').value = '';
       document.getElementById('btnClearInput').classList.add('hidden');
-      document.querySelectorAll('.plat-cb').forEach(cb => cb.checked = true);
+      document.querySelectorAll('.plat-cb').forEach(cb => cb.checked = false);
       syncPlatformPills();
       document.getElementById('searchIntent').value = 'seeker,employer';
       document.getElementById('searchLocation').value = 'Cebu';

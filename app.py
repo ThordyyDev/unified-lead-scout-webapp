@@ -214,6 +214,16 @@ class LeadScoutHandler(http.server.BaseHTTPRequestHandler):
             })
             return
 
+        if path == "/api/scan/cancel":
+            cancelled = SCAN_MANAGER.cancel()
+            self.send_json({
+                "success": True,
+                "cancelled": cancelled,
+                "scan": SCAN_MANAGER.status(),
+                "stats": database.get_stats(),
+            })
+            return
+
         if path == "/api/lead/status":
             lead_id = payload.get("id")
             new_status = payload.get("status")
