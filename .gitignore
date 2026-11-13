@@ -1,0 +1,23 @@
+# Local secrets and config (never push API tokens!)
+config.json
+.env
+.env.*
+
+# Local SQLite database and caches
+leads.db
+leads.db-*
+*.sqlite
+*.sqlite3
+
+# Python cache & virtual environments
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+
+# Logs & OS files
+*.log
+.DS_Store
+Thumbs.db

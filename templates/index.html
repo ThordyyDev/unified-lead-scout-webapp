@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unified Lead Scout v3.0 - Real-Time Seekers & Employers</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { background-color: #0f172a; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
+    .card { background-color: #1e293b; border: 1px solid #334155; }
+    .card:hover { border-color: #475569; }
+    .card-comment { background: linear-gradient(180deg, rgba(30, 41, 59, 1) 0%, rgba(15, 23, 42, 0.95) 100%); border: 1px solid #4f46e545; }
+    .card-comment:hover { border-color: #818cf8; }
+  </style>
+</head>
+<body class="min-h-screen pb-16">
+
+  <!-- Header -->
+  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-40 px-6 py-4">
+    <div class="max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-emerald-400 flex items-center justify-center font-bold text-xl shadow-lg">
+            <i class="fa-solid fa-radar text-white text-lg"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-xl font-bold tracking-tight">Unified Lead Scout</h1>
+              <span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold">v3.0 Live Scanner</span>
+            </div>
+            <p class="text-xs text-slate-400">Target: <span class="text-emerald-400 font-semibold" id="targetLoc">Cebu, Philippines</span> &bull; Jobseekers &amp; Employers &bull; Posts &amp; Comments</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Counters & Settings -->
+      <div class="flex flex-wrap items-center gap-2.5">
+        <div class="px-3.5 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 text-center">
+          <span class="text-[10px] text-slate-400 uppercase tracking-wider block">Total</span>
+          <span class="text-base font-bold text-white" id="statTotal">0</span>
+        </div>
+        <div class="px-3.5 py-1.5 rounded-lg bg-emerald-950/40 border border-emerald-800/50 text-center">
+          <span class="text-[10px] text-emerald-400 uppercase tracking-wider block">Jobseekers</span>
+          <span class="text-base font-bold text-emerald-300" id="statSeekers">0</span>
+        </div>
+        <div class="px-3.5 py-1.5 rounded-lg bg-amber-950/40 border border-amber-800/50 text-center">
+          <span class="text-[10px] text-amber-400 uppercase tracking-wider block">Employers</span>
+          <span class="text-base font-bold text-amber-300" id="statEmployers">0</span>
+        </div>
+        <div class="px-3.5 py-1.5 rounded-lg bg-sky-950/40 border border-sky-800/50 text-center" title="Buyers & Sellers (Separate from Jobs)">
+          <span class="text-[10px] text-sky-400 uppercase tracking-wider block">Buy &amp; Sell</span>
+          <span class="text-base font-bold text-sky-300" id="statMarket">0</span>
+        </div>
+        <div class="px-3.5 py-1.5 rounded-lg bg-purple-950/40 border border-purple-800/50 text-center">
+          <span class="text-[10px] text-purple-300 uppercase tracking-wider block">Comments</span>
+          <span class="text-base font-bold text-purple-200" id="statComments">0</span>
+        </div>
+        <div class="px-3.5 py-1.5 rounded-lg bg-indigo-950/40 border border-indigo-800/50 text-center">
+          <span class="text-[10px] text-indigo-400 uppercase tracking-wider block">Contacted</span>
+          <span class="text-base font-bold text-indigo-300" id="statContacted">0</span>
+        </div>
+        <button onclick="openSettingsModal()" class="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+          <i class="fa-solid fa-sliders text-indigo-400"></i> Settings
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ON-DEMAND MULTI-PLATFORM SEARCH BAR -->
+  <section class="max-w-7xl mx-auto px-6 pt-6">
+    <div class="bg-gradient-to-br from-slate-800/90 to-slate-900/90 p-5 rounded-2xl border border-slate-700 shadow-xl">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+          <i class="fa-solid fa-magnifying-glass-chart"></i> Live Multi-Platform Scanner (Seekers &amp; Employers)
+        </h2>
+        <span class="text-xs text-slate-400 hidden sm:inline">Reddit &bull; Comment Trees &bull; Facebook &bull; TikTok &bull; Instagram &bull; Web RSS</span>
+      </div>
+
+      <!-- Search Input + Target Type + Location + Recency + Search Button -->
+      <div class="flex flex-col lg:flex-row items-stretch lg:items-center gap-2.5">
+        <div class="relative flex-1">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+          <input
+            id="searchQuery"
+            type="text"
+            placeholder='Keyword (e.g., "dishwasher", "service crew", "interested po", "how to apply", "urgent hiring")...'
+            onkeydown="if(event.key === 'Enter') triggerLiveSearch()"
+            class="w-full bg-slate-950/90 border border-slate-700 focus:border-emerald-500 focus:outline-none rounded-xl pl-10 pr-9 py-2.5 text-sm text-white placeholder-slate-500"
+          >
+          <button onclick="clearSearchInput()" id="btnClearInput" title="Clear keyword" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-sm">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <!-- Target Intent Selector: Jobs (Seekers + Employers) vs Buy & Sell (Buyers + Sellers) -->
+        <div class="flex items-center gap-2 bg-slate-950/90 border border-slate-700 rounded-xl px-3 py-2">
+          <label for="searchIntent" class="text-xs font-semibold text-slate-400 whitespace-nowrap">
+            <i class="fa-solid fa-layer-group text-indigo-400 mr-1"></i>Category:
+          </label>
+          <select id="searchIntent" onchange="loadLeads()" class="bg-transparent text-sm font-semibold text-white focus:outline-none cursor-pointer pr-1">
+            <option value="seeker,employer" class="bg-slate-900 text-white" selected>💼 Jobs: Seekers &amp; Employers</option>
+            <option value="seeker" class="bg-slate-900 text-emerald-300">🙋 Jobseekers Only</option>
+            <option value="employer" class="bg-slate-900 text-amber-300">🏢 Employers Hiring Only</option>
+            <option value="buyer,seller" class="bg-slate-900 text-sky-300">🛒 Buy &amp; Sell: Buyers &amp; Sellers</option>
+            <option value="seller" class="bg-slate-900 text-sky-300">🏷️ Sellers (For Sale) Only</option>
+            <option value="buyer" class="bg-slate-900 text-cyan-300">🛒 Buyers (Looking For) Only</option>
+            <option value="seeker,employer,buyer,seller" class="bg-slate-900 text-slate-300">🌐 All Categories</option>
+          </select>
+        </div>
+
+        <!-- Target Location Selector: [ Cebu / Any ] -->
+        <div class="flex items-center gap-2 bg-slate-950/90 border border-slate-700 rounded-xl px-3 py-2">
+          <label for="searchLocation" class="text-xs font-semibold text-slate-400 whitespace-nowrap">
+            <i class="fa-solid fa-location-dot text-emerald-400 mr-1"></i>Location:
+          </label>
+          <select id="searchLocation" onchange="updateLocationBadge()" class="bg-transparent text-sm font-semibold text-white focus:outline-none cursor-pointer pr-1">
+            <option value="Cebu" class="bg-slate-900 text-white" selected>Cebu</option>
+            <option value="Any" class="bg-slate-900 text-white">Any</option>
+          </select>
+        </div>
+
+        <!-- Recency Selector -->
+        <div class="flex items-center gap-2 bg-slate-950/90 border border-slate-700 rounded-xl px-3 py-2">
+          <label for="searchRecency" class="text-xs font-semibold text-slate-400 whitespace-nowrap">
+            <i class="fa-regular fa-clock text-amber-400 mr-1"></i>Posted:
+          </label>
+          <select id="searchRecency" onchange="loadLeads()" class="bg-transparent text-sm font-semibold text-white focus:outline-none cursor-pointer pr-1">
+            <option value="1" class="bg-slate-900 text-white">Past 24 hours</option>
+            <option value="3" class="bg-slate-900 text-white">Past 3 days</option>
+            <option value="7" class="bg-slate-900 text-white" selected>Past week</option>
+            <option value="30" class="bg-slate-900 text-white">Past month</option>
+            <option value="365" class="bg-slate-900 text-white">Past year</option>
+          </select>
+        </div>
+
+        <!-- Search Button -->
+        <button
+          onclick="triggerLiveSearch()"
+          id="btnLiveSearch"
+          class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-emerald-500 hover:from-indigo-400 hover:to-emerald-400 text-sm font-bold text-white flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 transition whitespace-nowrap"
+        >
+          <i class="fa-solid fa-bolt" id="searchBtnIcon"></i>
+          <span>Scan &amp; Search</span>
+        </button>
+      </div>
+
+      <!-- Platform Checkboxes & Quick Phrase Chips -->
+      <div class="mt-4 pt-3 border-t border-slate-700/70 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-2.5">
+          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Platforms:</span>
+
+          <label class="inline-flex items-center gap-2 cursor-pointer select-none bg-slate-900/80 hover:bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-700 text-xs font-medium text-slate-200">
+            <input type="checkbox" id="plat_reddit_posts" value="reddit_posts" checked onchange="loadLeads()" class="plat-cb rounded focus:ring-0 accent-emerald-500 w-4 h-4">
+            <i class="fa-brands fa-reddit text-orange-400"></i>
+            <span>Reddit Posts</span>
+          </label>
+
+          <label class="inline-flex items-center gap-2 cursor-pointer select-none bg-slate-900/80 hover:bg-slate-900 px-3 py-1.5 rounded-lg border border-purple-500/40 text-xs font-medium text-purple-200">
+            <input type="checkbox" id="plat_reddit_comments" value="reddit_comments" checked onchange="loadLeads()" class="plat-cb rounded focus:ring-0 accent-emerald-500 w-4 h-4">
+            <i class="fa-regular fa-comments text-purple-400"></i>
+            <span>Reddit Comments</span>
+          </label>
+
+          <label class="inline-flex items-center gap-2 cursor-pointer select-none bg-slate-900/80 hover:bg-slate-900 px-3 py-1.5 rounded-lg border border-blue-500/40 text-xs font-medium text-blue-200">
+            <input type="checkbox" id="plat_facebook" value="facebook" checked onchange="loadLeads()" class="plat-cb rounded focus:ring-0 accent-emerald-500 w-4 h-4">
+            <i class="fa-brands fa-facebook text-blue-400"></i>
+            <span>Facebook</span>
+          </label>
+
+          <label class="inline-flex items-center gap-2 cursor-pointer select-none bg-slate-900/80 hover:bg-slate-900 px-3 py-1.5 rounded-lg border border-pink-500/40 text-xs font-medium text-pink-200">
+            <input type="checkbox" id="plat_tiktok" value="tiktok" checked onchange="loadLeads()" class="plat-cb rounded focus:ring-0 accent-emerald-500 w-4 h-4">
+            <i class="fa-brands fa-tiktok text-pink-400"></i>
+            <span>TikTok</span>
+          </label>
+
+          <label class="inline-flex items-center gap-2 cursor-pointer select-none bg-slate-900/80 hover:bg-slate-900 px-3 py-1.5 rounded-lg border border-fuchsia-500/40 text-xs font-medium text-fuchsia-200">
+            <input type="checkbox" id="plat_instagram" value="instagram" checked onchange="loadLeads()" class="plat-cb rounded focus:ring-0 accent-emerald-500 w-4 h-4">
+            <i class="fa-brands fa-instagram text-fuchsia-400"></i>
+            <span>Instagram</span>
+          </label>
+
+          <label class="inline-flex items-center gap-2 cursor-pointer select-none bg-slate-900/80 hover:bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-700 text-xs font-medium text-slate-200">
+            <input type="checkbox" id="plat_public_web" value="public_web" checked onchange="loadLeads()" class="plat-cb rounded focus:ring-0 accent-emerald-500 w-4 h-4">
+            <i class="fa-solid fa-globe text-sky-400"></i>
+            <span>Public Feeds / Web</span>
+          </label>
+        </div>
+
+        <!-- Quick Keyword / Comment Phrase Chips -->
+        <div id="quickTryContainer" class="flex flex-wrap items-center gap-1.5">
+          <span class="text-[11px] text-slate-400 mr-1">Quick Try:</span>
+          <button onclick="quickSearch('nangita kog trabaho', 'seeker')" class="text-[11px] px-2.5 py-1 rounded-full bg-emerald-900/50 hover:bg-emerald-800/70 text-emerald-200 border border-emerald-700/50 transition">🙋 nangita kog trabaho</button>
+          <button onclick="quickSearch('interested po', 'seeker')" class="text-[11px] px-2.5 py-1 rounded-full bg-purple-900/50 hover:bg-purple-800/70 text-purple-200 border border-purple-700/50 transition">💬 interested po</button>
+          <button onclick="quickSearch('how to apply', 'seeker')" class="text-[11px] px-2.5 py-1 rounded-full bg-purple-900/50 hover:bg-purple-800/70 text-purple-200 border border-purple-700/50 transition">💬 how to apply</button>
+          <button onclick="quickSearch('we are hiring', 'employer')" class="text-[11px] px-2.5 py-1 rounded-full bg-amber-900/50 hover:bg-amber-800/70 text-amber-200 border border-amber-700/50 transition">🏢 we are hiring</button>
+          <button onclick="quickSearch('gpu for sale', 'buyer,seller')" class="text-[11px] px-2.5 py-1 rounded-full bg-sky-900/50 hover:bg-sky-800/70 text-sky-200 border border-sky-700/50 transition">🏷️ gpu for sale</button>
+          <button onclick="quickSearch('ram', 'buyer,seller')" class="text-[11px] px-2.5 py-1 rounded-full bg-sky-900/50 hover:bg-sky-800/70 text-sky-200 border border-sky-700/50 transition">🏷️ ram</button>
+          <button onclick="quickSearch('pc set', 'buyer,seller')" class="text-[11px] px-2.5 py-1 rounded-full bg-sky-900/50 hover:bg-sky-800/70 text-sky-200 border border-sky-700/50 transition">🏷️ pc set</button>
+        </div>
+      </div>
+
+      <!-- Live Scan Progress & Per-Adapter Status Bar -->
+      <div id="scanProgressPanel" class="hidden mt-3 pt-3 border-t border-slate-700/60">
+        <div class="flex items-center justify-between text-xs mb-2">
+          <div id="searchStatusText" class="text-emerald-300 font-medium flex items-center gap-2"></div>
+          <button onclick="resetSearch()" class="px-3 py-1 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 font-medium">
+            Reset Filters
+          </button>
+        </div>
+        <div id="adapterStatusGrid" class="flex flex-wrap gap-2"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Controls Bar -->
+  <div class="max-w-7xl mx-auto px-6 pt-4">
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-800/60 p-4 rounded-xl border border-slate-700">
+      <div class="flex items-center gap-2 w-full sm:w-auto">
+        <button onclick="setFilter('all')" id="tab-all" class="filter-tab px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white">All Leads</button>
+        <button onclick="setFilter('new')" id="tab-new" class="filter-tab px-4 py-2 rounded-lg text-sm font-medium bg-slate-700 text-slate-300 hover:bg-slate-600">New Only</button>
+        <button onclick="setFilter('contacted')" id="tab-contacted" class="filter-tab px-4 py-2 rounded-lg text-sm font-medium bg-slate-700 text-slate-300 hover:bg-slate-600">Contacted</button>
+      </div>
+
+      <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+        <button onclick="openAddModal()" class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm font-medium flex items-center gap-2 border border-slate-600">
+          <i class="fa-solid fa-plus text-emerald-400"></i> Log Manual Lead
+        </button>
+        <button onclick="triggerLiveSearch()" id="btnScan" class="px-5 py-2 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-sm font-semibold flex items-center gap-2 shadow-lg shadow-emerald-500/20">
+          <i class="fa-solid fa-arrows-rotate" id="scanIcon"></i> Scan All Selected Platforms
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Feed List -->
+  <main class="max-w-7xl mx-auto px-6 pt-6">
+    <div id="leadsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+
+    <div id="emptyState" class="hidden text-center py-20 bg-slate-900/40 rounded-2xl border border-slate-800">
+      <i class="fa-solid fa-satellite-dish text-5xl text-slate-600 mb-4"></i>
+      <h3 class="text-lg font-medium text-slate-300">No leads stored for the current filters yet</h3>
+      <p class="text-sm text-slate-400 mt-1 max-w-xl mx-auto">
+        Click <strong>"Scan &amp; Search"</strong> above to run a live scan across Reddit Posts, Reddit Comment Trees, Facebook, TikTok, Instagram, and Web Feeds.
+      </p>
+    </div>
+  </main>
+
+  <!-- Outreach Modal -->
+  <div id="outreachModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold flex items-center gap-2 text-emerald-400">
+          <i class="fa-regular fa-paper-plane"></i> Tailored Outreach Message
+        </h3>
+        <button onclick="closeModal('outreachModal')" class="text-slate-400 hover:text-white text-lg">&times;</button>
+      </div>
+      <p class="text-xs text-slate-400 mb-3">Copy and paste this reply comment or DM:</p>
+      <div class="space-y-3 mb-4">
+        <div class="relative">
+          <textarea id="pitchText1" rows="4" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 resize-none font-sans"></textarea>
+          <button onclick="copyToClipboard('pitchText1', 'btnCopy1')" id="btnCopy1" class="absolute bottom-2 right-2 px-3 py-1 bg-indigo-600 hover:bg-indigo-500 rounded text-xs font-medium text-white">Copy</button>
+        </div>
+      </div>
+      <div class="flex justify-between items-center pt-2 border-t border-slate-700">
+        <button onclick="markLeadContacted()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-sm font-semibold text-white">
+          <i class="fa-solid fa-check mr-1"></i> Mark as Contacted
+        </button>
+        <button onclick="closeModal('outreachModal')" class="px-4 py-2 bg-slate-700 text-slate-300 rounded-lg text-sm">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal (Apify Token, Facebook Groups, Instagram Hashtags, TikTok Queries, Subreddits) -->
+  <div id="settingsModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold flex items-center gap-2 text-indigo-400">
+          <i class="fa-solid fa-sliders"></i> Multi-Platform Scanner Settings
+        </h3>
+        <button onclick="closeModal('settingsModal')" class="text-slate-400 hover:text-white text-lg">&times;</button>
+      </div>
+      <p class="text-xs text-slate-400 mb-4">
+        Reddit and Public Search-Index mode work out of the box for free. To unlock deep chronological scraping of Facebook Groups/Comments, TikTok Comments, and Instagram Hashtag Comments, paste your <a href="https://console.apify.com/settings/integrations" target="_blank" class="text-indigo-400 underline">Apify API Token</a> below.
+      </p>
+
+      <div class="space-y-4 text-xs">
+        <div>
+          <label class="font-semibold text-slate-200 block mb-1">Apify API Token (for deep Facebook / TikTok / Instagram post &amp; comment scraping)</label>
+          <input id="cfgApifyToken" type="password" placeholder="apify_api_..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="font-semibold text-slate-200 block mb-1">Subreddits (comma-separated)</label>
+            <input id="cfgSubreddits" type="text" placeholder="Cebu, phclassifieds, Philippines" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-200 block mb-1">Instagram Hashtags (comma-separated)</label>
+            <input id="cfgIgHashtags" type="text" placeholder="cebuhiring, cebujobs, trabahocebu" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+          </div>
+        </div>
+        <div>
+          <label class="font-semibold text-slate-200 block mb-1">Public Facebook Group URLs (one per line)</label>
+          <textarea id="cfgFbGroups" rows="3" placeholder="https://www.facebook.com/groups/cebujobhiring" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"></textarea>
+        </div>
+        <div>
+          <label class="font-semibold text-slate-200 block mb-1">Search Queries / Keywords (Facebook, TikTok, Reddit &amp; All Platforms — one per line)</label>
+          <p class="text-[11px] text-slate-400 mb-1.5">Used when scanning Facebook Groups/Pages, TikTok, Reddit, and Web (e.g. job roles or buy &amp; sell items like <code>gpu for sale</code>, <code>ram</code>, <code>pc set</code>, <code>laptop</code>, <code>cebu hiring</code>).</p>
+          <textarea id="cfgTiktokQueries" rows="4" placeholder="gpu for sale&#10;ram&#10;pc set&#10;system unit&#10;laptop&#10;cebu hiring" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"></textarea>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 mt-6 pt-3 border-t border-slate-700">
+        <button onclick="closeModal('settingsModal')" class="px-4 py-2 bg-slate-700 text-slate-300 rounded-lg text-sm">Cancel</button>
+        <button onclick="saveSettings()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-semibold text-white">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Manual Lead Modal -->
+  <div id="addModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold flex items-center gap-2 text-indigo-400">
+          <i class="fa-solid fa-plus"></i> Log Manual Lead
+        </h3>
+        <button onclick="closeModal('addModal')" class="text-slate-400 hover:text-white text-lg">&times;</button>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs font-semibold text-slate-300 block mb-1">Post Title or Thread Context *</label>
+          <input id="addTitle" type="text" placeholder="e.g. Nangita ug trabaho as dishwasher sa Cebu" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-300 block mb-1">Exact Comment or Post Text</label>
+          <textarea id="addContent" rows="2" placeholder="e.g. Interested po! Willing to start ASAP." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="text-xs font-semibold text-slate-300 block mb-1">Platform</label>
+            <select id="addSource" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+              <option value="Facebook Group">Facebook Group</option>
+              <option value="Facebook Comment">Facebook Comment</option>
+              <option value="TikTok Comment">TikTok Comment</option>
+              <option value="Instagram Comment">Instagram Comment</option>
+              <option value="Reddit Comment (r/Cebu)">Reddit Comment (r/Cebu)</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-slate-300 block mb-1">Lead Type</label>
+            <select id="addIntent" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+              <option value="seeker">🙋 Jobseeker</option>
+              <option value="employer">🏢 Employer Hiring</option>
+              <option value="seller">🏷️ Seller (For Sale)</option>
+              <option value="buyer">🛒 Buyer (Looking For)</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-300 block mb-1">Permalink URL *</label>
+          <input id="addUrl" type="url" placeholder="https://..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-300 block mb-1">Author / Username</label>
+          <input id="addAuthor" type="text" placeholder="e.g. u/username or @handle" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 mt-6 pt-3 border-t border-slate-700">
+        <button onclick="closeModal('addModal')" class="px-4 py-2 bg-slate-700 text-slate-300 rounded-lg text-sm">Cancel</button>
+        <button onclick="submitManualLead()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-semibold text-white">Save Lead</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentFilter = 'all';
+    let currentOutreachLead = null;
+    let currentConfig = {};
+    let pollTimer = null;
+
+    function getSelectedPlatforms() {
+      return Array.from(document.querySelectorAll('.plat-cb'))
+        .filter(cb => cb.checked)
+        .map(cb => cb.value);
+    }
+
+    function getSelectedIntents() {
+      return (document.getElementById('searchIntent').value || 'seeker,employer').split(',');
+    }
+
+    function getMaxAgeDays() {
+      return parseInt(document.getElementById('searchRecency').value || '7', 10);
+    }
+
+    function timeAgo(ts) {
+      if (!ts) return '';
+      const d = new Date(String(ts).replace(' ', 'T') + 'Z');
+      if (isNaN(d)) return '';
+      const mins = Math.max(0, Math.floor((Date.now() - d.getTime()) / 60000));
+      if (mins < 60) return `${mins}m ago`;
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return `${hrs}h ago`;
+      return `${Math.floor(hrs / 24)}d ago`;
+    }
+
+    function updateLocationBadge() {
+      const loc = document.getElementById('searchLocation').value;
+      document.getElementById('targetLoc').innerText = loc === 'Cebu' ? 'Cebu, Philippines' : 'Any Location (All Feeds)';
+      loadLeads();
+    }
+
+    async function loadLeads() {
+      try {
+        const query = document.getElementById('searchQuery').value.trim();
+        const location = document.getElementById('searchLocation').value;
+        const platforms = getSelectedPlatforms().join(',');
+        const intents = getSelectedIntents().join(',');
+
+        const clearBtn = document.getElementById('btnClearInput');
+        if (query) clearBtn.classList.remove('hidden');
+        else clearBtn.classList.add('hidden');
+
+        const params = new URLSearchParams({
+          status: currentFilter,
+          q: query,
+          location: location,
+          platforms: platforms,
+          intents: intents,
+          max_age_days: getMaxAgeDays()
+        });
+
+        const res = await fetch(`/api/leads?${params.toString()}`);
+        const data = await res.json();
+        checkBackendVersion(data.adapters);
+        renderStats(data.stats);
+        renderLeads(data.leads);
+        if (data.scan && (data.scan.running || Object.keys(data.scan.adapters || {}).length > 0)) {
+          renderScanState(data.scan);
+        }
+      } catch (err) {
+        console.error("Failed to load leads", err);
+      }
+    }
+
+    function renderScanState(scan) {
+      const panel = document.getElementById('scanProgressPanel');
+      const text = document.getElementById('searchStatusText');
+      const grid = document.getElementById('adapterStatusGrid');
+      panel.classList.remove('hidden');
+
+      if (scan.running) {
+        text.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-amber-400"></i> Scanning live platforms... (<strong>${scan.matched_total || 0}</strong> matched, <strong>${scan.new_total || 0}</strong> new)`;
+      } else {
+        text.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i> Scan complete &bull; <strong>${scan.matched_total || 0}</strong> matched (<strong>${scan.new_total || 0}</strong> new leads saved)`;
+      }
+
+      grid.innerHTML = '';
+      Object.entries(scan.adapters || {}).forEach(([key, a]) => {
+        const color = a.status === 'ok' ? 'border-emerald-700/60 bg-emerald-950/40 text-emerald-200'
+          : a.status === 'running' || a.status === 'queued' ? 'border-amber-700/60 bg-amber-950/40 text-amber-200'
+          : 'border-rose-700/60 bg-rose-950/40 text-rose-200';
+        const pill = document.createElement('div');
+        pill.className = `text-[11px] px-2.5 py-1 rounded-lg border ${color}`;
+        pill.title = a.message || '';
+        pill.innerHTML = `<strong>${escapeHtml(a.label)}:</strong> ${escapeHtml(a.status)} (${a.matched || 0} matched / ${a.fetched || 0} checked)${a.message && a.status !== 'ok' ? ` — ${escapeHtml(a.message)}` : ''}`;
+        grid.appendChild(pill);
+      });
+    }
+
+    function autoSyncCategoryForQuery(q) {
+      if (!q) return;
+      const sel = document.getElementById('searchIntent');
+      if (!sel) return;
+      const cur = sel.value;
+      const isBuySellQuery = /(\bfor sale\b|\bgpu\b|\bram\b|\bpc set\b|\bsystem unit\b|\brtx\b|\bgtx\b|\bddr4\b|\bddr5\b|\bmotherboard\b|\bpiso wifi\b)/i.test(q);
+      const isJobQuery = /(\bhiring\b|\btrabaho\b|\bjob\b|\bapply\b|\binterested\b|\bvacancy\b|\bresume\b|\bapplicant\b|\bngita\b|\bnangita\b|\bsweldo\b|\bwork\b)/i.test(q);
+      if (isBuySellQuery && !isJobQuery && (cur === 'seeker,employer' || cur === 'seeker' || cur === 'employer')) {
+        sel.value = 'buyer,seller';
+      } else if (isJobQuery && !isBuySellQuery && (cur === 'buyer,seller' || cur === 'buyer' || cur === 'seller')) {
+        sel.value = 'seeker,employer';
+      }
+    }
+
+    async function triggerLiveSearch() {
+      const query = document.getElementById('searchQuery').value.trim();
+      autoSyncCategoryForQuery(query);
+      const location = document.getElementById('searchLocation').value;
+      const platforms = getSelectedPlatforms();
+      const intents = getSelectedIntents();
+
+      if (platforms.length === 0) {
+        alert("Please select at least one platform checkbox.");
+        return;
+      }
+
+      const btn = document.getElementById('btnLiveSearch');
+      const icon = document.getElementById('searchBtnIcon');
+      const scanIcon = document.getElementById('scanIcon');
+      btn.disabled = true;
+      icon.className = "fa-solid fa-spinner fa-spin";
+      scanIcon.classList.add('fa-spin');
+
+      const panel = document.getElementById('scanProgressPanel');
+      const statusText = document.getElementById('searchStatusText');
+      panel.classList.remove('hidden');
+      statusText.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-amber-400"></i> Scanning live platforms (${platforms.join(', ')})...`;
+
+      try {
+        const res = await fetch('/api/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: query,
+            platforms: platforms,
+            intents: intents,
+            location: location,
+            status: currentFilter,
+            max_age_days: getMaxAgeDays(),
+            wait_seconds: 2
+          })
+        });
+        const data = await res.json();
+        renderStats(data.stats);
+        renderLeads(data.leads);
+        if (data.scan) {
+          renderScanState(data.scan);
+          if (data.scan.running) startPollingScan();
+        }
+      } catch (err) {
+        console.error("Live search error", err);
+        loadLeads();
+      } finally {
+        btn.disabled = false;
+        icon.className = "fa-solid fa-bolt";
+        scanIcon.classList.remove('fa-spin');
+      }
+    }
+
+    function startPollingScan() {
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(async () => {
+        try {
+          const res = await fetch('/api/scan/status');
+          const data = await res.json();
+          if (data.stats) renderStats(data.stats);
+          if (data.scan) renderScanState(data.scan);
+          await loadLeads();
+          if (!data.scan || !data.scan.running) {
+            clearInterval(pollTimer);
+            pollTimer = null;
+            await loadLeads();
+          }
+        } catch (e) {
+          console.error("Poll error", e);
+        }
+      }, 1500);
+    }
+
+    function quickSearch(keyword, intentMode) {
+      document.getElementById('searchQuery').value = keyword;
+      if (intentMode) {
+        document.getElementById('searchIntent').value = intentMode;
+      } else {
+        autoSyncCategoryForQuery(keyword);
+      }
+      triggerLiveSearch();
+    }
+
+    function clearSearchInput() {
+      document.getElementById('searchQuery').value = '';
+      document.getElementById('btnClearInput').classList.add('hidden');
+      loadLeads();
+    }
+
+    function resetSearch() {
+      document.getElementById('searchQuery').value = '';
+      document.getElementById('btnClearInput').classList.add('hidden');
+      document.querySelectorAll('.plat-cb').forEach(cb => cb.checked = true);
+      document.getElementById('searchIntent').value = 'seeker,employer';
+      document.getElementById('searchLocation').value = 'Cebu';
+      document.getElementById('searchRecency').value = '7';
+      document.getElementById('scanProgressPanel').classList.add('hidden');
+      updateLocationBadge();
+    }
+
+    function renderStats(stats) {
+      if (!stats) return;
+      document.getElementById('statTotal').innerText = stats.total || 0;
+      document.getElementById('statSeekers').innerText = stats.seekers || 0;
+      document.getElementById('statEmployers').innerText = stats.employers || 0;
+      const mktEl = document.getElementById('statMarket');
+      if (mktEl) mktEl.innerText = stats.market || ((stats.buyers || 0) + (stats.sellers || 0));
+      document.getElementById('statComments').innerText = stats.comments || 0;
+      document.getElementById('statContacted').innerText = stats.contacted || 0;
+    }
+
+    function checkBackendVersion(adapters) {
+      let banner = document.getElementById('versionNoticeBanner');
+      const isLatest = Array.isArray(adapters) && adapters.some(a => (a.version === 'v3.6' || a.version === 'v3.5' || a.version === 'v3.4') || String(a.hint || '').includes('v3.'));
+      if (!isLatest && Array.isArray(adapters) && adapters.length > 0) {
+        if (!banner) {
+          banner = document.createElement('div');
+          banner.id = 'versionNoticeBanner';
+          banner.className = 'mb-4 p-3 rounded-xl bg-amber-950/80 border border-amber-500/50 text-amber-200 text-xs flex items-center justify-between gap-3';
+          banner.innerHTML = '<div><i class="fa-solid fa-triangle-exclamation text-amber-400 mr-1.5"></i><strong>Backend restart needed once:</strong> Your terminal is still running an older in-memory server process. Press <code>Ctrl+C</code> in your terminal and run <code>python3 app.py</code> once to activate the v3.5 URL verifier &amp; automatic hot-reloader.</div>';
+          const mainEl = document.querySelector('main');
+          if (mainEl) mainEl.prepend(banner);
+        }
+      } else if (banner) {
+        banner.remove();
+      }
+    }
+
+    function getHostLabel(urlStr) {
+      try {
+        return new URL(urlStr).hostname.replace(/^www\./, '');
+      } catch (e) {
+        return 'link';
+      }
+    }
+
+    function isValidClientLead(l) {
+      if (!l || !l.url) return false;
+      if (String(l.external_id || '').startsWith('manual_')) return true;
+      let u;
+      try { u = new URL(l.url); } catch (e) { return false; }
+      const host = u.hostname.toLowerCase();
+      const path = (u.pathname + u.search).toLowerCase();
+      const plat = (l.platform || '').toLowerCase();
+      if (plat === 'facebook' || (l.source || '').toLowerCase().includes('facebook')) {
+        return (host === 'facebook.com' || host.endsWith('.facebook.com') || host === 'fb.com' || host === 'www.fb.com')
+          && !host.startsWith('upload.')
+          && (/(\/groups\/|\/posts\/|\/permalink|story_fbid=|fbid=|\/reel\/|\/videos\/|\/watch|\/share\/|\/photo|pfbid|\/commerce\/|\/marketplace\/item\/)/.test(path));
+      }
+      if (plat === 'tiktok' || (l.source || '').toLowerCase().includes('tiktok')) {
+        return (host === 'tiktok.com' || host.endsWith('.tiktok.com'))
+          && (/(\/@[^/]+\/(video|photo)\/|\/(v|t)\/|\/tag\/|\/discover\/)/.test(path));
+      }
+      if (plat === 'instagram' || (l.source || '').toLowerCase().includes('instagram')) {
+        return (host === 'instagram.com' || host.endswith?.('.instagram.com') || host.includes('instagram.com'))
+          && (/(\/(p|reel|reels|tv)\/|\/explore\/tags\/)/.test(path));
+      }
+      if (plat === 'reddit' || (l.source || '').toLowerCase().includes('reddit')) {
+        return host.includes('reddit.com') && path.includes('/comments/');
+      }
+      return true;
+    }
+
+    function renderLeads(leads) {
+      const container = document.getElementById('leadsContainer');
+      const emptyState = document.getElementById('emptyState');
+      container.innerHTML = '';
+      leads = (leads || []).filter(isValidClientLead);
+
+      if (!leads || leads.length === 0) {
+        emptyState.classList.remove('hidden');
+        const totalStored = parseInt(document.getElementById('statTotal').innerText || '0', 10);
+        const emptyTitle = emptyState.querySelector('h3');
+        const emptySub = emptyState.querySelector('p');
+        if (totalStored > 0) {
+          emptyTitle.innerText = `No leads match this exact filter (${totalStored} total leads stored in database)`;
+          emptySub.innerHTML = `Click <button onclick="resetSearch()" class="underline text-emerald-400 font-semibold">Reset Filters</button> to view all ${totalStored} saved leads.`;
+        } else {
+          emptyTitle.innerText = 'No leads stored for the current filters yet';
+          emptySub.innerHTML = 'Click <strong>"Scan &amp; Search"</strong> above to run a live scan across Reddit Posts, Reddit Comment Trees, Facebook, TikTok, Instagram, and Web Feeds.';
+        }
+        return;
+      }
+      emptyState.classList.add('hidden');
+
+      leads.forEach(l => {
+        const isNew = l.status === 'new';
+        const isComment = l.kind === 'comment' || (l.source || '').toLowerCase().includes('comment');
+        const srcLower = (l.source || '').toLowerCase();
+
+        const platIcon = srcLower.includes('facebook') ? 'fa-brands fa-facebook'
+          : srcLower.includes('tiktok') ? 'fa-brands fa-tiktok'
+          : srcLower.includes('instagram') ? 'fa-brands fa-instagram'
+          : srcLower.includes('reddit') ? (isComment ? 'fa-regular fa-comments' : 'fa-brands fa-reddit')
+          : 'fa-solid fa-globe';
+
+        const intentBadge = l.intent === 'employer'
+          ? '<span class="text-xs px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 font-semibold">🏢 Employer Hiring</span>'
+          : l.intent === 'seller'
+          ? '<span class="text-xs px-2 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/30 font-semibold">🏷️ Seller (For Sale)</span>'
+          : l.intent === 'buyer'
+          ? '<span class="text-xs px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-semibold">🛒 Buyer (Looking For)</span>'
+          : '<span class="text-xs px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-semibold">🙋 Jobseeker</span>';
+
+        const statusBadge = isNew 
+          ? '<span class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">New</span>'
+          : '<span class="text-xs px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-medium">Contacted</span>';
+
+        const sourceBadge = isComment
+          ? `<span class="text-xs px-2.5 py-0.5 rounded-md bg-purple-900/70 text-purple-200 font-semibold border border-purple-600/50 flex items-center gap-1.5"><i class="${platIcon}"></i> ${escapeHtml(l.source)}</span>`
+          : `<span class="text-xs px-2.5 py-0.5 rounded-md bg-blue-900/60 text-blue-300 font-semibold border border-blue-700/50 flex items-center gap-1.5"><i class="${platIcon}"></i> ${escapeHtml(l.source)}</span>`;
+
+        const ago = timeAgo(l.posted_at || l.found_at);
+        const timeBadge = ago ? `<span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700"><i class="fa-regular fa-clock mr-1"></i>${ago}</span>` : '';
+        const kwBadge = l.matched_keyword ? `<span class="text-[11px] px-2 py-0.5 rounded bg-slate-800/90 text-indigo-300 border border-slate-700">matched: "${escapeHtml(l.matched_keyword)}"</span>` : '';
+
+        const card = document.createElement('div');
+        card.className = `${isComment ? 'card-comment' : 'card'} p-5 rounded-2xl flex flex-col justify-between gap-4 transition`;
+
+        const contentBlock = isComment
+          ? `<div class="mt-2.5 p-3 rounded-xl bg-slate-900/90 border-l-4 border-purple-500 text-xs text-slate-200 leading-relaxed">
+               <span class="text-[10px] uppercase tracking-wider text-purple-400 font-bold block mb-1">Exact Comment / Reply:</span>
+               "${escapeHtml(l.content)}"
+             </div>`
+          : (l.content ? `<p class="text-xs text-slate-300 mt-2 line-clamp-4 leading-relaxed">${escapeHtml(l.content)}</p>` : '');
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-2">
+              <div class="flex flex-wrap items-center gap-1.5">
+                ${sourceBadge}
+                ${intentBadge}
+                <span class="text-xs px-2 py-0.5 rounded bg-emerald-950/60 text-emerald-300 font-medium border border-emerald-800/40">📍 ${escapeHtml(l.location || 'Cebu')}</span>
+                ${timeBadge}
+              </div>
+              ${statusBadge}
+            </div>
+            
+            <h3 class="font-bold text-slate-100 text-base leading-snug hover:text-emerald-300 transition cursor-pointer" onclick="window.open('${escapeHtml(l.url)}', '_blank')">
+              ${escapeHtml(l.title)}
+            </h3>
+            
+            ${contentBlock}
+            ${kwBadge ? `<div class="mt-2">${kwBadge}</div>` : ''}
+          </div>
+
+          <div class="pt-3 border-t border-slate-700/60 flex items-center justify-between text-xs text-slate-400">
+            <div class="flex items-center gap-1.5">
+              <i class="fa-regular fa-user text-slate-400"></i>
+              <span class="text-slate-200 font-semibold">${escapeHtml(l.author)}</span>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button onclick="openOutreach('${encodeURIComponent(JSON.stringify(l))}')" class="px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 transition flex items-center gap-1.5 font-medium">
+                <i class="fa-regular fa-comment-dots"></i> Reach Out
+              </button>
+              <a href="${escapeHtml(l.url)}" target="_blank" title="${escapeHtml(l.url)}" class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 transition flex items-center gap-1">
+                ${isComment ? 'Comment' : 'Open'} (${escapeHtml(getHostLabel(l.url))}) <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+              </a>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-tab').forEach(b => {
+        b.className = "filter-tab px-4 py-2 rounded-lg text-sm font-medium bg-slate-700 text-slate-300 hover:bg-slate-600";
+      });
+      document.getElementById(`tab-${filter}`).className = "filter-tab px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white";
+      loadLeads();
+    }
+
+    function openOutreach(leadJson) {
+      const lead = JSON.parse(decodeURIComponent(leadJson));
+      currentOutreachLead = lead;
+      const isComment = lead.kind === 'comment' || (lead.source || '').toLowerCase().includes('comment');
+      const actionWord = isComment ? 'comment' : 'post';
+
+      if (lead.intent === 'employer') {
+        document.getElementById('pitchText1').value =
+          `Hi ${lead.author}! Saw your recent ${actionWord} hiring in ${lead.location || 'Cebu'}. We have pre-screened, ready-to-start candidates available right now. Sent you a DM if you'd like us to refer applicants!`;
+      } else if (lead.intent === 'seller') {
+        document.getElementById('pitchText1').value =
+          `Hi ${lead.author}! Saw your recent ${actionWord} in ${lead.location || 'Cebu'}. Is this item still available? Please let me know the last price and meetup/pickup location. Sent you a DM!`;
+      } else if (lead.intent === 'buyer') {
+        document.getElementById('pitchText1').value =
+          `Hi ${lead.author}! Saw your recent ${actionWord} looking for an item in ${lead.location || 'Cebu'}. I have a unit available in great condition — sent you a DM with specs, photos, and price!`;
+      } else {
+        document.getElementById('pitchText1').value =
+          `Hi ${lead.author}! Saw your recent ${actionWord} looking for work in ${lead.location || 'Cebu'}. We are actively connecting jobseekers with immediate openings. Send me a quick DM or reply so I can share the details!`;
+      }
+      document.getElementById('outreachModal').classList.remove('hidden');
+    }
+
+    async function markLeadContacted() {
+      if (!currentOutreachLead) return;
+      await fetch('/api/lead/status', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ id: currentOutreachLead.id, status: 'contacted' })
+      });
+      closeModal('outreachModal');
+      loadLeads();
+    }
+
+    async function openSettingsModal() {
+      const res = await fetch('/api/config');
+      currentConfig = await res.json();
+      const social = currentConfig.social || {};
+      document.getElementById('cfgApifyToken').value = currentConfig.apify_token || '';
+      document.getElementById('cfgSubreddits').value = (currentConfig.subreddits || []).join(', ');
+      document.getElementById('cfgIgHashtags').value = (social.instagram_hashtags || []).join(', ');
+      document.getElementById('cfgFbGroups').value = (social.facebook_groups || []).join('\n');
+      const queries = social.search_queries || social.tiktok_search_queries || [];
+      document.getElementById('cfgTiktokQueries').value = queries.join('\n');
+      document.getElementById('settingsModal').classList.remove('hidden');
+    }
+
+    async function saveSettings() {
+      currentConfig.apify_token = document.getElementById('cfgApifyToken').value.trim();
+      currentConfig.subreddits = document.getElementById('cfgSubreddits').value.split(',').map(s => s.trim()).filter(Boolean);
+      currentConfig.social = currentConfig.social || {};
+      currentConfig.social.instagram_hashtags = document.getElementById('cfgIgHashtags').value.split(',').map(s => s.trim().replace(/^#/, '')).filter(Boolean);
+      currentConfig.social.facebook_groups = document.getElementById('cfgFbGroups').value.split('\n').map(s => s.trim()).filter(Boolean);
+      const qList = document.getElementById('cfgTiktokQueries').value.split('\n').map(s => s.trim()).filter(Boolean);
+      currentConfig.social.search_queries = qList;
+      currentConfig.social.tiktok_search_queries = qList;
+
+      await fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(currentConfig)
+      });
+      closeModal('settingsModal');
+      loadLeads();
+    }
+
+    function openAddModal() {
+      document.getElementById('addModal').classList.remove('hidden');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+
+    async function submitManualLead() {
+      const title = document.getElementById('addTitle').value;
+      const content = document.getElementById('addContent').value;
+      const source = document.getElementById('addSource').value;
+      const intent = document.getElementById('addIntent').value;
+      const url = document.getElementById('addUrl').value;
+      const author = document.getElementById('addAuthor').value || 'Social User';
+
+      if (!title || !url) {
+        alert("Please fill in Title and URL");
+        return;
+      }
+
+      await fetch('/api/lead/add', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          title, content, source, intent, url, author,
+          location: document.getElementById('searchLocation').value || 'Cebu'
+        })
+      });
+
+      document.getElementById('addTitle').value = '';
+      document.getElementById('addContent').value = '';
+      document.getElementById('addUrl').value = '';
+      document.getElementById('addAuthor').value = '';
+      closeModal('addModal');
+      loadLeads();
+    }
+
+    function copyToClipboard(textareaId, btnId) {
+      const text = document.getElementById(textareaId).value;
+      navigator.clipboard.writeText(text);
+      const btn = document.getElementById(btnId);
+      const original = btn.innerText;
+      btn.innerText = "Copied!";
+      btn.className = "absolute bottom-2 right-2 px-3 py-1 bg-emerald-600 rounded text-xs font-medium text-white";
+      setTimeout(() => {
+        btn.innerText = original;
+        btn.className = "absolute bottom-2 right-2 px-3 py-1 bg-indigo-600 hover:bg-indigo-500 rounded text-xs font-medium text-white";
+      }, 2000);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    loadLeads();
+  </script>
+</body>
+</html>

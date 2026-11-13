@@ -1,0 +1,116 @@
+{
+  "search_settings": {
+    "location": "Cebu",
+    "max_age_days": 7,
+    "seeker_keywords": [
+      "looking for a job",
+      "looking for job",
+      "looking for work",
+      "need a job",
+      "need work",
+      "open for work",
+      "open to work",
+      "available for work",
+      "for hire",
+      "nangita kog trabaho",
+      "nangita ug trabaho",
+      "nangita ko trabaho",
+      "ngita kog trabaho",
+      "pangita trabaho",
+      "naghahanap ng trabaho",
+      "pwede mo apply",
+      "pwede pa mo apply",
+      "unsaon pag apply",
+      "how to apply",
+      "where to apply",
+      "interested po",
+      "interested ako",
+      "willing to start asap",
+      "willing to start immediately",
+      "can start immediately",
+      "naay hiring",
+      "still hiring",
+      "hiring pa"
+    ],
+    "employer_keywords": [
+      "we are hiring",
+      "we're hiring",
+      "now hiring",
+      "urgent hiring",
+      "urgently hiring",
+      "is hiring",
+      "are hiring",
+      "hiring",
+      "job vacancy",
+      "job opening",
+      "apply now",
+      "send your resume",
+      "send resume",
+      "join our team",
+      "looking for staff",
+      "need staff",
+      "need crew",
+      "looking for crew",
+      "accepting applicants",
+      "walk-in applicants",
+      "nangita mi",
+      "nangita kami",
+      "hiring staff",
+      "hiring crew"
+    ]
+  },
+  "subreddits": [
+    "Cebu",
+    "phclassifieds",
+    "Philippines",
+    "buhaydigital"
+  ],
+  "apify_token": "",
+  "reddit": {
+    "client_id": "",
+    "client_secret": ""
+  },
+  "social": {
+    "facebook_groups": [],
+    "facebook_pages": [],
+    "instagram_hashtags": [
+      "cebuhiring",
+      "cebujobs",
+      "trabahocebu"
+    ],
+    "search_queries": [
+      "asa mo apply?",
+      "still hiring pani?",
+      "interested po",
+      "nangita kog trabaho",
+      "pwede pa mo apply",
+      "how to apply",
+      "naay hiring?",
+      "need work"
+    ],
+    "tiktok_search_queries": [
+      "asa mo apply?",
+      "still hiring pani?",
+      "interested po",
+      "nangita kog trabaho",
+      "pwede pa mo apply",
+      "how to apply",
+      "naay hiring?",
+      "need work"
+    ],
+    "tiktok_hashtags": [
+      "cebuhiring",
+      "cebujobs",
+      "trabahocebu"
+    ],
+    "results_per_source": 25,
+    "comment_threads_per_platform": 3,
+    "comments_per_thread": 50
+  },
+  "rss_feeds": [
+    {
+      "name": "Reddit Cebu & Classifieds Feed",
+      "url": "https://www.reddit.com/r/Cebu+phclassifieds/new/.rss?limit=50"
+    }
+  ]
+}
