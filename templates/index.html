@@ -1,374 +1,841 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Unified Lead Scout v3.0 - Real-Time Seekers & Employers</title>
+  <title>Unified Lead Scout — Designed in Glass</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    body { background-color: #0f172a; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
-    .card { background-color: #1e293b; border: 1px solid #334155; }
-    .card:hover { border-color: #475569; }
-    .card-comment { background: linear-gradient(180deg, rgba(30, 41, 59, 1) 0%, rgba(15, 23, 42, 0.95) 100%); border: 1px solid #4f46e545; }
-    .card-comment:hover { border-color: #818cf8; }
+    :root {
+      --bg-void: #050507;
+      --slab-base: #17171b;
+      --well-bg: #0a0a0d;
+      --track-bg: #09090c;
+      --accent-emerald: #36d67e;
+      --accent-lavender: #b9abff;
+      --accent-gold: #d4a359;
+    }
+
+    * {
+      box-sizing: border-box;
+      scrollbar-width: thin;
+      scrollbar-color: #26262e #09090c;
+    }
+
+    *::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    *::-webkit-scrollbar-track {
+      background: #09090c;
+    }
+    *::-webkit-scrollbar-thumb {
+      background: #26262e;
+      border-radius: 999px;
+    }
+    *::-webkit-scrollbar-thumb:hover {
+      background: #363642;
+    }
+
+    body {
+      background-color: var(--bg-void);
+      background-image: radial-gradient(900px 600px at 12% 0%, rgba(190, 205, 255, 0.045), transparent 70%);
+      background-attachment: fixed;
+      color: #e4e4e9;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Typography System */
+    .facet-title {
+      font-weight: 500;
+      letter-spacing: -0.035em;
+      background: linear-gradient(180deg, #dcdce0 0%, #bdbdc3 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .facet-eyebrow {
+      font-size: 10.5px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: rgba(255, 255, 255, 0.38);
+    }
+
+    .facet-counter {
+      font-variant-numeric: tabular-nums;
+      font-weight: 500;
+      font-size: 16px;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      color: #e8e8ec;
+    }
+
+    .facet-headline {
+      font-size: 15.5px;
+      font-weight: 500;
+      letter-spacing: -0.022em;
+      line-height: 1.35;
+      color: #e4e4e9;
+    }
+
+    .facet-excerpt {
+      font-size: 13px;
+      font-weight: 400;
+      line-height: 1.62;
+      color: rgba(255, 255, 255, 0.54);
+    }
+
+    .facet-meta {
+      font-size: 11.5px;
+      color: rgba(255, 255, 255, 0.34);
+    }
+
+    .mono-tag {
+      font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11px;
+    }
+
+    /* =====================================================================
+       EXACT FACET SMOKED-GLASS SLAB (3D Extruded Bevel + Specular Catchlight)
+       ===================================================================== */
+    .facet-slab,
+    .card,
+    .card-comment {
+      position: relative;
+      border-radius: 18px;
+      background: linear-gradient(
+        155deg,
+        rgba(32, 32, 38, 0.86) 0%,
+        rgba(20, 20, 24, 0.92) 45%,
+        rgba(13, 13, 16, 0.96) 100%
+      );
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.14),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.65),
+        0 24px 48px -12px rgba(0, 0, 0, 0.85);
+      isolation: isolate;
+      overflow: hidden;
+      transition: transform 220ms ease, box-shadow 220ms ease;
+    }
+
+    .facet-header-bar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      width: 100%;
+      background: linear-gradient(
+        180deg,
+        rgba(14, 14, 18, 0.72) 0%,
+        rgba(10, 10, 14, 0.64) 100%
+      );
+      backdrop-filter: blur(22px) saturate(140%);
+      -webkit-backdrop-filter: blur(22px) saturate(140%);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        0 14px 36px rgba(0, 0, 0, 0.60);
+    }
+
+    /* 1.25px Masked Beveled Specular Hairline Rim + Cursor Iridescence */
+    .facet-slab::before,
+    .card::before,
+    .card-comment::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 1.25px;
+      background:
+        radial-gradient(
+          380px circle at var(--mx, -999px) var(--my, -999px),
+          rgba(185, 171, 255, 0.45),
+          rgba(110, 231, 183, 0.18) 42%,
+          transparent 72%
+        ),
+        linear-gradient(
+          155deg,
+          rgba(255, 255, 255, 0.28) 0%,
+          rgba(210, 220, 255, 0.16) 22%,
+          rgba(255, 255, 255, 0.07) 58%,
+          rgba(255, 255, 255, 0.04) 100%
+        );
+      -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    /* Lavender Face Illumination on Hover */
+    @media (prefers-reduced-motion: no-preference) {
+      .facet-slab::after,
+      .card::after,
+      .card-comment::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: radial-gradient(
+          520px circle at var(--mx, -999px) var(--my, -999px),
+          rgba(107, 94, 160, 0.24),
+          rgba(107, 94, 160, 0.07) 42%,
+          transparent 72%
+        );
+        opacity: 0;
+        transition: opacity 250ms ease;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .facet-slab:hover::after,
+      .card:hover::after,
+      .card-comment:hover::after {
+        opacity: 1;
+      }
+    }
+
+    .facet-slab > *,
+    .card > *,
+    .card-comment > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Recessed Inner Wells (Inputs, Selects, KPI Bar, Filter Track) */
+    .facet-well {
+      background: rgba(9, 9, 12, 0.78);
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      box-shadow:
+        inset 0 1px 2px rgba(0, 0, 0, 0.75),
+        0 1px 0 rgba(255, 255, 255, 0.04);
+      transition: border-color 180ms ease, box-shadow 180ms ease;
+    }
+
+    .facet-well:focus-within {
+      border-color: rgba(185, 171, 255, 0.38);
+      box-shadow:
+        inset 0 1px 2px rgba(0, 0, 0, 0.75),
+        0 0 0 3px rgba(185, 171, 255, 0.10);
+    }
+
+    .facet-input {
+      background: rgba(9, 9, 12, 0.82);
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.75);
+      color: #e4e4e9;
+      transition: border-color 180ms ease, box-shadow 180ms ease;
+    }
+
+    .facet-input:focus {
+      outline: none;
+      border-color: rgba(185, 171, 255, 0.42);
+      box-shadow:
+        inset 0 1px 2px rgba(0, 0, 0, 0.75),
+        0 0 0 3px rgba(185, 171, 255, 0.10);
+    }
+
+    /* Signature Facet Primary Action Pill (Light Rest -> Emerald Hover) */
+    .btn-facet-primary {
+      height: 38px;
+      border-radius: 6px;
+      background: #e4e4e8;
+      color: #09090b;
+      font-weight: 500;
+      font-size: 13px;
+      letter-spacing: -0.01em;
+      border: 1px solid rgba(255, 255, 255, 0.65);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.9),
+        0 6px 18px rgba(0, 0, 0, 0.5);
+      transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+    }
+
+    .btn-facet-primary:hover:not(:disabled),
+    .btn-facet-primary.is-scanning {
+      background: #36d67e;
+      color: #052e16;
+      border-color: rgba(110, 231, 183, 0.75);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.55),
+        0 8px 24px rgba(54, 214, 126, 0.28);
+    }
+
+    .btn-facet-primary:disabled {
+      opacity: 0.75;
+      cursor: not-allowed;
+    }
+
+    /* Secondary & Ghost Actions */
+    .btn-facet-ghost {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      color: rgba(255, 255, 255, 0.65);
+      font-weight: 500;
+      transition: all 180ms ease;
+    }
+
+    .btn-facet-ghost:hover {
+      background: rgba(255, 255, 255, 0.075);
+      border-color: rgba(185, 171, 255, 0.34);
+      color: #ffffff;
+    }
+
+    /* Platform Toggle Pills (Dot + Brand Icon + Emerald Active Tint) */
+    .platform-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      height: 30px;
+      padding: 0 11px;
+      border-radius: 999px;
+      background: #141418;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      color: rgba(255, 255, 255, 0.48);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      user-select: none;
+      transition: all 180ms ease;
+    }
+
+    .platform-pill:hover {
+      border-color: rgba(255, 255, 255, 0.16);
+      color: rgba(255, 255, 255, 0.82);
+    }
+
+    .platform-pill .plat-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.22);
+      transition: all 180ms ease;
+    }
+
+    .platform-pill:has(input:checked),
+    .platform-pill.is-active {
+      background: rgba(54, 214, 126, 0.09);
+      border-color: rgba(54, 214, 126, 0.30);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10);
+      color: #ececf1;
+    }
+
+    .platform-pill:has(input:checked) .plat-dot,
+    .platform-pill.is-active .plat-dot {
+      background: var(--accent-emerald);
+      box-shadow: 0 0 8px rgba(54, 214, 126, 0.65);
+    }
+
+    /* Quick Try Chips */
+    .quick-chip {
+      height: 26px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.035);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.66);
+      font-size: 11.5px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 180ms ease;
+    }
+
+    .quick-chip:hover {
+      background: rgba(185, 171, 255, 0.10);
+      border-color: rgba(185, 171, 255, 0.28);
+      color: rgba(255, 255, 255, 0.95);
+    }
+
+    /* Understated Smoked-Glass Card Tags */
+    .glass-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      height: 22px;
+      padding: 0 8.5px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.045);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      color: rgba(255, 255, 255, 0.68);
+      font-size: 11px;
+      font-weight: 500;
+      line-height: 1;
+    }
+
+    .micro-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 999px;
+      flex-shrink: 0;
+    }
+
+    /* Segmented Filter Track */
+    .segmented-track {
+      background: var(--track-bg);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      padding: 3px;
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .filter-tab {
+      height: 30px;
+      padding: 0 13px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.45);
+      background: transparent;
+      border: 1px solid transparent;
+      transition: all 180ms ease;
+    }
+
+    .filter-tab:hover {
+      color: rgba(255, 255, 255, 0.78);
+    }
+
+    .filter-tab.active-tab {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.12);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 2px 6px rgba(0, 0, 0, 0.45);
+      color: rgba(255, 255, 255, 0.95);
+    }
+
+    /* Modal Backdrop */
+    .modal-backdrop {
+      background: rgba(5, 5, 7, 0.82);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
   </style>
 </head>
-<body class="min-h-screen pb-16">
+<body class="min-h-screen pb-10 selection:bg-[#b9abff]/25 selection:text-white">
 
-  <!-- Header -->
-  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-40 px-6 py-4">
-    <div class="max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-emerald-400 flex items-center justify-center font-bold text-xl shadow-lg">
-            <i class="fa-solid fa-radar text-white text-lg"></i>
+  <!-- 1. FULL-WIDTH STICKY FROSTED GLASS NAV BAR (Blurs scrolling content beneath) -->
+  <header class="facet-header-bar">
+    <div class="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+      <!-- Left: Frosted Mark + Stacked Title & Subtitle -->
+      <div class="flex items-center gap-3 min-w-0 shrink-0">
+        <div class="w-9 h-9 rounded-[10px] facet-well flex items-center justify-center shrink-0">
+          <i class="fa-solid fa-layer-group text-white/75 text-xs"></i>
+        </div>
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <h1 class="text-[16.5px] facet-title whitespace-nowrap">Unified Lead Scout</h1>
+            <span class="glass-tag text-[10.5px] text-white/55">
+              <span class="micro-dot bg-[#36d67e]"></span>
+              v3.6
+            </span>
           </div>
-          <div>
-            <div class="flex items-center gap-2">
-              <h1 class="text-xl font-bold tracking-tight">Unified Lead Scout</h1>
-              <span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold">v3.0 Live Scanner</span>
-            </div>
-            <p class="text-xs text-slate-400">Target: <span class="text-emerald-400 font-semibold" id="targetLoc">Cebu, Philippines</span> &bull; Jobseekers &amp; Employers &bull; Posts &amp; Comments</p>
-          </div>
+          <p class="text-[11.5px] text-white/45 truncate mt-0.5">
+            Target: <span class="text-white/75 font-medium" id="targetLoc">Cebu, Philippines</span> &middot; Jobseekers &amp; Employers
+          </p>
         </div>
       </div>
 
-      <!-- Live Counters & Settings -->
-      <div class="flex flex-wrap items-center gap-2.5">
-        <div class="px-3.5 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 text-center">
-          <span class="text-[10px] text-slate-400 uppercase tracking-wider block">Total</span>
-          <span class="text-base font-bold text-white" id="statTotal">0</span>
+      <!-- Right: Unified Recessed KPI Bar + Settings Button (stays inline) -->
+      <div class="flex items-center gap-2.5 shrink-0 flex-wrap sm:flex-nowrap">
+        <div class="facet-well px-1 py-1.5 flex items-center divide-x divide-white/[0.07] overflow-x-auto">
+          <div class="px-2.5 py-0.5 shrink-0">
+            <span class="facet-eyebrow block text-[9px] tracking-[0.12em]">Total</span>
+            <span class="facet-counter text-[15px]" id="statTotal">0</span>
+          </div>
+          <div class="px-2.5 py-0.5 shrink-0">
+            <span class="facet-eyebrow flex items-center gap-1.5 text-[9px] tracking-[0.12em]">
+              <span class="w-1.5 h-1.5 rounded-full bg-[#36d67e]"></span>Jobseekers
+            </span>
+            <span class="facet-counter text-[15px]" id="statSeekers">0</span>
+          </div>
+          <div class="px-2.5 py-0.5 shrink-0">
+            <span class="facet-eyebrow flex items-center gap-1.5 text-[9px] tracking-[0.12em]">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>Employers
+            </span>
+            <span class="facet-counter text-[15px]" id="statEmployers">0</span>
+          </div>
+          <div class="px-2.5 py-0.5 shrink-0" title="Buyers & Sellers (Separate from Jobs)">
+            <span class="facet-eyebrow flex items-center gap-1.5 text-[9px] tracking-[0.12em]">
+              <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>Buy &amp; Sell
+            </span>
+            <span class="facet-counter text-[15px]" id="statMarket">0</span>
+          </div>
+          <div class="px-2.5 py-0.5 shrink-0">
+            <span class="facet-eyebrow flex items-center gap-1.5 text-[9px] tracking-[0.12em]">
+              <span class="w-1.5 h-1.5 rounded-full bg-[#b9abff]"></span>Comments
+            </span>
+            <span class="facet-counter text-[15px]" id="statComments">0</span>
+          </div>
+          <div class="px-2.5 py-0.5 shrink-0">
+            <span class="facet-eyebrow flex items-center gap-1.5 text-[9px] tracking-[0.12em]">
+              <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>Contacted
+            </span>
+            <span class="facet-counter text-[15px]" id="statContacted">0</span>
+          </div>
         </div>
-        <div class="px-3.5 py-1.5 rounded-lg bg-emerald-950/40 border border-emerald-800/50 text-center">
-          <span class="text-[10px] text-emerald-400 uppercase tracking-wider block">Jobseekers</span>
-          <span class="text-base font-bold text-emerald-300" id="statSeekers">0</span>
-        </div>
-        <div class="px-3.5 py-1.5 rounded-lg bg-amber-950/40 border border-amber-800/50 text-center">
-          <span class="text-[10px] text-amber-400 uppercase tracking-wider block">Employers</span>
-          <span class="text-base font-bold text-amber-300" id="statEmployers">0</span>
-        </div>
-        <div class="px-3.5 py-1.5 rounded-lg bg-sky-950/40 border border-sky-800/50 text-center" title="Buyers & Sellers (Separate from Jobs)">
-          <span class="text-[10px] text-sky-400 uppercase tracking-wider block">Buy &amp; Sell</span>
-          <span class="text-base font-bold text-sky-300" id="statMarket">0</span>
-        </div>
-        <div class="px-3.5 py-1.5 rounded-lg bg-purple-950/40 border border-purple-800/50 text-center">
-          <span class="text-[10px] text-purple-300 uppercase tracking-wider block">Comments</span>
-          <span class="text-base font-bold text-purple-200" id="statComments">0</span>
-        </div>
-        <div class="px-3.5 py-1.5 rounded-lg bg-indigo-950/40 border border-indigo-800/50 text-center">
-          <span class="text-[10px] text-indigo-400 uppercase tracking-wider block">Contacted</span>
-          <span class="text-base font-bold text-indigo-300" id="statContacted">0</span>
-        </div>
-        <button onclick="openSettingsModal()" class="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-semibold text-slate-200 flex items-center gap-1.5">
-          <i class="fa-solid fa-sliders text-indigo-400"></i> Settings
+
+        <button onclick="openSettingsModal()" class="btn-facet-ghost h-[38px] px-3.5 rounded-[8px] text-[12px] flex items-center gap-2 shrink-0 whitespace-nowrap">
+          <i class="fa-solid fa-sliders text-[11px] text-white/60"></i>
+          <span>Settings</span>
         </button>
       </div>
     </div>
   </header>
 
-  <!-- ON-DEMAND MULTI-PLATFORM SEARCH BAR -->
-  <section class="max-w-7xl mx-auto px-6 pt-6">
-    <div class="bg-gradient-to-br from-slate-800/90 to-slate-900/90 p-5 rounded-2xl border border-slate-700 shadow-xl">
-      <div class="flex items-center justify-between mb-3">
-        <h2 class="text-sm font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
-          <i class="fa-solid fa-magnifying-glass-chart"></i> Live Multi-Platform Scanner (Seekers &amp; Employers)
-        </h2>
-        <span class="text-xs text-slate-400 hidden sm:inline">Reddit &bull; Comment Trees &bull; Facebook &bull; TikTok &bull; Instagram &bull; Web RSS</span>
+  <!-- MAIN PAGE FRAME: max-w-[1380px] with 14px vertical gaps between floating glass slabs -->
+  <div class="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8 pt-4 flex flex-col gap-[14px]">
+
+    <!-- 2. MULTI-PLATFORM SCANNER SLAB -->
+    <section class="facet-slab p-5 sm:p-6 flex flex-col gap-[14px]">
+      <!-- Top Bar: Clean Eyebrow Left (No Dot) + Supported Platforms Right -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+        <span class="facet-eyebrow">Live Multi-Platform Scanner</span>
+        <span class="facet-meta">
+          Reddit &middot; Comment Trees &middot; Facebook &middot; TikTok &middot; Instagram &middot; Web RSS
+        </span>
       </div>
 
-      <!-- Search Input + Target Type + Location + Recency + Search Button -->
+      <!-- Control Row: Recessed Wells + Signature Facet Light CTA Pill -->
       <div class="flex flex-col lg:flex-row items-stretch lg:items-center gap-2.5">
-        <div class="relative flex-1">
-          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+        <!-- Search Input Well -->
+        <div class="facet-well h-[38px] relative flex-1 flex items-center">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 text-white/30 text-[11.5px] pointer-events-none"></i>
           <input
             id="searchQuery"
             type="text"
-            placeholder='Keyword (e.g., "dishwasher", "service crew", "interested po", "how to apply", "urgent hiring")...'
+            placeholder='Search keyword or phrase (e.g., "dishwasher", "interested po", "how to apply", "urgent hiring")...'
             onkeydown="if(event.key === 'Enter') triggerLiveSearch()"
-            class="w-full bg-slate-950/90 border border-slate-700 focus:border-emerald-500 focus:outline-none rounded-xl pl-10 pr-9 py-2.5 text-sm text-white placeholder-slate-500"
+            class="w-full h-full bg-transparent focus:outline-none pl-9 pr-8 text-[13px] text-[#e4e4e9] placeholder-white/30"
           >
-          <button onclick="clearSearchInput()" id="btnClearInput" title="Clear keyword" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-sm">
+          <button onclick="clearSearchInput()" id="btnClearInput" title="Clear keyword" class="hidden absolute right-3 text-white/40 hover:text-white text-xs">
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
 
-        <!-- Target Intent Selector: Jobs (Seekers + Employers) vs Buy & Sell (Buyers + Sellers) -->
-        <div class="flex items-center gap-2 bg-slate-950/90 border border-slate-700 rounded-xl px-3 py-2">
-          <label for="searchIntent" class="text-xs font-semibold text-slate-400 whitespace-nowrap">
-            <i class="fa-solid fa-layer-group text-indigo-400 mr-1"></i>Category:
-          </label>
-          <select id="searchIntent" onchange="loadLeads()" class="bg-transparent text-sm font-semibold text-white focus:outline-none cursor-pointer pr-1">
-            <option value="seeker,employer" class="bg-slate-900 text-white" selected>💼 Jobs: Seekers &amp; Employers</option>
-            <option value="seeker" class="bg-slate-900 text-emerald-300">🙋 Jobseekers Only</option>
-            <option value="employer" class="bg-slate-900 text-amber-300">🏢 Employers Hiring Only</option>
-            <option value="buyer,seller" class="bg-slate-900 text-sky-300">🛒 Buy &amp; Sell: Buyers &amp; Sellers</option>
-            <option value="seller" class="bg-slate-900 text-sky-300">🏷️ Sellers (For Sale) Only</option>
-            <option value="buyer" class="bg-slate-900 text-cyan-300">🛒 Buyers (Looking For) Only</option>
-            <option value="seeker,employer,buyer,seller" class="bg-slate-900 text-slate-300">🌐 All Categories</option>
+        <!-- Category Dropdown Well -->
+        <div class="facet-well h-[38px] px-3 flex items-center gap-2 shrink-0">
+          <label for="searchIntent" class="facet-eyebrow text-[9.5px] whitespace-nowrap">Category</label>
+          <select id="searchIntent" onchange="loadLeads()" class="bg-transparent text-[12.5px] font-medium text-[#e4e4e9] focus:outline-none cursor-pointer pr-1">
+            <option value="seeker,employer" class="bg-[#111115] text-white" selected>Jobs: Seekers &amp; Employers</option>
+            <option value="seeker" class="bg-[#111115] text-white">Jobseekers Only</option>
+            <option value="employer" class="bg-[#111115] text-white">Employers Hiring Only</option>
+            <option value="buyer,seller" class="bg-[#111115] text-white">Buy &amp; Sell: Buyers &amp; Sellers</option>
+            <option value="seller" class="bg-[#111115] text-white">Sellers (For Sale) Only</option>
+            <option value="buyer" class="bg-[#111115] text-white">Buyers (Looking For) Only</option>
+            <option value="seeker,employer,buyer,seller" class="bg-[#111115] text-white">All Categories</option>
           </select>
         </div>
 
-        <!-- Target Location Selector: [ Cebu / Any ] -->
-        <div class="flex items-center gap-2 bg-slate-950/90 border border-slate-700 rounded-xl px-3 py-2">
-          <label for="searchLocation" class="text-xs font-semibold text-slate-400 whitespace-nowrap">
-            <i class="fa-solid fa-location-dot text-emerald-400 mr-1"></i>Location:
-          </label>
-          <select id="searchLocation" onchange="updateLocationBadge()" class="bg-transparent text-sm font-semibold text-white focus:outline-none cursor-pointer pr-1">
-            <option value="Cebu" class="bg-slate-900 text-white" selected>Cebu</option>
-            <option value="Any" class="bg-slate-900 text-white">Any</option>
+        <!-- Location Dropdown Well -->
+        <div class="facet-well h-[38px] px-3 flex items-center gap-2 shrink-0">
+          <label for="searchLocation" class="facet-eyebrow text-[9.5px] whitespace-nowrap">Location</label>
+          <select id="searchLocation" onchange="updateLocationBadge()" class="bg-transparent text-[12.5px] font-medium text-[#e4e4e9] focus:outline-none cursor-pointer pr-1">
+            <option value="Cebu" class="bg-[#111115] text-white" selected>Cebu</option>
+            <option value="Any" class="bg-[#111115] text-white">Any</option>
           </select>
         </div>
 
-        <!-- Recency Selector -->
-        <div class="flex items-center gap-2 bg-slate-950/90 border border-slate-700 rounded-xl px-3 py-2">
-          <label for="searchRecency" class="text-xs font-semibold text-slate-400 whitespace-nowrap">
-            <i class="fa-regular fa-clock text-amber-400 mr-1"></i>Posted:
-          </label>
-          <select id="searchRecency" onchange="loadLeads()" class="bg-transparent text-sm font-semibold text-white focus:outline-none cursor-pointer pr-1">
-            <option value="1" class="bg-slate-900 text-white">Past 24 hours</option>
-            <option value="3" class="bg-slate-900 text-white">Past 3 days</option>
-            <option value="7" class="bg-slate-900 text-white" selected>Past week</option>
-            <option value="30" class="bg-slate-900 text-white">Past month</option>
-            <option value="365" class="bg-slate-900 text-white">Past year</option>
+        <!-- Posted Dropdown Well -->
+        <div class="facet-well h-[38px] px-3 flex items-center gap-2 shrink-0">
+          <label for="searchRecency" class="facet-eyebrow text-[9.5px] whitespace-nowrap">Posted</label>
+          <select id="searchRecency" onchange="loadLeads()" class="bg-transparent text-[12.5px] font-medium text-[#e4e4e9] focus:outline-none cursor-pointer pr-1">
+            <option value="1" class="bg-[#111115] text-white">Past 24 hours</option>
+            <option value="3" class="bg-[#111115] text-white">Past 3 days</option>
+            <option value="7" class="bg-[#111115] text-white" selected>Past week</option>
+            <option value="30" class="bg-[#111115] text-white">Past month</option>
+            <option value="365" class="bg-[#111115] text-white">Past year</option>
           </select>
         </div>
 
-        <!-- Search Button -->
+        <!-- Primary Facet Light Pill CTA -->
         <button
           onclick="triggerLiveSearch()"
           id="btnLiveSearch"
-          class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-emerald-500 hover:from-indigo-400 hover:to-emerald-400 text-sm font-bold text-white flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 transition whitespace-nowrap"
+          class="btn-facet-primary px-5 flex items-center justify-center gap-2 whitespace-nowrap shrink-0"
         >
-          <i class="fa-solid fa-bolt" id="searchBtnIcon"></i>
+          <i class="fa-solid fa-bolt text-[11px]" id="searchBtnIcon"></i>
           <span>Scan &amp; Search</span>
         </button>
       </div>
 
-      <!-- Platform Checkboxes & Quick Phrase Chips -->
-      <div class="mt-4 pt-3 border-t border-slate-700/70 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-        <div class="flex flex-wrap items-center gap-2.5">
-          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Platforms:</span>
+      <!-- Platform Toggles & Quick Try Row -->
+      <div class="pt-3 border-t border-white/[0.06] flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+        <!-- Platform Toggle Chips -->
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="facet-eyebrow mr-1">Platforms</span>
 
-          <label class="inline-flex items-center gap-2 cursor-pointer select-none bg-slate-900/80 hover:bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-700 text-xs font-medium text-slate-200">
-            <input type="checkbox" id="plat_reddit_posts" value="reddit_posts" checked onchange="loadLeads()" class="plat-cb rounded focus:ring-0 accent-emerald-500 w-4 h-4">
-            <i class="fa-brands fa-reddit text-orange-400"></i>
+          <label class="platform-pill is-active">
+            <input type="checkbox" id="plat_reddit_posts" value="reddit_posts" checked onchange="syncPlatformPills(); loadLeads()" class="plat-cb sr-only">
+            <span class="plat-dot"></span>
+            <i class="fa-brands fa-reddit text-white/70 text-xs"></i>
             <span>Reddit Posts</span>
           </label>
 
-          <label class="inline-flex items-center gap-2 cursor-pointer select-none bg-slate-900/80 hover:bg-slate-900 px-3 py-1.5 rounded-lg border border-purple-500/40 text-xs font-medium text-purple-200">
-            <input type="checkbox" id="plat_reddit_comments" value="reddit_comments" checked onchange="loadLeads()" class="plat-cb rounded focus:ring-0 accent-emerald-500 w-4 h-4">
-            <i class="fa-regular fa-comments text-purple-400"></i>
+          <label class="platform-pill is-active">
+            <input type="checkbox" id="plat_reddit_comments" value="reddit_comments" checked onchange="syncPlatformPills(); loadLeads()" class="plat-cb sr-only">
+            <span class="plat-dot"></span>
+            <i class="fa-regular fa-comments text-[#b9abff] text-xs"></i>
             <span>Reddit Comments</span>
           </label>
 
-          <label class="inline-flex items-center gap-2 cursor-pointer select-none bg-slate-900/80 hover:bg-slate-900 px-3 py-1.5 rounded-lg border border-blue-500/40 text-xs font-medium text-blue-200">
-            <input type="checkbox" id="plat_facebook" value="facebook" checked onchange="loadLeads()" class="plat-cb rounded focus:ring-0 accent-emerald-500 w-4 h-4">
-            <i class="fa-brands fa-facebook text-blue-400"></i>
+          <label class="platform-pill is-active">
+            <input type="checkbox" id="plat_facebook" value="facebook" checked onchange="syncPlatformPills(); loadLeads()" class="plat-cb sr-only">
+            <span class="plat-dot"></span>
+            <i class="fa-brands fa-facebook text-white/70 text-xs"></i>
             <span>Facebook</span>
           </label>
 
-          <label class="inline-flex items-center gap-2 cursor-pointer select-none bg-slate-900/80 hover:bg-slate-900 px-3 py-1.5 rounded-lg border border-pink-500/40 text-xs font-medium text-pink-200">
-            <input type="checkbox" id="plat_tiktok" value="tiktok" checked onchange="loadLeads()" class="plat-cb rounded focus:ring-0 accent-emerald-500 w-4 h-4">
-            <i class="fa-brands fa-tiktok text-pink-400"></i>
+          <label class="platform-pill is-active">
+            <input type="checkbox" id="plat_tiktok" value="tiktok" checked onchange="syncPlatformPills(); loadLeads()" class="plat-cb sr-only">
+            <span class="plat-dot"></span>
+            <i class="fa-brands fa-tiktok text-white/70 text-xs"></i>
             <span>TikTok</span>
           </label>
 
-          <label class="inline-flex items-center gap-2 cursor-pointer select-none bg-slate-900/80 hover:bg-slate-900 px-3 py-1.5 rounded-lg border border-fuchsia-500/40 text-xs font-medium text-fuchsia-200">
-            <input type="checkbox" id="plat_instagram" value="instagram" checked onchange="loadLeads()" class="plat-cb rounded focus:ring-0 accent-emerald-500 w-4 h-4">
-            <i class="fa-brands fa-instagram text-fuchsia-400"></i>
+          <label class="platform-pill is-active">
+            <input type="checkbox" id="plat_instagram" value="instagram" checked onchange="syncPlatformPills(); loadLeads()" class="plat-cb sr-only">
+            <span class="plat-dot"></span>
+            <i class="fa-brands fa-instagram text-white/70 text-xs"></i>
             <span>Instagram</span>
           </label>
 
-          <label class="inline-flex items-center gap-2 cursor-pointer select-none bg-slate-900/80 hover:bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-700 text-xs font-medium text-slate-200">
-            <input type="checkbox" id="plat_public_web" value="public_web" checked onchange="loadLeads()" class="plat-cb rounded focus:ring-0 accent-emerald-500 w-4 h-4">
-            <i class="fa-solid fa-globe text-sky-400"></i>
-            <span>Public Feeds / Web</span>
+          <label class="platform-pill is-active">
+            <input type="checkbox" id="plat_public_web" value="public_web" checked onchange="syncPlatformPills(); loadLeads()" class="plat-cb sr-only">
+            <span class="plat-dot"></span>
+            <i class="fa-solid fa-globe text-white/70 text-xs"></i>
+            <span>Public Web</span>
           </label>
         </div>
 
-        <!-- Quick Keyword / Comment Phrase Chips -->
+        <!-- Quick Try Chips -->
         <div id="quickTryContainer" class="flex flex-wrap items-center gap-1.5">
-          <span class="text-[11px] text-slate-400 mr-1">Quick Try:</span>
-          <button onclick="quickSearch('nangita kog trabaho', 'seeker')" class="text-[11px] px-2.5 py-1 rounded-full bg-emerald-900/50 hover:bg-emerald-800/70 text-emerald-200 border border-emerald-700/50 transition">🙋 nangita kog trabaho</button>
-          <button onclick="quickSearch('interested po', 'seeker')" class="text-[11px] px-2.5 py-1 rounded-full bg-purple-900/50 hover:bg-purple-800/70 text-purple-200 border border-purple-700/50 transition">💬 interested po</button>
-          <button onclick="quickSearch('how to apply', 'seeker')" class="text-[11px] px-2.5 py-1 rounded-full bg-purple-900/50 hover:bg-purple-800/70 text-purple-200 border border-purple-700/50 transition">💬 how to apply</button>
-          <button onclick="quickSearch('we are hiring', 'employer')" class="text-[11px] px-2.5 py-1 rounded-full bg-amber-900/50 hover:bg-amber-800/70 text-amber-200 border border-amber-700/50 transition">🏢 we are hiring</button>
-          <button onclick="quickSearch('gpu for sale', 'buyer,seller')" class="text-[11px] px-2.5 py-1 rounded-full bg-sky-900/50 hover:bg-sky-800/70 text-sky-200 border border-sky-700/50 transition">🏷️ gpu for sale</button>
-          <button onclick="quickSearch('ram', 'buyer,seller')" class="text-[11px] px-2.5 py-1 rounded-full bg-sky-900/50 hover:bg-sky-800/70 text-sky-200 border border-sky-700/50 transition">🏷️ ram</button>
-          <button onclick="quickSearch('pc set', 'buyer,seller')" class="text-[11px] px-2.5 py-1 rounded-full bg-sky-900/50 hover:bg-sky-800/70 text-sky-200 border border-sky-700/50 transition">🏷️ pc set</button>
+          <span class="facet-eyebrow mr-1">Quick Try</span>
+          <button onclick="quickSearch('nangita kog trabaho', 'seeker')" class="quick-chip">
+            <span class="w-1.5 h-1.5 rounded-full bg-[#36d67e]"></span>nangita kog trabaho
+          </button>
+          <button onclick="quickSearch('interested po', 'seeker')" class="quick-chip">
+            <span class="w-1.5 h-1.5 rounded-full bg-[#b9abff]"></span>interested po
+          </button>
+          <button onclick="quickSearch('how to apply', 'seeker')" class="quick-chip">
+            <span class="w-1.5 h-1.5 rounded-full bg-[#b9abff]"></span>how to apply
+          </button>
+          <button onclick="quickSearch('we are hiring', 'employer')" class="quick-chip">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>we are hiring
+          </button>
+          <button onclick="quickSearch('gpu for sale', 'buyer,seller')" class="quick-chip">
+            <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>gpu for sale
+          </button>
+          <button onclick="quickSearch('ram', 'buyer,seller')" class="quick-chip">
+            <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>ram
+          </button>
+          <button onclick="quickSearch('pc set', 'buyer,seller')" class="quick-chip">
+            <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>pc set
+          </button>
         </div>
       </div>
 
       <!-- Live Scan Progress & Per-Adapter Status Bar -->
-      <div id="scanProgressPanel" class="hidden mt-3 pt-3 border-t border-slate-700/60">
+      <div id="scanProgressPanel" class="hidden pt-3 border-t border-white/[0.06]">
         <div class="flex items-center justify-between text-xs mb-2">
-          <div id="searchStatusText" class="text-emerald-300 font-medium flex items-center gap-2"></div>
-          <button onclick="resetSearch()" class="px-3 py-1 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 font-medium">
+          <div id="searchStatusText" class="text-white/80 font-medium flex items-center gap-2"></div>
+          <button onclick="resetSearch()" class="btn-facet-ghost h-[28px] px-3 rounded-[6px] text-[11.5px]">
             Reset Filters
           </button>
         </div>
-        <div id="adapterStatusGrid" class="flex flex-wrap gap-2"></div>
+        <div id="adapterStatusGrid" class="flex flex-wrap gap-1.5"></div>
+      </div>
+    </section>
+
+    <!-- 3. FILTER & ACTION TOOLBAR SLAB -->
+    <div class="facet-slab px-4 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <!-- Left: Segmented Glass Tab Control -->
+      <div class="segmented-track w-full sm:w-auto justify-center sm:justify-start">
+        <button onclick="setFilter('all')" id="tab-all" class="filter-tab active-tab">All Leads</button>
+        <button onclick="setFilter('new')" id="tab-new" class="filter-tab">New Only</button>
+        <button onclick="setFilter('contacted')" id="tab-contacted" class="filter-tab">Contacted</button>
+      </div>
+
+      <!-- Right: Secondary Ghost Action + Primary Facet Action Pill -->
+      <div class="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+        <button onclick="openAddModal()" class="btn-facet-ghost h-[38px] px-3.5 rounded-[6px] text-[12.5px] flex items-center gap-2">
+          <i class="fa-solid fa-plus text-[10.5px]"></i>
+          <span>Log Manual Lead</span>
+        </button>
+        <button onclick="triggerLiveSearch()" id="btnScan" class="btn-facet-primary px-4 flex items-center gap-2">
+          <i class="fa-solid fa-arrows-rotate text-[11px]" id="scanIcon"></i>
+          <span>Scan All Selected Platforms</span>
+        </button>
       </div>
     </div>
-  </section>
 
-  <!-- Controls Bar -->
-  <div class="max-w-7xl mx-auto px-6 pt-4">
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-800/60 p-4 rounded-xl border border-slate-700">
-      <div class="flex items-center gap-2 w-full sm:w-auto">
-        <button onclick="setFilter('all')" id="tab-all" class="filter-tab px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white">All Leads</button>
-        <button onclick="setFilter('new')" id="tab-new" class="filter-tab px-4 py-2 rounded-lg text-sm font-medium bg-slate-700 text-slate-300 hover:bg-slate-600">New Only</button>
-        <button onclick="setFilter('contacted')" id="tab-contacted" class="filter-tab px-4 py-2 rounded-lg text-sm font-medium bg-slate-700 text-slate-300 hover:bg-slate-600">Contacted</button>
-      </div>
+    <!-- 4. LEAD CARDS GRID (14px gap matching floating glass slabs) -->
+    <main>
+      <div id="leadsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-[14px]"></div>
 
-      <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
-        <button onclick="openAddModal()" class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm font-medium flex items-center gap-2 border border-slate-600">
-          <i class="fa-solid fa-plus text-emerald-400"></i> Log Manual Lead
-        </button>
-        <button onclick="triggerLiveSearch()" id="btnScan" class="px-5 py-2 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-sm font-semibold flex items-center gap-2 shadow-lg shadow-emerald-500/20">
-          <i class="fa-solid fa-arrows-rotate" id="scanIcon"></i> Scan All Selected Platforms
-        </button>
+      <div id="emptyState" class="hidden facet-slab text-center py-20 px-6">
+        <div class="w-11 h-11 rounded-[12px] facet-well mx-auto mb-4 flex items-center justify-center">
+          <i class="fa-solid fa-satellite-dish text-sm text-white/40"></i>
+        </div>
+        <h3 class="text-[16px] facet-title">No leads stored for the current filters yet</h3>
+        <p class="facet-excerpt mt-1.5 max-w-lg mx-auto">
+          Click <strong class="text-white/80 font-medium">Scan &amp; Search</strong> above to run a live scan across Reddit Posts, Reddit Comment Trees, Facebook, TikTok, Instagram, and Web Feeds.
+        </p>
       </div>
-    </div>
+    </main>
+
   </div>
 
-  <!-- Main Feed List -->
-  <main class="max-w-7xl mx-auto px-6 pt-6">
-    <div id="leadsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-
-    <div id="emptyState" class="hidden text-center py-20 bg-slate-900/40 rounded-2xl border border-slate-800">
-      <i class="fa-solid fa-satellite-dish text-5xl text-slate-600 mb-4"></i>
-      <h3 class="text-lg font-medium text-slate-300">No leads stored for the current filters yet</h3>
-      <p class="text-sm text-slate-400 mt-1 max-w-xl mx-auto">
-        Click <strong>"Scan &amp; Search"</strong> above to run a live scan across Reddit Posts, Reddit Comment Trees, Facebook, TikTok, Instagram, and Web Feeds.
-      </p>
-    </div>
-  </main>
-
-  <!-- Outreach Modal -->
-  <div id="outreachModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-bold flex items-center gap-2 text-emerald-400">
-          <i class="fa-regular fa-paper-plane"></i> Tailored Outreach Message
-        </h3>
-        <button onclick="closeModal('outreachModal')" class="text-slate-400 hover:text-white text-lg">&times;</button>
+  <!-- OUTREACH MODAL -->
+  <div id="outreachModal" class="modal-backdrop fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="facet-slab max-w-lg w-full overflow-hidden">
+      <div class="px-6 py-4 border-b border-white/[0.06] flex justify-between items-center">
+        <div>
+          <span class="facet-eyebrow block">Direct Response</span>
+          <h3 class="text-[16px] facet-title mt-0.5">Tailored Outreach Message</h3>
+        </div>
+        <button onclick="closeModal('outreachModal')" class="w-7 h-7 rounded-[6px] btn-facet-ghost flex items-center justify-center text-sm">&times;</button>
       </div>
-      <p class="text-xs text-slate-400 mb-3">Copy and paste this reply comment or DM:</p>
-      <div class="space-y-3 mb-4">
+      <div class="p-6">
+        <p class="facet-excerpt mb-3">Copy and paste this reply comment or direct message:</p>
         <div class="relative">
-          <textarea id="pitchText1" rows="4" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 resize-none font-sans"></textarea>
-          <button onclick="copyToClipboard('pitchText1', 'btnCopy1')" id="btnCopy1" class="absolute bottom-2 right-2 px-3 py-1 bg-indigo-600 hover:bg-indigo-500 rounded text-xs font-medium text-white">Copy</button>
+          <textarea id="pitchText1" rows="4" class="facet-input w-full p-3.5 text-[13px] leading-relaxed resize-none"></textarea>
+          <button onclick="copyToClipboard('pitchText1', 'btnCopy1')" id="btnCopy1" class="btn-facet-ghost absolute bottom-3 right-3 h-[28px] px-3 rounded-[6px] text-xs">Copy</button>
         </div>
       </div>
-      <div class="flex justify-between items-center pt-2 border-t border-slate-700">
-        <button onclick="markLeadContacted()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-sm font-semibold text-white">
-          <i class="fa-solid fa-check mr-1"></i> Mark as Contacted
+      <div class="px-6 py-3.5 border-t border-white/[0.06] flex justify-between items-center">
+        <button onclick="markLeadContacted()" class="btn-facet-primary px-4 flex items-center gap-1.5">
+          <i class="fa-solid fa-check text-[11px]"></i>
+          <span>Mark as Contacted</span>
         </button>
-        <button onclick="closeModal('outreachModal')" class="px-4 py-2 bg-slate-700 text-slate-300 rounded-lg text-sm">Close</button>
+        <button onclick="closeModal('outreachModal')" class="btn-facet-ghost h-[38px] px-4 rounded-[6px] text-xs">Close</button>
       </div>
     </div>
   </div>
 
-  <!-- Settings Modal (Apify Token, Facebook Groups, Instagram Hashtags, TikTok Queries, Subreddits) -->
-  <div id="settingsModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-bold flex items-center gap-2 text-indigo-400">
-          <i class="fa-solid fa-sliders"></i> Multi-Platform Scanner Settings
-        </h3>
-        <button onclick="closeModal('settingsModal')" class="text-slate-400 hover:text-white text-lg">&times;</button>
-      </div>
-      <p class="text-xs text-slate-400 mb-4">
-        Reddit and Public Search-Index mode work out of the box for free. To unlock deep chronological scraping of Facebook Groups/Comments, TikTok Comments, and Instagram Hashtag Comments, paste your <a href="https://console.apify.com/settings/integrations" target="_blank" class="text-indigo-400 underline">Apify API Token</a> below.
-      </p>
-
-      <div class="space-y-4 text-xs">
+  <!-- 5. SETTINGS MODAL -->
+  <div id="settingsModal" class="modal-backdrop fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="facet-slab max-w-2xl w-full max-h-[88vh] flex flex-col overflow-hidden">
+      <!-- Sticky Glass Header -->
+      <div class="px-6 py-4 border-b border-white/[0.06] flex justify-between items-center shrink-0">
         <div>
-          <label class="font-semibold text-slate-200 block mb-1">Apify API Token (for deep Facebook / TikTok / Instagram post &amp; comment scraping)</label>
-          <input id="cfgApifyToken" type="password" placeholder="apify_api_..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+          <span class="facet-eyebrow block">Configuration</span>
+          <h3 class="text-[16px] facet-title mt-0.5">Multi-Platform Scanner Settings</h3>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label class="font-semibold text-slate-200 block mb-1">Subreddits (comma-separated)</label>
-            <input id="cfgSubreddits" type="text" placeholder="Cebu, phclassifieds, Philippines" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-200 block mb-1">Instagram Hashtags (comma-separated)</label>
-            <input id="cfgIgHashtags" type="text" placeholder="cebuhiring, cebujobs, trabahocebu" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
-          </div>
-        </div>
-        <div>
-          <label class="font-semibold text-slate-200 block mb-1">Public Facebook Group URLs (one per line)</label>
-          <textarea id="cfgFbGroups" rows="3" placeholder="https://www.facebook.com/groups/cebujobhiring" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"></textarea>
-        </div>
-        <div>
-          <label class="font-semibold text-slate-200 block mb-1">Search Queries / Keywords (Facebook, TikTok, Reddit &amp; All Platforms — one per line)</label>
-          <p class="text-[11px] text-slate-400 mb-1.5">Used when scanning Facebook Groups/Pages, TikTok, Reddit, and Web (e.g. job roles or buy &amp; sell items like <code>gpu for sale</code>, <code>ram</code>, <code>pc set</code>, <code>laptop</code>, <code>cebu hiring</code>).</p>
-          <textarea id="cfgTiktokQueries" rows="4" placeholder="gpu for sale&#10;ram&#10;pc set&#10;system unit&#10;laptop&#10;cebu hiring" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"></textarea>
-        </div>
+        <button onclick="closeModal('settingsModal')" class="w-7 h-7 rounded-[6px] btn-facet-ghost flex items-center justify-center text-sm">&times;</button>
       </div>
 
-      <div class="flex justify-end gap-2 mt-6 pt-3 border-t border-slate-700">
-        <button onclick="closeModal('settingsModal')" class="px-4 py-2 bg-slate-700 text-slate-300 rounded-lg text-sm">Cancel</button>
-        <button onclick="saveSettings()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-semibold text-white">Save Settings</button>
+      <!-- Scrollable Form Body -->
+      <div class="p-6 overflow-y-auto space-y-5 text-xs">
+        <p class="facet-excerpt">
+          Reddit and Public Search-Index mode work out of the box. To unlock deep chronological scraping of Facebook Groups/Comments, TikTok Comments, and Instagram Hashtag Comments, paste your <a href="https://console.apify.com/settings/integrations" target="_blank" class="text-white/85 underline decoration-white/30 hover:decoration-white">Apify API Token</a> below.
+        </p>
+
+        <div>
+          <label class="facet-eyebrow block mb-2">Apify API Token (Facebook / TikTok / Instagram Deep Scraper)</label>
+          <input id="cfgApifyToken" type="password" placeholder="apify_api_..." class="facet-input w-full h-[38px] px-3.5 text-[13px]">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="facet-eyebrow block mb-2">Subreddits (comma-separated)</label>
+            <input id="cfgSubreddits" type="text" placeholder="Cebu, phclassifieds, Philippines" class="facet-input w-full h-[38px] px-3.5 text-[13px]">
+          </div>
+          <div>
+            <label class="facet-eyebrow block mb-2">Instagram Hashtags (comma-separated)</label>
+            <input id="cfgIgHashtags" type="text" placeholder="cebuhiring, cebujobs, trabahocebu" class="facet-input w-full h-[38px] px-3.5 text-[13px]">
+          </div>
+        </div>
+
+        <div>
+          <label class="facet-eyebrow block mb-2">Public Facebook Group URLs (one per line)</label>
+          <textarea id="cfgFbGroups" rows="3" placeholder="https://www.facebook.com/groups/cebujobhiring" class="facet-input w-full p-3.5 text-[13px] leading-relaxed"></textarea>
+        </div>
+
+        <div>
+          <label class="facet-eyebrow block mb-1.5">Search Queries / Keywords (Facebook, TikTok, Reddit &amp; All Platforms — one per line)</label>
+          <p class="facet-meta mb-2">Used when scanning Facebook Groups/Pages, TikTok, Reddit, and Web (e.g. job roles or buy &amp; sell items like <code class="mono-tag text-white/65">gpu for sale</code>, <code class="mono-tag text-white/65">ram</code>, <code class="mono-tag text-white/65">pc set</code>, <code class="mono-tag text-white/65">cebu hiring</code>).</p>
+          <textarea id="cfgTiktokQueries" rows="4" placeholder="gpu for sale&#10;ram&#10;pc set&#10;system unit&#10;laptop&#10;cebu hiring" class="facet-input w-full p-3.5 text-[13px] leading-relaxed"></textarea>
+        </div>
+      </div>
+
+      <!-- Sticky Glass Footer -->
+      <div class="px-6 py-3.5 border-t border-white/[0.06] flex justify-end gap-2.5 shrink-0">
+        <button onclick="closeModal('settingsModal')" class="btn-facet-ghost h-[38px] px-4 rounded-[6px] text-xs">Cancel</button>
+        <button onclick="saveSettings()" class="btn-facet-primary px-5">Save Settings</button>
       </div>
     </div>
   </div>
 
-  <!-- Add Manual Lead Modal -->
-  <div id="addModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-bold flex items-center gap-2 text-indigo-400">
-          <i class="fa-solid fa-plus"></i> Log Manual Lead
-        </h3>
-        <button onclick="closeModal('addModal')" class="text-slate-400 hover:text-white text-lg">&times;</button>
+  <!-- ADD MANUAL LEAD MODAL -->
+  <div id="addModal" class="modal-backdrop fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="facet-slab max-w-md w-full overflow-hidden">
+      <div class="px-6 py-4 border-b border-white/[0.06] flex justify-between items-center">
+        <div>
+          <span class="facet-eyebrow block">Manual Entry</span>
+          <h3 class="text-[16px] facet-title mt-0.5">Log Manual Lead</h3>
+        </div>
+        <button onclick="closeModal('addModal')" class="w-7 h-7 rounded-[6px] btn-facet-ghost flex items-center justify-center text-sm">&times;</button>
       </div>
-      <div class="space-y-3">
+
+      <div class="p-6 space-y-4">
         <div>
-          <label class="text-xs font-semibold text-slate-300 block mb-1">Post Title or Thread Context *</label>
-          <input id="addTitle" type="text" placeholder="e.g. Nangita ug trabaho as dishwasher sa Cebu" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+          <label class="facet-eyebrow block mb-1.5">Post Title or Thread Context *</label>
+          <input id="addTitle" type="text" placeholder="e.g. Nangita ug trabaho as dishwasher sa Cebu" class="facet-input w-full h-[38px] px-3.5 text-[13px]">
         </div>
         <div>
-          <label class="text-xs font-semibold text-slate-300 block mb-1">Exact Comment or Post Text</label>
-          <textarea id="addContent" rows="2" placeholder="e.g. Interested po! Willing to start ASAP." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"></textarea>
+          <label class="facet-eyebrow block mb-1.5">Exact Comment or Post Text</label>
+          <textarea id="addContent" rows="2" placeholder="e.g. Interested po! Willing to start ASAP." class="facet-input w-full p-3.5 text-[13px]"></textarea>
         </div>
-        <div class="grid grid-cols-2 gap-2">
+        <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="text-xs font-semibold text-slate-300 block mb-1">Platform</label>
-            <select id="addSource" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
-              <option value="Facebook Group">Facebook Group</option>
-              <option value="Facebook Comment">Facebook Comment</option>
-              <option value="TikTok Comment">TikTok Comment</option>
-              <option value="Instagram Comment">Instagram Comment</option>
-              <option value="Reddit Comment (r/Cebu)">Reddit Comment (r/Cebu)</option>
+            <label class="facet-eyebrow block mb-1.5">Platform</label>
+            <select id="addSource" class="facet-input w-full h-[38px] px-3 text-[12.5px]">
+              <option value="Facebook Group" class="bg-[#111115]">Facebook Group</option>
+              <option value="Facebook Comment" class="bg-[#111115]">Facebook Comment</option>
+              <option value="TikTok Comment" class="bg-[#111115]">TikTok Comment</option>
+              <option value="Instagram Comment" class="bg-[#111115]">Instagram Comment</option>
+              <option value="Reddit Comment (r/Cebu)" class="bg-[#111115]">Reddit Comment (r/Cebu)</option>
             </select>
           </div>
           <div>
-            <label class="text-xs font-semibold text-slate-300 block mb-1">Lead Type</label>
-            <select id="addIntent" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
-              <option value="seeker">🙋 Jobseeker</option>
-              <option value="employer">🏢 Employer Hiring</option>
-              <option value="seller">🏷️ Seller (For Sale)</option>
-              <option value="buyer">🛒 Buyer (Looking For)</option>
+            <label class="facet-eyebrow block mb-1.5">Lead Type</label>
+            <select id="addIntent" class="facet-input w-full h-[38px] px-3 text-[12.5px]">
+              <option value="seeker" class="bg-[#111115]">Jobseeker</option>
+              <option value="employer" class="bg-[#111115]">Employer Hiring</option>
+              <option value="seller" class="bg-[#111115]">Seller (For Sale)</option>
+              <option value="buyer" class="bg-[#111115]">Buyer (Looking For)</option>
             </select>
           </div>
         </div>
         <div>
-          <label class="text-xs font-semibold text-slate-300 block mb-1">Permalink URL *</label>
-          <input id="addUrl" type="url" placeholder="https://..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+          <label class="facet-eyebrow block mb-1.5">Permalink URL *</label>
+          <input id="addUrl" type="url" placeholder="https://..." class="facet-input w-full h-[38px] px-3.5 text-[13px]">
         </div>
         <div>
-          <label class="text-xs font-semibold text-slate-300 block mb-1">Author / Username</label>
-          <input id="addAuthor" type="text" placeholder="e.g. u/username or @handle" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+          <label class="facet-eyebrow block mb-1.5">Author / Username</label>
+          <input id="addAuthor" type="text" placeholder="e.g. u/username or @handle" class="facet-input w-full h-[38px] px-3.5 text-[13px]">
         </div>
       </div>
 
-      <div class="flex justify-end gap-2 mt-6 pt-3 border-t border-slate-700">
-        <button onclick="closeModal('addModal')" class="px-4 py-2 bg-slate-700 text-slate-300 rounded-lg text-sm">Cancel</button>
-        <button onclick="submitManualLead()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-semibold text-white">Save Lead</button>
+      <div class="px-6 py-3.5 border-t border-white/[0.06] flex justify-end gap-2.5">
+        <button onclick="closeModal('addModal')" class="btn-facet-ghost h-[38px] px-4 rounded-[6px] text-xs">Cancel</button>
+        <button onclick="submitManualLead()" class="btn-facet-primary px-5">Save Lead</button>
       </div>
     </div>
   </div>
@@ -378,6 +845,26 @@
     let currentOutreachLead = null;
     let currentConfig = {};
     let pollTimer = null;
+
+    // Track pointer coordinates (--mx, --my) across slabs & cards for Facet lavender emission + rim iridescence
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.addEventListener('pointermove', (e) => {
+        const slab = e.target.closest('.facet-slab, .card, .card-comment');
+        if (!slab) return;
+        const rect = slab.getBoundingClientRect();
+        slab.style.setProperty('--mx', `${e.clientX - rect.left}px`);
+        slab.style.setProperty('--my', `${e.clientY - rect.top}px`);
+      }, { passive: true });
+    }
+
+    function syncPlatformPills() {
+      document.querySelectorAll('.platform-pill').forEach(label => {
+        const cb = label.querySelector('input.plat-cb');
+        if (cb) {
+          label.classList.toggle('is-active', cb.checked);
+        }
+      });
+    }
 
     function getSelectedPlatforms() {
       return Array.from(document.querySelectorAll('.plat-cb'))
@@ -402,6 +889,15 @@
       const hrs = Math.floor(mins / 60);
       if (hrs < 24) return `${hrs}h ago`;
       return `${Math.floor(hrs / 24)}d ago`;
+    }
+
+    function cleanExcerpt(raw) {
+      if (!raw) return '';
+      return String(raw)
+        .replace(/https?:\/\/(?:preview|i)\.redd\.it\/[^\s)]+/gi, '')
+        .replace(/https?:\/\/[^\s]{65,}/g, (m) => m.slice(0, 48) + '…')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
     }
 
     function updateLocationBadge() {
@@ -447,23 +943,31 @@
       const panel = document.getElementById('scanProgressPanel');
       const text = document.getElementById('searchStatusText');
       const grid = document.getElementById('adapterStatusGrid');
+      const btnSearch = document.getElementById('btnLiveSearch');
+      const btnScan = document.getElementById('btnScan');
       panel.classList.remove('hidden');
 
       if (scan.running) {
-        text.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-amber-400"></i> Scanning live platforms... (<strong>${scan.matched_total || 0}</strong> matched, <strong>${scan.new_total || 0}</strong> new)`;
+        if (btnSearch) btnSearch.classList.add('is-scanning');
+        if (btnScan) btnScan.classList.add('is-scanning');
+        text.innerHTML = `<span class="micro-dot bg-[#36d67e] animate-pulse"></span> <span class="text-[12px] text-white/75">Scanning live platforms&hellip; (<strong class="text-white font-medium">${scan.matched_total || 0}</strong> matched, <strong class="text-[#36d67e] font-medium">${scan.new_total || 0}</strong> new)</span>`;
       } else {
-        text.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i> Scan complete &bull; <strong>${scan.matched_total || 0}</strong> matched (<strong>${scan.new_total || 0}</strong> new leads saved)`;
+        if (btnSearch) btnSearch.classList.remove('is-scanning');
+        if (btnScan) btnScan.classList.remove('is-scanning');
+        text.innerHTML = `<span class="micro-dot bg-[#36d67e]"></span> <span class="text-[12px] text-white/65">Scan complete &middot; <strong class="text-white/90 font-medium">${scan.matched_total || 0}</strong> matched (<strong class="text-white/90 font-medium">${scan.new_total || 0}</strong> new leads saved)</span>`;
       }
 
       grid.innerHTML = '';
       Object.entries(scan.adapters || {}).forEach(([key, a]) => {
-        const color = a.status === 'ok' ? 'border-emerald-700/60 bg-emerald-950/40 text-emerald-200'
-          : a.status === 'running' || a.status === 'queued' ? 'border-amber-700/60 bg-amber-950/40 text-amber-200'
-          : 'border-rose-700/60 bg-rose-950/40 text-rose-200';
+        const dotColor = a.status === 'ok'
+          ? 'bg-[#36d67e]'
+          : a.status === 'running' || a.status === 'queued'
+          ? 'bg-[#d4a359] animate-pulse'
+          : 'bg-rose-400';
         const pill = document.createElement('div');
-        pill.className = `text-[11px] px-2.5 py-1 rounded-lg border ${color}`;
+        pill.className = 'glass-tag text-[11px] py-1 px-2.5';
         pill.title = a.message || '';
-        pill.innerHTML = `<strong>${escapeHtml(a.label)}:</strong> ${escapeHtml(a.status)} (${a.matched || 0} matched / ${a.fetched || 0} checked)${a.message && a.status !== 'ok' ? ` — ${escapeHtml(a.message)}` : ''}`;
+        pill.innerHTML = `<span class="micro-dot ${dotColor}"></span><span class="text-white/80 font-medium">${escapeHtml(a.label)}:</span> <span class="text-white/50">${escapeHtml(a.status)} (${a.matched || 0}/${a.fetched || 0})</span>`;
         grid.appendChild(pill);
       });
     }
@@ -490,21 +994,24 @@
       const intents = getSelectedIntents();
 
       if (platforms.length === 0) {
-        alert("Please select at least one platform checkbox.");
+        alert("Please select at least one platform pill.");
         return;
       }
 
       const btn = document.getElementById('btnLiveSearch');
+      const btnScan = document.getElementById('btnScan');
       const icon = document.getElementById('searchBtnIcon');
       const scanIcon = document.getElementById('scanIcon');
       btn.disabled = true;
-      icon.className = "fa-solid fa-spinner fa-spin";
+      btn.classList.add('is-scanning');
+      if (btnScan) btnScan.classList.add('is-scanning');
+      icon.className = "fa-solid fa-spinner fa-spin text-[11px]";
       scanIcon.classList.add('fa-spin');
 
       const panel = document.getElementById('scanProgressPanel');
       const statusText = document.getElementById('searchStatusText');
       panel.classList.remove('hidden');
-      statusText.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-amber-400"></i> Scanning live platforms (${platforms.join(', ')})...`;
+      statusText.innerHTML = `<span class="micro-dot bg-[#36d67e] animate-pulse"></span> <span class="text-[12px] text-white/75">Scanning live platforms (${platforms.join(', ')})&hellip;</span>`;
 
       try {
         const res = await fetch('/api/search', {
@@ -532,7 +1039,7 @@
         loadLeads();
       } finally {
         btn.disabled = false;
-        icon.className = "fa-solid fa-bolt";
+        icon.className = "fa-solid fa-bolt text-[11px]";
         scanIcon.classList.remove('fa-spin');
       }
     }
@@ -577,6 +1084,7 @@
       document.getElementById('searchQuery').value = '';
       document.getElementById('btnClearInput').classList.add('hidden');
       document.querySelectorAll('.plat-cb').forEach(cb => cb.checked = true);
+      syncPlatformPills();
       document.getElementById('searchIntent').value = 'seeker,employer';
       document.getElementById('searchLocation').value = 'Cebu';
       document.getElementById('searchRecency').value = '7';
@@ -602,8 +1110,8 @@
         if (!banner) {
           banner = document.createElement('div');
           banner.id = 'versionNoticeBanner';
-          banner.className = 'mb-4 p-3 rounded-xl bg-amber-950/80 border border-amber-500/50 text-amber-200 text-xs flex items-center justify-between gap-3';
-          banner.innerHTML = '<div><i class="fa-solid fa-triangle-exclamation text-amber-400 mr-1.5"></i><strong>Backend restart needed once:</strong> Your terminal is still running an older in-memory server process. Press <code>Ctrl+C</code> in your terminal and run <code>python3 app.py</code> once to activate the v3.5 URL verifier &amp; automatic hot-reloader.</div>';
+          banner.className = 'mb-3.5 p-3.5 facet-slab text-white/75 text-xs flex items-center justify-between gap-3';
+          banner.innerHTML = '<div><span class="micro-dot bg-[#d4a359] inline-block mr-2"></span><strong class="text-white font-medium">Backend restart needed once:</strong> Press <code class="mono-tag">Ctrl+C</code> and run <code class="mono-tag">python3 app.py</code> once to activate the latest URL verifier &amp; hot-reloader.</div>';
           const mainEl = document.querySelector('main');
           if (mainEl) mainEl.prepend(banner);
         }
@@ -659,11 +1167,11 @@
         const emptyTitle = emptyState.querySelector('h3');
         const emptySub = emptyState.querySelector('p');
         if (totalStored > 0) {
-          emptyTitle.innerText = `No leads match this exact filter (${totalStored} total leads stored in database)`;
-          emptySub.innerHTML = `Click <button onclick="resetSearch()" class="underline text-emerald-400 font-semibold">Reset Filters</button> to view all ${totalStored} saved leads.`;
+          emptyTitle.innerText = `No leads match this exact filter (${totalStored} total leads stored)`;
+          emptySub.innerHTML = `Click <button onclick="resetSearch()" class="underline text-white/85 hover:text-white font-medium">Reset Filters</button> to view all ${totalStored} saved leads.`;
         } else {
           emptyTitle.innerText = 'No leads stored for the current filters yet';
-          emptySub.innerHTML = 'Click <strong>"Scan &amp; Search"</strong> above to run a live scan across Reddit Posts, Reddit Comment Trees, Facebook, TikTok, Instagram, and Web Feeds.';
+          emptySub.innerHTML = 'Click <strong class="text-white/80 font-medium">Scan &amp; Search</strong> above to run a live scan across Reddit Posts, Reddit Comment Trees, Facebook, TikTok, Instagram, and Web Feeds.';
         }
         return;
       }
@@ -681,68 +1189,80 @@
           : 'fa-solid fa-globe';
 
         const intentBadge = l.intent === 'employer'
-          ? '<span class="text-xs px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 font-semibold">🏢 Employer Hiring</span>'
+          ? '<span class="text-[11px] px-2.5 py-0.5 rounded-full bg-amber-400/[0.11] text-amber-200/90 border border-amber-400/25 font-medium shrink-0">Employer Hiring</span>'
           : l.intent === 'seller'
-          ? '<span class="text-xs px-2 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/30 font-semibold">🏷️ Seller (For Sale)</span>'
+          ? '<span class="text-[11px] px-2.5 py-0.5 rounded-full bg-sky-400/[0.11] text-sky-200/90 border border-sky-400/25 font-medium shrink-0">Seller &middot; For Sale</span>'
           : l.intent === 'buyer'
-          ? '<span class="text-xs px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-semibold">🛒 Buyer (Looking For)</span>'
-          : '<span class="text-xs px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-semibold">🙋 Jobseeker</span>';
+          ? '<span class="text-[11px] px-2.5 py-0.5 rounded-full bg-cyan-400/[0.11] text-cyan-200/90 border border-cyan-400/25 font-medium shrink-0">Buyer &middot; Looking For</span>'
+          : '<span class="text-[11px] px-2.5 py-0.5 rounded-full bg-[#36d67e]/[0.11] text-[#36d67e] border border-[#36d67e]/25 font-medium shrink-0">Jobseeker</span>';
 
-        const statusBadge = isNew 
-          ? '<span class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">New</span>'
-          : '<span class="text-xs px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-medium">Contacted</span>';
+        const statusBadge = isNew
+          ? '<span class="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-0.5 rounded-full bg-[#36d67e]/10 text-[#36d67e] border border-[#36d67e]/25 font-medium shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-[#36d67e]"></span>New</span>'
+          : '<span class="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-0.5 rounded-full bg-[#b9abff]/10 text-[#b9abff] border border-[#b9abff]/25 font-medium shrink-0">Contacted</span>';
 
         const sourceBadge = isComment
-          ? `<span class="text-xs px-2.5 py-0.5 rounded-md bg-purple-900/70 text-purple-200 font-semibold border border-purple-600/50 flex items-center gap-1.5"><i class="${platIcon}"></i> ${escapeHtml(l.source)}</span>`
-          : `<span class="text-xs px-2.5 py-0.5 rounded-md bg-blue-900/60 text-blue-300 font-semibold border border-blue-700/50 flex items-center gap-1.5"><i class="${platIcon}"></i> ${escapeHtml(l.source)}</span>`;
+          ? `<span class="text-[11px] px-2.5 py-0.5 rounded-full bg-[#b9abff]/[0.11] text-[#d6ceff] font-medium border border-[#b9abff]/25 inline-flex items-center gap-1.5"><i class="${platIcon} text-[10px]"></i>${escapeHtml(l.source)}</span>`
+          : `<span class="text-[11px] px-2.5 py-0.5 rounded-full bg-white/[0.05] text-white/80 font-medium border border-white/[0.09] inline-flex items-center gap-1.5"><i class="${platIcon} text-[10px] text-white/60"></i>${escapeHtml(l.source)}</span>`;
 
         const ago = timeAgo(l.posted_at || l.found_at);
-        const timeBadge = ago ? `<span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700"><i class="fa-regular fa-clock mr-1"></i>${ago}</span>` : '';
-        const kwBadge = l.matched_keyword ? `<span class="text-[11px] px-2 py-0.5 rounded bg-slate-800/90 text-indigo-300 border border-slate-700">matched: "${escapeHtml(l.matched_keyword)}"</span>` : '';
+        const locTimeMeta = `<span class="text-[11.5px] text-white/40 font-normal">${escapeHtml(l.location || 'Cebu')}${ago ? ` &middot; ${ago}` : ''}</span>`;
+
+        const kwBadge = l.matched_keyword
+          ? `<span class="mono-tag inline-flex items-center px-2.5 py-0.5 rounded-md bg-white/[0.03] text-white/50 border border-white/[0.07]">matched: "${escapeHtml(l.matched_keyword)}"</span>`
+          : '';
 
         const card = document.createElement('div');
-        card.className = `${isComment ? 'card-comment' : 'card'} p-5 rounded-2xl flex flex-col justify-between gap-4 transition`;
+        card.className = `${isComment ? 'card-comment' : 'card'} p-5 sm:p-6 flex flex-col justify-between h-full`;
 
+        const sanitizedBody = cleanExcerpt(l.content);
         const contentBlock = isComment
-          ? `<div class="mt-2.5 p-3 rounded-xl bg-slate-900/90 border-l-4 border-purple-500 text-xs text-slate-200 leading-relaxed">
-               <span class="text-[10px] uppercase tracking-wider text-purple-400 font-bold block mb-1">Exact Comment / Reply:</span>
-               "${escapeHtml(l.content)}"
+          ? `<div class="mt-2.5 p-3 rounded-xl bg-[#09090d]/85 border-l-2 border-[#b9abff]/60 facet-excerpt line-clamp-3">
+               <span class="facet-eyebrow block text-[9.5px] text-[#b9abff]/80 mb-1">Comment Reply</span>
+               "${escapeHtml(sanitizedBody)}"
              </div>`
-          : (l.content ? `<p class="text-xs text-slate-300 mt-2 line-clamp-4 leading-relaxed">${escapeHtml(l.content)}</p>` : '');
+          : (sanitizedBody ? `<p class="facet-excerpt mt-2 line-clamp-3">${escapeHtml(sanitizedBody)}</p>` : '');
 
         card.innerHTML = `
           <div>
-            <div class="flex items-center justify-between gap-2 mb-2">
+            <!-- 1. Meta Row -->
+            <div class="flex items-start justify-between gap-2 mb-2.5">
               <div class="flex flex-wrap items-center gap-1.5">
                 ${sourceBadge}
                 ${intentBadge}
-                <span class="text-xs px-2 py-0.5 rounded bg-emerald-950/60 text-emerald-300 font-medium border border-emerald-800/40">📍 ${escapeHtml(l.location || 'Cebu')}</span>
-                ${timeBadge}
+                ${locTimeMeta}
               </div>
               ${statusBadge}
             </div>
-            
-            <h3 class="font-bold text-slate-100 text-base leading-snug hover:text-emerald-300 transition cursor-pointer" onclick="window.open('${escapeHtml(l.url)}', '_blank')">
-              ${escapeHtml(l.title)}
+
+            <!-- 2. 2-Line Clamped Headline -->
+            <h3 class="facet-headline line-clamp-2 hover:text-[#36d67e] transition cursor-pointer" onclick="window.open('${escapeHtml(l.url)}', '_blank')">
+              ${escapeHtml(cleanExcerpt(l.title))}
             </h3>
-            
+
+            <!-- 3. 3-Line Clamped Excerpt + Inline Matched Tag -->
             ${contentBlock}
-            ${kwBadge ? `<div class="mt-2">${kwBadge}</div>` : ''}
+            ${kwBadge ? `<div class="mt-3 flex items-center">${kwBadge}</div>` : ''}
           </div>
 
-          <div class="pt-3 border-t border-slate-700/60 flex items-center justify-between text-xs text-slate-400">
-            <div class="flex items-center gap-1.5">
-              <i class="fa-regular fa-user text-slate-400"></i>
-              <span class="text-slate-200 font-semibold">${escapeHtml(l.author)}</span>
+          <!-- 4. Hairline-Separated Footer -->
+          <div class="border-t border-white/[0.06] pt-3.5 mt-4 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="w-5 h-5 rounded-full bg-white/[0.06] border border-white/[0.08] flex items-center justify-center text-[10px] text-white/50 shrink-0">
+                <i class="fa-regular fa-user"></i>
+              </span>
+              <span class="text-white/75 text-xs font-medium truncate">${escapeHtml(l.author)}</span>
             </div>
 
-            <div class="flex items-center gap-2">
-              <button onclick="openOutreach('${encodeURIComponent(JSON.stringify(l))}')" class="px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 transition flex items-center gap-1.5 font-medium">
-                <i class="fa-regular fa-comment-dots"></i> Reach Out
-              </button>
-              <a href="${escapeHtml(l.url)}" target="_blank" title="${escapeHtml(l.url)}" class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 transition flex items-center gap-1">
-                ${isComment ? 'Comment' : 'Open'} (${escapeHtml(getHostLabel(l.url))}) <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+            <div class="flex items-center gap-2 shrink-0">
+              <a href="${escapeHtml(l.url)}" target="_blank" title="${escapeHtml(l.url)}" class="btn-facet-ghost h-[30px] px-2.5 rounded-[6px] text-[11.5px] flex items-center gap-1.5">
+                <span>${isComment ? 'Comment' : 'Open'}</span>
+                <span class="mono-tag text-[10px] text-white/40">${escapeHtml(getHostLabel(l.url))}</span>
+                <i class="fa-solid fa-arrow-up-right-from-square text-[9px] text-white/40"></i>
               </a>
+              <button onclick="openOutreach('${encodeURIComponent(JSON.stringify(l))}')" class="h-[30px] px-3 rounded-[6px] bg-[#36d67e]/12 hover:bg-[#36d67e]/22 text-[#36d67e] border border-[#36d67e]/30 transition flex items-center gap-1.5 text-[11.5px] font-medium">
+                <i class="fa-regular fa-paper-plane text-[10px]"></i>
+                <span>Reach Out</span>
+              </button>
             </div>
           </div>
         `;
@@ -753,9 +1273,10 @@
     function setFilter(filter) {
       currentFilter = filter;
       document.querySelectorAll('.filter-tab').forEach(b => {
-        b.className = "filter-tab px-4 py-2 rounded-lg text-sm font-medium bg-slate-700 text-slate-300 hover:bg-slate-600";
+        b.classList.remove('active-tab');
       });
-      document.getElementById(`tab-${filter}`).className = "filter-tab px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white";
+      const activeBtn = document.getElementById(`tab-${filter}`);
+      if (activeBtn) activeBtn.classList.add('active-tab');
       loadLeads();
     }
 
@@ -868,10 +1389,10 @@
       const btn = document.getElementById(btnId);
       const original = btn.innerText;
       btn.innerText = "Copied!";
-      btn.className = "absolute bottom-2 right-2 px-3 py-1 bg-emerald-600 rounded text-xs font-medium text-white";
+      btn.className = "btn-facet-primary absolute bottom-3 right-3 !h-[28px] px-3 text-xs";
       setTimeout(() => {
         btn.innerText = original;
-        btn.className = "absolute bottom-2 right-2 px-3 py-1 bg-indigo-600 hover:bg-indigo-500 rounded text-xs font-medium text-white";
+        btn.className = "btn-facet-ghost absolute bottom-3 right-3 h-[28px] px-3 rounded-[6px] text-xs";
       }, 2000);
     }
 
@@ -885,6 +1406,7 @@
         .replace(/'/g, '&#039;');
     }
 
+    syncPlatformPills();
     loadLeads();
   </script>
 </body>
