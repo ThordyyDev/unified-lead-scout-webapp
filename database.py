@@ -14,6 +14,9 @@ EXTRA_COLUMNS = {
     "intent": "TEXT DEFAULT ''",
     "matched_keyword": "TEXT DEFAULT ''",
     "parent_url": "TEXT DEFAULT ''",
+    "ai_verdict": "TEXT DEFAULT ''",
+    "ai_reason": "TEXT DEFAULT ''",
+    "updated_at": "TIMESTAMP",
 }
 
 ALLOWED_WEB_DOMAINS = (
@@ -416,7 +419,8 @@ def init_db():
 
 def save_lead(source, external_id, title, content, author, url, location="",
               posted_at=None, platform="", kind="post", intent="",
-              matched_keyword="", parent_url=""):
+              matched_keyword="", parent_url="", status="new",
+              ai_verdict="", ai_reason=""):
     """Insert a lead after strict domain and URL structure verification."""
     plat = platform or infer_platform(source)
     if not is_valid_lead_url(plat, url, external_id):
@@ -432,12 +436,13 @@ def save_lead(source, external_id, title, content, author, url, location="",
                 """
                 INSERT OR IGNORE INTO leads
                 (source, external_id, title, content, author, url, location, posted_at,
-                 platform, kind, intent, matched_keyword, parent_url)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 platform, kind, intent, matched_keyword, parent_url, status, ai_verdict, ai_reason, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                 """,
                 (source, external_id, title, content, author, url, location, posted_at,
                  plat, kind or "post", intent or "seeker",
-                 matched_keyword or "", parent_url or ""),
+                 matched_keyword or "", parent_url or "", status or "new",
+                 ai_verdict or "", ai_reason or ""),
             )
             return cur.rowcount > 0
     finally:
@@ -459,7 +464,11 @@ def search_leads(query="", platforms=None, intents=None, location="Any", status_
                  max_age_days=7, since=None, limit=300):
     sql = "SELECT * FROM leads WHERE 1=1"
     params = []
-    if status_filter and status_filter != "all":
+    if not status_filter or status_filter == "all":
+        sql += " AND status NOT IN ('ai_filtered', 'archived')"
+    elif status_filter == "followup":
+        sql += " AND (status = 'followup' OR (status = 'contacted' AND COALESCE(updated_at, found_at) <= datetime('now', '-2 days')))"
+    else:
         sql += " AND status = ?"
         params.append(status_filter)
     if max_age_days and int(max_age_days) > 0:
@@ -487,10 +496,10 @@ def search_leads(query="", platforms=None, intents=None, location="Any", status_
             continue
         if platforms is not None and platform_key(row) not in platforms:
             continue
-        if intents is not None and (row.get("intent") or "") not in intents:
+        if intents is not None and status_filter != "ai_filtered" and (row.get("intent") or "") not in intents:
             continue
         haystack = " ".join(str(row.get(k) or "") for k in
-                            ("title", "content", "author", "source", "location", "matched_keyword")).lower()
+                            ("title", "content", "author", "source", "location", "matched_keyword", "notes", "ai_reason")).lower()
         if loc and loc != "any" and loc not in haystack and "remote" not in haystack:
             continue
         if q and not smart_query_matches(haystack, q):
@@ -505,7 +514,50 @@ def update_lead_status(lead_id, new_status):
     conn = get_db()
     try:
         with conn:
-            conn.execute("UPDATE leads SET status = ? WHERE id = ?", (new_status, lead_id))
+            if new_status == "new":
+                conn.execute(
+                    "UPDATE leads SET status = ?, ai_verdict = CASE WHEN ai_verdict = 'filtered' THEN 'approved' ELSE ai_verdict END, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                    (new_status, lead_id),
+                )
+            else:
+                conn.execute(
+                    "UPDATE leads SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                    (new_status, lead_id),
+                )
+    finally:
+        conn.close()
+
+
+def update_lead_ai_verdict(lead_id, verdict, reason, new_status=None):
+    conn = get_db()
+    try:
+        with conn:
+            if new_status:
+                conn.execute(
+                    "UPDATE leads SET ai_verdict = ?, ai_reason = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                    (verdict or "", reason or "", new_status, lead_id),
+                )
+            else:
+                conn.execute(
+                    "UPDATE leads SET ai_verdict = ?, ai_reason = ? WHERE id = ?",
+                    (verdict or "", reason or "", lead_id),
+                )
+    finally:
+        conn.close()
+
+
+def auto_archive_old_leads(days=14):
+    days = int(days or 0)
+    if days <= 0:
+        return 0
+    conn = get_db()
+    try:
+        with conn:
+            cur = conn.execute(
+                "UPDATE leads SET status = 'archived', updated_at = CURRENT_TIMESTAMP WHERE status = 'new' AND COALESCE(posted_at, found_at) < datetime('now', ?)",
+                (f"-{days} days",),
+            )
+            return cur.rowcount
     finally:
         conn.close()
 
@@ -514,7 +566,7 @@ def update_lead_notes(lead_id, notes):
     conn = get_db()
     try:
         with conn:
-            conn.execute("UPDATE leads SET notes = ? WHERE id = ?", (notes, lead_id))
+            conn.execute("UPDATE leads SET notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", (notes, lead_id))
     finally:
         conn.close()
 
@@ -532,16 +584,21 @@ def get_stats():
     conn = get_db()
     try:
         one = lambda sql: conn.execute(sql).fetchone()[0]
+        active_where = "status NOT IN ('ai_filtered', 'archived')"
         return {
-            "total": one("SELECT COUNT(*) FROM leads"),
+            "total": one(f"SELECT COUNT(*) FROM leads WHERE {active_where}"),
             "new": one("SELECT COUNT(*) FROM leads WHERE status = 'new'"),
-            "contacted": one("SELECT COUNT(*) FROM leads WHERE status = 'contacted'"),
-            "seekers": one("SELECT COUNT(*) FROM leads WHERE intent = 'seeker'"),
-            "employers": one("SELECT COUNT(*) FROM leads WHERE intent = 'employer'"),
-            "buyers": one("SELECT COUNT(*) FROM leads WHERE intent = 'buyer'"),
-            "sellers": one("SELECT COUNT(*) FROM leads WHERE intent = 'seller'"),
-            "market": one("SELECT COUNT(*) FROM leads WHERE intent IN ('buyer', 'seller')"),
-            "comments": one("SELECT COUNT(*) FROM leads WHERE kind = 'comment'"),
+            "contacted": one("SELECT COUNT(*) FROM leads WHERE status IN ('contacted', 'followup', 'closed')"),
+            "followup": one("SELECT COUNT(*) FROM leads WHERE status = 'followup' OR (status = 'contacted' AND COALESCE(updated_at, found_at) <= datetime('now', '-2 days'))"),
+            "closed": one("SELECT COUNT(*) FROM leads WHERE status = 'closed'"),
+            "archived": one("SELECT COUNT(*) FROM leads WHERE status = 'archived'"),
+            "ai_filtered": one("SELECT COUNT(*) FROM leads WHERE status = 'ai_filtered'"),
+            "seekers": one(f"SELECT COUNT(*) FROM leads WHERE {active_where} AND intent = 'seeker'"),
+            "employers": one(f"SELECT COUNT(*) FROM leads WHERE {active_where} AND intent = 'employer'"),
+            "buyers": one(f"SELECT COUNT(*) FROM leads WHERE {active_where} AND intent = 'buyer'"),
+            "sellers": one(f"SELECT COUNT(*) FROM leads WHERE {active_where} AND intent = 'seller'"),
+            "market": one(f"SELECT COUNT(*) FROM leads WHERE {active_where} AND intent IN ('buyer', 'seller')"),
+            "comments": one(f"SELECT COUNT(*) FROM leads WHERE {active_where} AND kind = 'comment'"),
         }
     finally:
         conn.close()

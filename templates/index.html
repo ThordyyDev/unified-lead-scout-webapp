@@ -3,319 +3,551 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Unified Lead Scout — Designed in Glass</title>
+  <title>Unified Lead Scout — Operations & Signal Hub</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
-      --bg-void: #050507;
-      --slab-base: #17171b;
-      --well-bg: #0a0a0d;
-      --track-bg: #09090c;
-      --accent-emerald: #36d67e;
-      --accent-lavender: #b9abff;
-      --accent-gold: #d4a359;
+      --bg-canvas: #090a0c;
+      --bg-rail: #0d0e12;
+      --bg-card: #121418;
+      --bg-card-elevated: #171a20;
+      --bg-well: #0b0c0f;
+      --border-subtle: rgba(255, 255, 255, 0.065);
+      --border-hover: rgba(255, 255, 255, 0.14);
+      /* Haulli-inspired Soft Butter-Lime & Warm Amber palette */
+      --accent-lime: #e5fb80;
+      --accent-lime-strong: #d8f656;
+      --accent-lime-soft: rgba(229, 251, 128, 0.12);
+      --accent-amber: #f59e0b;
+      --accent-amber-soft: rgba(245, 158, 11, 0.12);
+      --accent-coral: #f87171;
+      --accent-sky: #38bdf8;
+      --accent-violet: #b9abff;
+      color-scheme: dark;
+    }
+
+    select, option {
+      color-scheme: dark;
+    }
+
+    .status-pill-select {
+      -webkit-appearance: none !important;
+      -moz-appearance: none !important;
+      appearance: none !important;
+      background-color: #111318 !important;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      padding: 0 22px 0 10px;
+      height: 24px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color 180ms ease, background-color 180ms ease;
+    }
+
+    .status-pill-select.st-new {
+      background-color: #151910 !important;
+      color: #e5fb80 !important;
+      border: 1px solid rgba(229, 251, 128, 0.38);
+    }
+
+    .status-pill-select.st-contacted {
+      background-color: #16181f !important;
+      color: #e5e7eb !important;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
+    .status-pill-select.st-followup {
+      background-color: #1c150c !important;
+      color: #fcd34d !important;
+      border: 1px solid rgba(245, 158, 11, 0.42);
+    }
+
+    .status-pill-select.st-closed {
+      background-color: #0e1b15 !important;
+      color: #6ee7b7 !important;
+      border: 1px solid rgba(52, 211, 153, 0.42);
+    }
+
+    .status-pill-select.st-ai_filtered {
+      background-color: #1e1015 !important;
+      color: #fda4af !important;
+      border: 1px solid rgba(244, 63, 94, 0.42);
+    }
+
+    .status-pill-select.st-archived {
+      background-color: #121418 !important;
+      color: #9ca3af !important;
+      border: 1px solid rgba(255, 255, 255, 0.12);
     }
 
     * {
       box-sizing: border-box;
       scrollbar-width: thin;
-      scrollbar-color: #26262e #09090c;
+      scrollbar-color: #252830 #0a0b0d;
     }
 
-    *::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    *::-webkit-scrollbar-track {
-      background: #09090c;
-    }
-    *::-webkit-scrollbar-thumb {
-      background: #26262e;
-      border-radius: 999px;
-    }
-    *::-webkit-scrollbar-thumb:hover {
-      background: #363642;
-    }
+    *::-webkit-scrollbar { width: 6px; height: 6px; }
+    *::-webkit-scrollbar-track { background: #0a0b0d; }
+    *::-webkit-scrollbar-thumb { background: #252830; border-radius: 999px; }
+    *::-webkit-scrollbar-thumb:hover { background: #363b47; }
 
     body {
-      background-color: var(--bg-void);
-      background-image: radial-gradient(900px 600px at 12% 0%, rgba(190, 205, 255, 0.045), transparent 70%);
+      background-color: var(--bg-canvas);
+      background-image:
+        radial-gradient(950px 580px at 14% 0%, rgba(215, 230, 255, 0.038), transparent 68%),
+        radial-gradient(850px 480px at 85% -8%, rgba(229, 251, 128, 0.035), transparent 62%);
       background-attachment: fixed;
-      color: #e4e4e9;
+      color: #f3f4f6;
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      font-feature-settings: "cv02", "cv03", "cv04", "cv11";
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
     }
 
-    /* Typography System */
-    .facet-title {
-      font-weight: 500;
-      letter-spacing: -0.035em;
-      background: linear-gradient(180deg, #dcdce0 0%, #bdbdc3 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .facet-eyebrow {
-      font-size: 10.5px;
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 0.18em;
-      color: rgba(255, 255, 255, 0.38);
-    }
-
-    .facet-counter {
-      font-variant-numeric: tabular-nums;
-      font-weight: 500;
-      font-size: 16px;
-      line-height: 1.15;
-      letter-spacing: -0.02em;
-      color: #e8e8ec;
-    }
-
-    .facet-headline {
-      font-size: 15.5px;
-      font-weight: 500;
-      letter-spacing: -0.022em;
-      line-height: 1.35;
-      color: #e4e4e9;
-    }
-
-    .facet-excerpt {
-      font-size: 13px;
-      font-weight: 400;
-      line-height: 1.62;
-      color: rgba(255, 255, 255, 0.54);
-    }
-
-    .facet-meta {
-      font-size: 11.5px;
-      color: rgba(255, 255, 255, 0.34);
+    .font-display {
+      font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
     }
 
     .mono-tag {
       font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-      font-size: 11px;
     }
 
-    /* =====================================================================
-       EXACT FACET SMOKED-GLASS SLAB (3D Extruded Bevel + Specular Catchlight)
-       ===================================================================== */
-    .facet-slab,
+    /* Smoked-Glass + Dark Bento Surface with Specular Rim & Cursor Illumination */
+    .bento-card,
+    .bento-card-lime,
+    .lead-card,
     .card,
     .card-comment {
+      --mx: 50%;
+      --my: 0%;
       position: relative;
-      border-radius: 18px;
-      background: linear-gradient(
-        155deg,
-        rgba(32, 32, 38, 0.86) 0%,
-        rgba(20, 20, 24, 0.92) 45%,
-        rgba(13, 13, 16, 0.96) 100%
-      );
+      isolation: isolate;
+      background: linear-gradient(155deg, rgba(26, 28, 34, 0.88) 0%, rgba(18, 20, 24, 0.94) 52%, rgba(13, 14, 18, 0.98) 100%);
       backdrop-filter: blur(18px);
       -webkit-backdrop-filter: blur(18px);
+      border-radius: 22px;
       box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.14),
+        inset 0 1px 0 rgba(255, 255, 255, 0.11),
         inset 0 -1px 0 rgba(0, 0, 0, 0.65),
-        0 24px 48px -12px rgba(0, 0, 0, 0.85);
-      isolation: isolate;
-      overflow: hidden;
-      transition: transform 220ms ease, box-shadow 220ms ease;
+        0 22px 46px -16px rgba(0, 0, 0, 0.82);
+      transition:
+        transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 280ms cubic-bezier(0.22, 1, 0.36, 1),
+        background 240ms ease;
     }
 
-    .facet-header-bar {
-      position: sticky;
-      top: 0;
-      z-index: 40;
-      width: 100%;
-      background: linear-gradient(
-        180deg,
-        rgba(14, 14, 18, 0.72) 0%,
-        rgba(10, 10, 14, 0.64) 100%
-      );
-      backdrop-filter: blur(22px) saturate(140%);
-      -webkit-backdrop-filter: blur(22px) saturate(140%);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.08),
-        0 14px 36px rgba(0, 0, 0, 0.60);
-    }
-
-    /* 1.25px Masked Beveled Specular Hairline Rim + Cursor Iridescence */
-    .facet-slab::before,
+    /* Beveled Specular Rim + Cursor Iridescence (from Facet Smoked-Glass design) */
+    .bento-card::before,
+    .bento-card-lime::before,
+    .lead-card::before,
     .card::before,
     .card-comment::before {
       content: "";
       position: absolute;
       inset: 0;
       border-radius: inherit;
-      padding: 1.25px;
+      padding: 1.15px;
       background:
-        radial-gradient(
-          380px circle at var(--mx, -999px) var(--my, -999px),
-          rgba(185, 171, 255, 0.45),
-          rgba(110, 231, 183, 0.18) 42%,
-          transparent 72%
-        ),
-        linear-gradient(
-          155deg,
-          rgba(255, 255, 255, 0.28) 0%,
-          rgba(210, 220, 255, 0.16) 22%,
-          rgba(255, 255, 255, 0.07) 58%,
-          rgba(255, 255, 255, 0.04) 100%
-        );
-      -webkit-mask:
-        linear-gradient(#fff 0 0) content-box,
-        linear-gradient(#fff 0 0);
+        radial-gradient(380px circle at var(--mx) var(--my), rgba(229, 251, 128, 0.38), rgba(185, 171, 255, 0.22) 38%, transparent 70%),
+        linear-gradient(145deg, rgba(255, 255, 255, 0.20) 0%, rgba(255, 255, 255, 0.06) 45%, rgba(255, 255, 255, 0.025) 100%);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
       -webkit-mask-composite: xor;
       mask-composite: exclude;
       pointer-events: none;
       z-index: 2;
+      transition: opacity 250ms ease;
     }
 
-    /* Lavender Face Illumination on Hover */
-    @media (prefers-reduced-motion: no-preference) {
-      .facet-slab::after,
-      .card::after,
-      .card-comment::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        border-radius: inherit;
-        background: radial-gradient(
-          520px circle at var(--mx, -999px) var(--my, -999px),
-          rgba(107, 94, 160, 0.24),
-          rgba(107, 94, 160, 0.07) 42%,
-          transparent 72%
-        );
-        opacity: 0;
-        transition: opacity 250ms ease;
-        pointer-events: none;
-        z-index: 0;
-      }
-
-      .facet-slab:hover::after,
-      .card:hover::after,
-      .card-comment:hover::after {
-        opacity: 1;
-      }
+    /* Soft Studio Cursor Surface Glow */
+    .bento-card::after,
+    .bento-card-lime::after,
+    .lead-card::after,
+    .card::after,
+    .card-comment::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(
+        480px circle at var(--mx) var(--my),
+        rgba(148, 138, 210, 0.11),
+        rgba(229, 251, 128, 0.04) 40%,
+        transparent 72%
+      );
+      opacity: 0;
+      pointer-events: none;
+      z-index: 0;
+      transition: opacity 260ms ease;
     }
 
-    .facet-slab > *,
+    .bento-card:hover::after,
+    .bento-card-lime:hover::after,
+    .lead-card:hover::after,
+    .card:hover::after,
+    .card-comment:hover::after {
+      opacity: 1;
+    }
+
+    .bento-card > *,
+    .bento-card-lime > *,
+    .lead-card > *,
     .card > *,
     .card-comment > * {
       position: relative;
       z-index: 1;
     }
 
-    /* Recessed Inner Wells (Inputs, Selects, KPI Bar, Filter Track) */
-    .facet-well {
-      background: rgba(9, 9, 12, 0.78);
-      border-radius: 10px;
-      border: 1px solid rgba(255, 255, 255, 0.07);
-      box-shadow:
-        inset 0 1px 2px rgba(0, 0, 0, 0.75),
-        0 1px 0 rgba(255, 255, 255, 0.04);
-      transition: border-color 180ms ease, box-shadow 180ms ease;
+    /* Haulli-inspired Dark Outreach Card with subtle warm-lime ambient rim */
+    .bento-card-lime {
+      background: linear-gradient(155deg, rgba(30, 33, 39, 0.92) 0%, rgba(19, 21, 25, 0.96) 55%, rgba(14, 15, 19, 0.99) 100%);
     }
 
-    .facet-well:focus-within {
-      border-color: rgba(185, 171, 255, 0.38);
+    .lead-card:hover,
+    .card:hover,
+    .card-comment:hover {
+      transform: translateY(-3px);
       box-shadow:
-        inset 0 1px 2px rgba(0, 0, 0, 0.75),
-        0 0 0 3px rgba(185, 171, 255, 0.10);
+        inset 0 1px 0 rgba(255, 255, 255, 0.16),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.7),
+        0 28px 54px -16px rgba(0, 0, 0, 0.9);
     }
 
-    .facet-input {
-      background: rgba(9, 9, 12, 0.82);
-      border-radius: 10px;
+    .card-comment::before {
+      background:
+        radial-gradient(380px circle at var(--mx) var(--my), rgba(185, 171, 255, 0.5), rgba(229, 251, 128, 0.18) 42%, transparent 72%),
+        linear-gradient(145deg, rgba(185, 171, 255, 0.26) 0%, rgba(255, 255, 255, 0.06) 50%, rgba(255, 255, 255, 0.03) 100%);
+    }
+
+    /* Card Staggered Entrance Animation */
+    @keyframes cardEnter {
+      from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.99);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .animate-card-in {
+      animation: cardEnter 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    /* Recessed Input Wells */
+    .bento-well {
+      background: var(--bg-well);
+      border: 1px solid rgba(255, 255, 255, 0.075);
+      border-radius: 999px;
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
+      transition: border-color 200ms ease, box-shadow 200ms ease, background-color 200ms ease;
+    }
+
+    .bento-well:focus-within {
+      border-color: rgba(229, 251, 128, 0.45);
+      box-shadow: 0 0 0 3px rgba(229, 251, 128, 0.10), inset 0 1px 2px rgba(0, 0, 0, 0.6);
+    }
+
+    .bento-input {
+      background: var(--bg-well);
       border: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.75);
-      color: #e4e4e9;
+      border-radius: 14px;
+      color: #f3f4f6;
       transition: border-color 180ms ease, box-shadow 180ms ease;
     }
 
-    .facet-input:focus {
+    .bento-input:focus {
       outline: none;
-      border-color: rgba(185, 171, 255, 0.42);
-      box-shadow:
-        inset 0 1px 2px rgba(0, 0, 0, 0.75),
-        0 0 0 3px rgba(185, 171, 255, 0.10);
+      border-color: rgba(229, 251, 128, 0.45);
+      box-shadow: 0 0 0 3px rgba(229, 251, 128, 0.10);
     }
 
-    /* Signature Facet Primary Action Pill (Light Rest -> Emerald Hover) */
-    .btn-facet-primary {
-      height: 38px;
-      border-radius: 6px;
-      background: #e4e4e8;
-      color: #09090b;
+    /* Expandable Left Vertical Icon Rail (Image #2) */
+    .left-rail {
+      width: 72px;
+      background: linear-gradient(180deg, rgba(16, 18, 22, 0.96) 0%, rgba(11, 12, 15, 0.98) 100%);
+      border-right: 1px solid var(--border-subtle);
+      transition: width 320ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 320ms ease;
+      overflow-x: visible;
+    }
+
+    .left-rail.is-expanded {
+      width: 244px;
+      box-shadow: 18px 0 44px -18px rgba(0, 0, 0, 0.75);
+    }
+
+    .rail-brand-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      padding: 0;
+      margin: 0 auto;
+      transition: all 300ms cubic-bezier(0.22, 1, 0.36, 1);
+      position: relative;
+    }
+
+    .left-rail.is-expanded .rail-brand-btn {
+      width: 100%;
+      justify-content: flex-start;
+      gap: 12px;
+    }
+
+    .rail-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      padding: 0;
+      margin: 0 auto;
+      color: rgba(255, 255, 255, 0.46);
+      background: transparent;
+      border: 1px solid transparent;
+      transition:
+        width 300ms cubic-bezier(0.22, 1, 0.36, 1),
+        padding 300ms cubic-bezier(0.22, 1, 0.36, 1),
+        background-color 200ms ease,
+        color 200ms ease,
+        transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 220ms ease;
+      position: relative;
+    }
+
+    .left-rail.is-expanded .rail-btn {
+      width: 100%;
+      justify-content: flex-start;
+      padding: 0 13px;
+      gap: 12px;
+    }
+
+    .rail-btn i {
+      width: 18px;
+      text-align: center;
+      flex-shrink: 0;
+      transition: transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .rail-btn:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.065);
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .rail-btn:hover i {
+      transform: scale(1.14);
+    }
+
+    .rail-btn.active {
+      background: #ffffff;
+      color: #090a0c;
+      border-color: #ffffff;
+      box-shadow: 0 8px 22px rgba(255, 255, 255, 0.18);
+    }
+
+    /* Expandable Label & Counter inside Rail Buttons */
+    .rail-label {
+      max-width: 0;
+      opacity: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      font-size: 13px;
       font-weight: 500;
+      letter-spacing: -0.01em;
+      transform: translateX(-6px);
+      transition:
+        max-width 280ms cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 200ms ease,
+        transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .left-rail.is-expanded .rail-label {
+      max-width: 150px;
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .rail-count {
+      display: none;
+      margin-left: auto;
+      font-size: 10.5px;
+      font-weight: 600;
+      padding: 1px 7px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.65);
+    }
+
+    .rail-btn.active .rail-count {
+      background: rgba(9, 10, 12, 0.12);
+      color: #090a0c;
+    }
+
+    .left-rail.is-expanded .rail-count {
+      display: inline-flex;
+    }
+
+    /* Floating Hover Tooltip when Rail is Collapsed */
+    .rail-tooltip {
+      position: absolute;
+      left: calc(100% + 12px);
+      top: 50%;
+      transform: translateY(-50%) translateX(-6px);
+      background: #181b22;
+      color: #f3f4f6;
+      border: 1px solid rgba(255, 255, 255, 0.13);
+      padding: 5px 11px;
+      border-radius: 10px;
+      font-size: 11.5px;
+      font-weight: 500;
+      white-space: nowrap;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 160ms ease, transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+      z-index: 60;
+    }
+
+    .left-rail:not(.is-expanded) .rail-btn:hover .rail-tooltip {
+      opacity: 1;
+      transform: translateY(-50%) translateX(0);
+    }
+
+    .left-rail.is-expanded .rail-tooltip {
+      display: none;
+    }
+
+    /* Top Nav & Haulli Status Metric Pills */
+    .top-pill {
+      height: 36px;
+      padding: 0 14px;
+      border-radius: 999px;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.62);
+      background: #131519;
+      border: 1px solid rgba(255, 255, 255, 0.075);
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: all 200ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .top-pill:hover {
+      color: #ffffff;
+      background: #191c22;
+      border-color: rgba(255, 255, 255, 0.16);
+      transform: translateY(-1px);
+    }
+
+    .top-pill.active {
+      background: #ffffff;
+      color: #090a0c;
+      border-color: #ffffff;
+      font-weight: 600;
+    }
+
+    .metric-chip {
+      height: 34px;
+      padding: 0 12px;
+      border-radius: 999px;
+      background: #121418;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      color: rgba(255, 255, 255, 0.52);
+      transition: border-color 180ms ease, background-color 180ms ease;
+    }
+
+    .metric-chip:hover {
+      border-color: rgba(255, 255, 255, 0.15);
+      background: #17191f;
+    }
+
+    /* Primary Soft Butter-Lime Pill Button (Matches Image #1 "+ Activate Route") */
+    .btn-lime {
+      height: 40px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #ecfc94 0%, #dff96d 100%);
+      color: #090a0c;
+      font-weight: 600;
       font-size: 13px;
       letter-spacing: -0.01em;
-      border: 1px solid rgba(255, 255, 255, 0.65);
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.9),
-        0 6px 18px rgba(0, 0, 0, 0.5);
-      transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      box-shadow: 0 8px 24px rgba(229, 251, 128, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.65);
+      transition: all 220ms cubic-bezier(0.22, 1, 0.36, 1);
     }
 
-    .btn-facet-primary:hover:not(:disabled),
-    .btn-facet-primary.is-scanning {
-      background: #36d67e;
-      color: #052e16;
-      border-color: rgba(110, 231, 183, 0.75);
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.55),
-        0 8px 24px rgba(54, 214, 126, 0.28);
+    .btn-lime:hover:not(:disabled) {
+      background: linear-gradient(180deg, #f3ffad 0%, #e6fb80 100%);
+      transform: translateY(-1.5px);
+      box-shadow: 0 12px 28px rgba(229, 251, 128, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.8);
     }
 
-    .btn-facet-primary:disabled {
-      opacity: 0.75;
-      cursor: not-allowed;
+    .btn-lime:active:not(:disabled) {
+      transform: translateY(0);
     }
 
-    /* Secondary & Ghost Actions */
-    .btn-facet-ghost {
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.10);
+    .btn-lime:disabled,
+    .btn-lime.is-scanning {
+      opacity: 0.82;
+      cursor: wait;
+    }
+
+    .btn-dark-pill {
+      height: 38px;
+      border-radius: 999px;
+      background: #17191f;
+      color: rgba(255, 255, 255, 0.82);
+      border: 1px solid rgba(255, 255, 255, 0.09);
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-      color: rgba(255, 255, 255, 0.65);
+      font-size: 12.5px;
       font-weight: 500;
-      transition: all 180ms ease;
+      transition: all 200ms cubic-bezier(0.22, 1, 0.36, 1);
     }
 
-    .btn-facet-ghost:hover {
-      background: rgba(255, 255, 255, 0.075);
-      border-color: rgba(185, 171, 255, 0.34);
+    .btn-dark-pill:hover {
+      background: #20232b;
       color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.18);
+      transform: translateY(-1px);
     }
 
-    /* Platform Toggle Pills (Dot + Brand Icon + Emerald Active Tint) */
+    /* Platform Toggle Pills */
     .platform-pill {
       display: inline-flex;
       align-items: center;
       gap: 7px;
-      height: 30px;
-      padding: 0 11px;
+      height: 32px;
+      padding: 0 13px;
       border-radius: 999px;
-      background: #141418;
-      border: 1px solid rgba(255, 255, 255, 0.07);
-      color: rgba(255, 255, 255, 0.48);
+      background: #0d0e12;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.54);
       font-size: 12px;
       font-weight: 500;
       cursor: pointer;
       user-select: none;
-      transition: all 180ms ease;
+      transition: all 200ms cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     .platform-pill:hover {
-      border-color: rgba(255, 255, 255, 0.16);
-      color: rgba(255, 255, 255, 0.82);
+      border-color: rgba(255, 255, 255, 0.22);
+      color: rgba(255, 255, 255, 0.92);
+      transform: translateY(-1px);
     }
 
     .platform-pill .plat-dot {
@@ -323,536 +555,947 @@
       height: 6px;
       border-radius: 999px;
       background: rgba(255, 255, 255, 0.22);
-      transition: all 180ms ease;
+      transition: all 200ms ease;
     }
 
     .platform-pill:has(input:checked),
     .platform-pill.is-active {
-      background: rgba(54, 214, 126, 0.09);
-      border-color: rgba(54, 214, 126, 0.30);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10);
-      color: #ececf1;
+      background: rgba(229, 251, 128, 0.12);
+      border-color: rgba(229, 251, 128, 0.42);
+      color: #f6ffcf;
+      box-shadow: 0 4px 14px rgba(229, 251, 128, 0.10);
     }
 
     .platform-pill:has(input:checked) .plat-dot,
     .platform-pill.is-active .plat-dot {
-      background: var(--accent-emerald);
-      box-shadow: 0 0 8px rgba(54, 214, 126, 0.65);
+      background: var(--accent-lime);
+      box-shadow: 0 0 10px rgba(229, 251, 128, 0.85);
     }
 
     /* Quick Try Chips */
     .quick-chip {
-      height: 26px;
-      padding: 0 10px;
+      height: 28px;
+      padding: 0 11px;
       border-radius: 999px;
-      background: rgba(255, 255, 255, 0.035);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      color: rgba(255, 255, 255, 0.66);
+      background: #0f1115;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      color: rgba(255, 255, 255, 0.65);
       font-size: 11.5px;
       font-weight: 500;
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      transition: all 180ms ease;
+      transition: all 180ms cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     .quick-chip:hover {
-      background: rgba(185, 171, 255, 0.10);
-      border-color: rgba(185, 171, 255, 0.28);
-      color: rgba(255, 255, 255, 0.95);
+      background: #191c23;
+      border-color: rgba(229, 251, 128, 0.35);
+      color: #ffffff;
+      transform: translateY(-1px);
     }
 
-    /* Understated Smoked-Glass Card Tags */
-    .glass-tag {
+    /* Segmented Filter Pills */
+    .filter-track {
+      background: #0d0e12;
+      border: 1px solid rgba(255, 255, 255, 0.075);
+      padding: 4px;
+      border-radius: 999px;
       display: inline-flex;
       align-items: center;
-      gap: 5px;
-      height: 22px;
-      padding: 0 8.5px;
+      gap: 3px;
+    }
+
+    .filter-tab {
+      height: 32px;
+      padding: 0 16px;
       border-radius: 999px;
-      background: rgba(255, 255, 255, 0.045);
-      border: 1px solid rgba(255, 255, 255, 0.09);
-      color: rgba(255, 255, 255, 0.68);
-      font-size: 11px;
+      font-size: 12.5px;
       font-weight: 500;
-      line-height: 1;
+      color: rgba(255, 255, 255, 0.52);
+      background: transparent;
+      transition: all 200ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .filter-tab:hover {
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .filter-tab.active-tab {
+      background: #ffffff;
+      color: #090a0c;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    .filter-tab.active-tab .tab-count {
+      background: rgba(9, 10, 12, 0.12) !important;
+      color: #090a0c !important;
+    }
+
+    .filter-tab.active-tab i {
+      color: #6d28d9 !important;
+    }
+
+    /* Capsule Bar Chart Animation */
+    .capsule-bar {
+      transition: height 520ms cubic-bezier(0.22, 1, 0.36, 1), opacity 200ms ease, transform 200ms ease;
+    }
+
+    .capsule-bar:hover {
+      transform: scaleX(1.06);
     }
 
     .micro-dot {
-      width: 5px;
-      height: 5px;
+      width: 6px;
+      height: 6px;
       border-radius: 999px;
       flex-shrink: 0;
     }
 
-    /* Segmented Filter Track */
-    .segmented-track {
-      background: var(--track-bg);
-      border: 1px solid rgba(255, 255, 255, 0.07);
-      padding: 3px;
-      border-radius: 10px;
-      display: inline-flex;
-      align-items: center;
-      gap: 2px;
-    }
-
-    .filter-tab {
-      height: 30px;
-      padding: 0 13px;
-      border-radius: 7px;
-      font-size: 12px;
-      font-weight: 500;
-      color: rgba(255, 255, 255, 0.45);
-      background: transparent;
-      border: 1px solid transparent;
-      transition: all 180ms ease;
-    }
-
-    .filter-tab:hover {
-      color: rgba(255, 255, 255, 0.78);
-    }
-
-    .filter-tab.active-tab {
-      background: rgba(255, 255, 255, 0.08);
-      border-color: rgba(255, 255, 255, 0.12);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 2px 6px rgba(0, 0, 0, 0.45);
-      color: rgba(255, 255, 255, 0.95);
-    }
-
-    /* Modal Backdrop */
     .modal-backdrop {
-      background: rgba(5, 5, 7, 0.82);
+      background: rgba(5, 6, 8, 0.80);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
     }
+
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
   </style>
 </head>
-<body class="min-h-screen pb-10 selection:bg-[#b9abff]/25 selection:text-white">
+<body class="min-h-screen flex flex-col lg:flex-row selection:bg-[#c8ff2e]/30 selection:text-white">
 
-  <!-- 1. FULL-WIDTH STICKY FROSTED GLASS NAV BAR (Blurs scrolling content beneath) -->
-  <header class="facet-header-bar">
-    <div class="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-      <!-- Left: Frosted Mark + Stacked Title & Subtitle -->
-      <div class="flex items-center gap-3 min-w-0 shrink-0">
-        <div class="w-9 h-9 rounded-[10px] facet-well flex items-center justify-center shrink-0">
-          <i class="fa-solid fa-layer-group text-white/75 text-xs"></i>
+  <!-- EXPANDABLE LEFT VERTICAL ICON RAIL (Click Yellow Button to Expand/Collapse) -->
+  <aside id="leftSidebar" class="left-rail hidden lg:flex flex-col justify-between shrink-0 py-5 px-3.5 sticky top-0 h-screen z-40 select-none">
+    <div class="flex flex-col gap-6 w-full">
+      <!-- Top Yellow Brand Button (Click to Expand / Collapse Sidebar) -->
+      <button id="btnToggleSidebar" onclick="toggleSidebar()" title="Click to expand or collapse sidebar" class="rail-brand-btn group text-left">
+        <div class="w-11 h-11 rounded-2xl bg-[#161920] border border-white/10 flex items-center justify-center shadow-lg group-hover:border-[#e5fb80]/50 transition shrink-0">
+          <svg id="sidebarToggleIcon" class="w-5 h-5 text-[#e5fb80] group-hover:scale-110 transition-transform duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M12 3v4M12 17v4M3 12h4M17 12h4"/>
+            <circle cx="12" cy="12" r="2.5" fill="currentColor"/>
+          </svg>
         </div>
-        <div class="min-w-0">
-          <div class="flex items-center gap-2">
-            <h1 class="text-[16.5px] facet-title whitespace-nowrap">Unified Lead Scout</h1>
-            <span class="glass-tag text-[10.5px] text-white/55">
-              <span class="micro-dot bg-[#36d67e]"></span>
-              v3.6
-            </span>
+        <div class="rail-label">
+          <span class="font-display font-bold text-sm text-white block leading-tight">Lead Scout</span>
+          <span class="text-[10.5px] text-white/40 block">Click to collapse</span>
+        </div>
+      </button>
+
+      <!-- Primary Rail Navigation -->
+      <nav class="flex flex-col gap-2.5 w-full" aria-label="Views">
+        <button id="rail-all" onclick="railNavigate('all', this)" class="rail-btn active">
+          <i class="fa-solid fa-table-cells-large text-[14px]"></i>
+          <span class="rail-label">All Leads Overview</span>
+          <span id="railCountTotal" class="rail-count tabular-nums">0</span>
+          <span class="rail-tooltip">All Leads Overview</span>
+        </button>
+
+        <button id="rail-seeker" onclick="railNavigate('seeker', this)" class="rail-btn">
+          <i class="fa-solid fa-user-check text-[14px]"></i>
+          <span class="rail-label">Jobseekers</span>
+          <span id="railCountSeekers" class="rail-count tabular-nums">0</span>
+          <span class="rail-tooltip">Jobseekers Only</span>
+        </button>
+
+        <button id="rail-employer" onclick="railNavigate('employer', this)" class="rail-btn">
+          <i class="fa-solid fa-briefcase text-[14px]"></i>
+          <span class="rail-label">Employers Hiring</span>
+          <span id="railCountEmployers" class="rail-count tabular-nums">0</span>
+          <span class="rail-tooltip">Employers Hiring</span>
+        </button>
+
+        <button id="rail-market" onclick="railNavigate('buyer,seller', this)" class="rail-btn">
+          <i class="fa-solid fa-tags text-[14px]"></i>
+          <span class="rail-label">Buy &amp; Sell</span>
+          <span id="railCountMarket" class="rail-count tabular-nums">0</span>
+          <span class="rail-tooltip">Buy &amp; Sell Marketplace</span>
+        </button>
+
+        <button id="rail-contacted" onclick="railNavigate('contacted', this)" class="rail-btn">
+          <i class="fa-regular fa-paper-plane text-[14px]"></i>
+          <span class="rail-label">Contacted</span>
+          <span id="railCountContacted" class="rail-count tabular-nums">0</span>
+          <span class="rail-tooltip">Contacted Pipeline</span>
+        </button>
+
+        <button id="rail-ai-filtered" onclick="railNavigate('ai_filtered', this)" class="rail-btn">
+          <i class="fa-solid fa-wand-magic-sparkles text-[14px] text-[#b9abff]"></i>
+          <span class="rail-label">AI Filtered (Rants)</span>
+          <span id="railCountAiFiltered" class="rail-count tabular-nums">0</span>
+          <span class="rail-tooltip">AI Filtered (Rants &amp; Unaligned)</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Bottom Rail Utilities -->
+    <div class="flex flex-col gap-3 w-full">
+      <button onclick="openSettingsModal()" class="rail-btn">
+        <i class="fa-solid fa-sliders text-[14px]"></i>
+        <span class="rail-label">Scanner Settings</span>
+        <span class="rail-tooltip">Scanner &amp; API Settings</span>
+      </button>
+
+      <button onclick="openAddModal()" class="rail-btn !rounded-full !bg-[#1a1d24] hover:!bg-[#e5fb80] !text-white hover:!text-[#090a0c] !border-white/10 shadow-lg">
+        <i class="fa-solid fa-plus text-sm"></i>
+        <span class="rail-label font-semibold">Log Manual Lead</span>
+        <span class="rail-tooltip">Log Manual Lead</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN WORKSPACE -->
+  <div class="flex-1 min-w-0 flex flex-col">
+
+    <!-- TOP PILL NAVIGATION BAR -->
+    <header class="sticky top-0 z-30 bg-[#08090b]/85 backdrop-blur-xl border-b border-white/[0.05] px-4 sm:px-7 py-3.5">
+      <div class="max-w-[1440px] mx-auto flex flex-wrap items-center justify-between gap-3">
+        <!-- Left: Brand + Pill Nav -->
+        <div class="flex items-center gap-3 flex-wrap">
+          <div class="flex items-center gap-2.5 lg:hidden mr-1">
+            <div class="w-9 h-9 rounded-xl bg-[#16191f] border border-white/10 flex items-center justify-center text-[#e5fb80]">
+              <i class="fa-solid fa-crosshairs text-sm"></i>
+            </div>
+            <span class="font-display font-bold text-base tracking-tight">Lead Scout</span>
           </div>
-          <p class="text-[11.5px] text-white/45 truncate mt-0.5">
-            Target: <span class="text-white/75 font-medium" id="targetLoc">Cebu, Philippines</span> &middot; Jobseekers &amp; Employers
+
+          <div class="hidden sm:flex items-center gap-2">
+            <button onclick="setTopNav('overview', this)" class="top-pill active">
+              <i class="fa-solid fa-compass text-xs"></i>
+              <span>Overview</span>
+            </button>
+            <button onclick="toggleBentoStats(this)" id="btnToggleStats" class="top-pill">
+              <i class="fa-solid fa-chart-simple text-xs text-[#e5fb80]"></i>
+              <span>Signal Analytics</span>
+            </button>
+            <button onclick="openSettingsModal()" class="top-pill">
+              <i class="fa-solid fa-plug text-xs text-[#f59e0b]"></i>
+              <span>API &amp; Sources</span>
+            </button>
+            <button onclick="toggleAutoScanQuick()" id="btnAutoScanToggle" title="Click to toggle credit-safe Background Auto-Scan" class="top-pill">
+              <span id="autoScanDot" class="w-2 h-2 rounded-full bg-white/25"></span>
+              <span id="autoScanLabel">Auto-Scan: Off</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Right: Quick Search Shortcut + Location Pill + Settings -->
+        <div class="flex items-center gap-2.5">
+          <button onclick="focusSearch()" class="hidden md:flex items-center gap-3 h-[38px] px-4 rounded-full bg-[#131519] border border-white/[0.07] hover:border-white/20 text-xs text-white/45 transition">
+            <i class="fa-solid fa-magnifying-glass text-[11px]"></i>
+            <span>Quick search leads...</span>
+            <kbd class="mono-tag text-[10px] px-1.5 py-0.5 rounded bg-white/[0.06] text-white/60 border border-white/10">⌘K</kbd>
+          </button>
+
+          <div class="h-[38px] px-3.5 rounded-full bg-[#131519] border border-white/[0.07] flex items-center gap-2 text-xs">
+            <span class="w-2 h-2 rounded-full bg-[#e5fb80] animate-pulse"></span>
+            <span class="text-white/80 font-medium" id="targetLoc">Cebu, Philippines</span>
+            <span class="text-white/30">&bull;</span>
+            <span class="mono-tag text-[10.5px] text-white/45">v3.6</span>
+          </div>
+
+          <button onclick="openSettingsModal()" class="w-[38px] h-[38px] rounded-full bg-[#131519] hover:bg-[#1c1f26] border border-white/[0.08] flex items-center justify-center text-white/70 hover:text-white transition lg:hidden" title="Settings">
+            <i class="fa-solid fa-sliders text-xs"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- CONTENT CONTAINER -->
+    <div class="max-w-[1440px] w-full mx-auto px-4 sm:px-7 pt-6 pb-16 space-y-5">
+
+      <!-- HERO TITLE ROW -->
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <p class="text-xs font-medium uppercase tracking-[0.16em] text-white/40 mb-1">Unified Signal Command</p>
+          <h1 class="font-display text-2xl sm:text-[28px] font-bold tracking-tight text-white">Operations Dashboard</h1>
+        </div>
+
+        <div class="flex items-center gap-2.5 flex-wrap">
+          <button onclick="openAddModal()" class="btn-dark-pill px-4 flex items-center gap-2">
+            <i class="fa-solid fa-plus text-[#e5fb80] text-xs"></i>
+            <span>Log Manual Lead</span>
+          </button>
+          <button onclick="triggerLiveSearch()" id="btnScan" class="btn-lime px-5 flex items-center gap-2">
+            <i class="fa-solid fa-arrows-rotate text-xs" id="scanIcon"></i>
+            <span>Scan All Selected Platforms</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- BENTO ANALYTICS ROW (3 Dark Precision Cards Matching Image #1 Palette) -->
+      <section id="bentoStatsRow" class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+        <!-- Card 1: Lead Signals Overview (Dark Bento + Sparkline + Split Figures) -->
+        <div class="bento-card lg:col-span-5 p-5 sm:p-6 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2.5">
+              <span class="w-7 h-7 rounded-lg bg-white/[0.04] border border-white/[0.07] flex items-center justify-center text-white/70 text-xs">
+                <i class="fa-solid fa-wave-square"></i>
+              </span>
+              <div>
+                <h2 class="font-display text-sm font-semibold text-white/95">Signal Volume</h2>
+                <span class="text-[11px] text-white/40 block">Captured leads across active feeds</span>
+              </div>
+            </div>
+            <span class="px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.07] text-[11px] text-white/60 font-medium">Live DB</span>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-4">
+            <div class="bg-[#0b0c0f] border border-white/[0.055] rounded-2xl p-3">
+              <span class="text-[10.5px] text-white/45 block">Total</span>
+              <span class="font-display text-2xl font-bold text-white tabular-nums mt-0.5 block" id="statTotal">0</span>
+            </div>
+            <div class="bg-[#0b0c0f] border border-white/[0.055] rounded-2xl p-3">
+              <span class="text-[10.5px] text-[#e5fb80] flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-[#e5fb80]"></span>Seekers
+              </span>
+              <span class="font-display text-2xl font-bold text-white tabular-nums mt-0.5 block" id="statSeekers">0</span>
+            </div>
+            <div class="bg-[#0b0c0f] border border-white/[0.055] rounded-2xl p-3">
+              <span class="text-[10.5px] text-[#f59e0b] flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-[#f59e0b]"></span>Employers
+              </span>
+              <span class="font-display text-2xl font-bold text-white tabular-nums mt-0.5 block" id="statEmployers">0</span>
+            </div>
+            <div class="bg-[#0b0c0f] border border-white/[0.055] rounded-2xl p-3">
+              <span class="text-[10.5px] text-sky-400 flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>Buy &amp; Sell
+              </span>
+              <span class="font-display text-2xl font-bold text-white tabular-nums mt-0.5 block" id="statMarket">0</span>
+            </div>
+          </div>
+
+          <!-- Dual-Line SVG Sparkline (Dynamic 7-Day Activity) -->
+          <div class="relative h-12 w-full pt-1">
+            <svg class="w-full h-full overflow-visible" viewBox="0 0 360 44" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="limeSparkGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#e5fb80" stop-opacity="0.22"/>
+                  <stop offset="100%" stop-color="#e5fb80" stop-opacity="0.0"/>
+                </linearGradient>
+              </defs>
+              <path id="sparklineSeekersArea" d="M0 36 Q 35 12, 75 26 T 150 18 T 225 29 T 300 10 T 360 22 L 360 44 L 0 44 Z" fill="url(#limeSparkGrad)"/>
+              <path id="sparklineSeekersPath" d="M0 36 Q 35 12, 75 26 T 150 18 T 225 29 T 300 10 T 360 22" fill="none" stroke="#e5fb80" stroke-width="2" stroke-linecap="round" opacity="0.9"/>
+              <path id="sparklineEmployersPath" d="M0 30 Q 45 40, 90 22 T 180 34 T 260 18 T 360 32" fill="none" stroke="#f59e0b" stroke-width="1.75" stroke-linecap="round" opacity="0.8"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Card 2: Platform Pulse & Comment Activity -->
+        <div class="bento-card lg:col-span-4 p-5 sm:p-6 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2.5">
+              <span class="w-7 h-7 rounded-lg bg-white/[0.04] border border-white/[0.07] flex items-center justify-center text-white/70 text-xs">
+                <i class="fa-solid fa-layer-group"></i>
+              </span>
+              <div>
+                <h2 class="font-display text-sm font-semibold text-white/95">Platform &amp; Comment Pulse</h2>
+                <span class="text-[11px] text-white/40 block">Active source distribution</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#b9abff]/10 border border-[#b9abff]/25 text-[11px] text-[#d6ceff] font-medium">
+              <span class="w-1.5 h-1.5 rounded-full bg-[#b9abff]"></span>
+              <span id="statComments" class="tabular-nums font-semibold">0</span> Comments
+            </div>
+          </div>
+
+          <!-- Capsule Bars Chart (Dynamic from visible leads) -->
+          <div id="channelCapsuleChart" class="grid grid-cols-5 gap-2.5 items-end h-[112px] pt-2 px-1">
+            <!-- Populated dynamically by JS -->
+          </div>
+        </div>
+
+        <!-- Card 3: Haulli-Inspired Dark Outreach & Pipeline Capacity Card (Matches Image #1 Right Panel) -->
+        <div class="bento-card-lime lg:col-span-3 p-5 sm:p-6 flex flex-col justify-between">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <span class="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/45">Outreach Pipeline</span>
+              <div class="flex items-baseline gap-2 mt-1">
+                <span class="font-display text-3xl font-extrabold tracking-tight text-white tabular-nums" id="statContacted">0</span>
+                <span class="text-xs font-medium text-white/45">contacted leads</span>
+              </div>
+            </div>
+            <span id="contactRateBadge" class="px-2.5 py-1 rounded-full bg-[#e5fb80]/15 text-[#e5fb80] border border-[#e5fb80]/30 text-[11px] font-bold tabular-nums">0%</span>
+          </div>
+
+          <!-- Segmented Pill Bar + Warm Amber Callout (Like Image #1 Capacity & Fragile Banner) -->
+          <div class="my-3.5 space-y-2.5">
+            <div id="segmentedProgressBar" class="grid grid-cols-10 gap-1.5 h-5">
+              <!-- Populated by JS -->
+            </div>
+
+            <div class="px-3 py-2 rounded-xl bg-[#f59e0b]/[0.08] border border-[#f59e0b]/25 flex items-center gap-2.5 text-[11px] text-[#fbd38d]">
+              <i class="fa-solid fa-bolt text-[#f59e0b] text-[10px]"></i>
+              <span class="truncate">Manual reply mode active &middot; Safe outreach</span>
+            </div>
+          </div>
+
+          <button onclick="setFilter('new')" class="w-full h-9 rounded-full bg-[#191c23] hover:bg-[#e5fb80] text-white hover:text-[#090a0c] border border-white/10 text-xs font-semibold flex items-center justify-center gap-2 transition">
+            <span>Review New Leads</span>
+            <i class="fa-solid fa-arrow-right text-[10px]"></i>
+          </button>
+        </div>
+
+      </section>
+
+      <!-- MULTI-PLATFORM SCANNER COMMAND BAR (Bento Card) -->
+      <section class="bento-card p-5 sm:p-6 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <span class="w-2 h-2 rounded-full bg-[#c8ff2e]"></span>
+            <span class="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/60">Live Multi-Platform Scanner</span>
+          </div>
+          <span class="text-xs text-white/40">
+            Reddit &middot; Comment Trees &middot; Facebook &middot; TikTok &middot; Instagram &middot; Web RSS
+          </span>
+        </div>
+
+        <!-- Search Input + Dropdowns + Primary CTA -->
+        <div class="flex flex-col xl:flex-row items-stretch xl:items-center gap-2.5">
+          <!-- Pill Search Input -->
+          <div class="bento-well h-[42px] relative flex-1 flex items-center">
+            <i class="fa-solid fa-magnifying-glass absolute left-4 text-white/35 text-xs pointer-events-none"></i>
+            <input
+              id="searchQuery"
+              type="text"
+              placeholder='Search keyword or phrase (e.g., "dishwasher", "interested po", "how to apply", "urgent hiring")...'
+              onkeydown="if(event.key === 'Enter') triggerLiveSearch()"
+              class="w-full h-full bg-transparent focus:outline-none pl-10 pr-9 text-[13px] text-white placeholder-white/35"
+            >
+            <button onclick="clearSearchInput()" id="btnClearInput" title="Clear keyword" class="hidden absolute right-3.5 text-white/40 hover:text-white text-xs">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          <!-- Compact Filter Pills -->
+          <div class="flex flex-wrap items-center gap-2">
+            <div class="bento-well h-[42px] px-3.5 flex items-center gap-2">
+              <label for="searchIntent" class="text-[10.5px] font-semibold uppercase tracking-wider text-white/40 whitespace-nowrap">Category</label>
+              <select id="searchIntent" onchange="loadLeads()" class="bg-transparent text-[12.5px] font-medium text-white focus:outline-none cursor-pointer pr-1">
+                <option value="seeker,employer" class="bg-[#131519] text-white" selected>Jobs: Seekers &amp; Employers</option>
+                <option value="seeker" class="bg-[#131519] text-white">Jobseekers Only</option>
+                <option value="employer" class="bg-[#131519] text-white">Employers Hiring Only</option>
+                <option value="buyer,seller" class="bg-[#131519] text-white">Buy &amp; Sell: Buyers &amp; Sellers</option>
+                <option value="seller" class="bg-[#131519] text-white">Sellers (For Sale) Only</option>
+                <option value="buyer" class="bg-[#131519] text-white">Buyers (Looking For) Only</option>
+                <option value="seeker,employer,buyer,seller" class="bg-[#131519] text-white">All Categories</option>
+              </select>
+            </div>
+
+            <div class="bento-well h-[42px] px-3.5 flex items-center gap-2">
+              <label for="searchLocation" class="text-[10.5px] font-semibold uppercase tracking-wider text-white/40 whitespace-nowrap">Location</label>
+              <select id="searchLocation" onchange="updateLocationBadge()" class="bg-transparent text-[12.5px] font-medium text-white focus:outline-none cursor-pointer pr-1">
+                <option value="Cebu" class="bg-[#131519] text-white" selected>Cebu</option>
+                <option value="Any" class="bg-[#131519] text-white">Any</option>
+              </select>
+            </div>
+
+            <div class="bento-well h-[42px] px-3.5 flex items-center gap-2">
+              <label for="searchRecency" class="text-[10.5px] font-semibold uppercase tracking-wider text-white/40 whitespace-nowrap">Posted</label>
+              <select id="searchRecency" onchange="loadLeads()" class="bg-transparent text-[12.5px] font-medium text-white focus:outline-none cursor-pointer pr-1">
+                <option value="1" class="bg-[#131519] text-white">Past 24 hours</option>
+                <option value="3" class="bg-[#131519] text-white">Past 3 days</option>
+                <option value="7" class="bg-[#131519] text-white" selected>Past week</option>
+                <option value="30" class="bg-[#131519] text-white">Past month</option>
+                <option value="365" class="bg-[#131519] text-white">Past year</option>
+              </select>
+            </div>
+
+            <button onclick="triggerLiveSearch()" id="btnLiveSearch" class="btn-lime h-[42px] px-6 flex items-center justify-center gap-2 whitespace-nowrap flex-1 sm:flex-initial">
+              <i class="fa-solid fa-bolt text-xs" id="searchBtnIcon"></i>
+              <span>Scan &amp; Search</span>
+            </button>
+
+            <button onclick="cancelLiveSearch()" id="btnCancelSearch" class="hidden h-[42px] px-4 rounded-full bg-rose-500/15 hover:bg-rose-500/25 text-rose-200 border border-rose-400/35 text-xs font-semibold flex items-center justify-center gap-1.5 whitespace-nowrap transition">
+              <i class="fa-solid fa-xmark"></i>
+              <span>Cancel</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Platform Pills & Quick Try Chips -->
+        <div class="pt-3.5 border-t border-white/[0.06] flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+          <div id="platformPillsRow" class="flex flex-wrap items-center gap-2 rounded-2xl transition">
+            <span class="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-white/40 mr-1">Platforms</span>
+
+            <label class="platform-pill">
+              <input type="checkbox" id="plat_reddit_posts" value="reddit_posts" onchange="syncPlatformPills(); loadLeads()" class="plat-cb sr-only">
+              <span class="plat-dot"></span>
+              <i class="fa-brands fa-reddit text-xs"></i>
+              <span>Reddit Posts</span>
+            </label>
+
+            <label class="platform-pill">
+              <input type="checkbox" id="plat_reddit_comments" value="reddit_comments" onchange="syncPlatformPills(); loadLeads()" class="plat-cb sr-only">
+              <span class="plat-dot"></span>
+              <i class="fa-regular fa-comments text-[#b9abff] text-xs"></i>
+              <span>Reddit Comments</span>
+            </label>
+
+            <label class="platform-pill">
+              <input type="checkbox" id="plat_facebook" value="facebook" onchange="syncPlatformPills(); loadLeads()" class="plat-cb sr-only">
+              <span class="plat-dot"></span>
+              <i class="fa-brands fa-facebook text-xs"></i>
+              <span>Facebook</span>
+            </label>
+
+            <label class="platform-pill">
+              <input type="checkbox" id="plat_tiktok" value="tiktok" onchange="syncPlatformPills(); loadLeads()" class="plat-cb sr-only">
+              <span class="plat-dot"></span>
+              <i class="fa-brands fa-tiktok text-xs"></i>
+              <span>TikTok</span>
+            </label>
+
+            <label class="platform-pill">
+              <input type="checkbox" id="plat_instagram" value="instagram" onchange="syncPlatformPills(); loadLeads()" class="plat-cb sr-only">
+              <span class="plat-dot"></span>
+              <i class="fa-brands fa-instagram text-xs"></i>
+              <span>Instagram</span>
+            </label>
+
+            <label class="platform-pill">
+              <input type="checkbox" id="plat_public_web" value="public_web" onchange="syncPlatformPills(); loadLeads()" class="plat-cb sr-only">
+              <span class="plat-dot"></span>
+              <i class="fa-solid fa-globe text-xs"></i>
+              <span>Public Web</span>
+            </label>
+          </div>
+
+          <!-- Quick Try Chips -->
+          <div id="quickTryContainer" class="flex flex-wrap items-center gap-1.5">
+            <span class="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-white/40 mr-1">Quick Try</span>
+            <button onclick="quickSearch('nangita kog trabaho', 'seeker')" class="quick-chip">
+              <span class="w-1.5 h-1.5 rounded-full bg-[#c8ff2e]"></span>nangita kog trabaho
+            </button>
+            <button onclick="quickSearch('interested po', 'seeker')" class="quick-chip">
+              <span class="w-1.5 h-1.5 rounded-full bg-[#b9abff]"></span>interested po
+            </button>
+            <button onclick="quickSearch('how to apply', 'seeker')" class="quick-chip">
+              <span class="w-1.5 h-1.5 rounded-full bg-[#b9abff]"></span>how to apply
+            </button>
+            <button onclick="quickSearch('we are hiring', 'employer')" class="quick-chip">
+              <span class="w-1.5 h-1.5 rounded-full bg-[#ff9429]"></span>we are hiring
+            </button>
+            <button onclick="quickSearch('gpu for sale', 'buyer,seller')" class="quick-chip">
+              <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>gpu for sale
+            </button>
+            <button onclick="quickSearch('ram', 'buyer,seller')" class="quick-chip">
+              <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>ram
+            </button>
+            <button onclick="quickSearch('pc set', 'buyer,seller')" class="quick-chip">
+              <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>pc set
+            </button>
+          </div>
+        </div>
+
+        <!-- Live Scan Progress Panel -->
+        <div id="scanProgressPanel" class="hidden pt-3.5 border-t border-white/[0.06]">
+          <div class="flex flex-wrap items-center justify-between gap-2 text-xs mb-2.5">
+            <div id="searchStatusText" class="text-white/80 font-medium flex items-center gap-2 min-w-0"></div>
+            <div class="flex items-center gap-2 shrink-0">
+              <button onclick="cancelLiveSearch()" id="btnCancelPanel" class="hidden h-7 px-3 rounded-full bg-rose-500/15 hover:bg-rose-500/25 text-rose-200 border border-rose-400/35 text-[11.5px] font-medium flex items-center gap-1.5 transition">
+                <i class="fa-solid fa-xmark text-[10px]"></i>
+                <span>Cancel Search</span>
+              </button>
+              <button onclick="resetSearch()" class="btn-dark-pill !h-7 px-3 text-[11.5px]">
+                Reset Filters
+              </button>
+            </div>
+          </div>
+          <div id="adapterStatusGrid" class="flex flex-wrap gap-1.5"></div>
+        </div>
+      </section>
+
+      <!-- PIPELINE FILTER & SIGNAL PRIORITY TOOLBAR -->
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pt-1">
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="filter-track flex-wrap">
+            <button onclick="setFilter('all')" id="tab-all" class="filter-tab active-tab">All Leads</button>
+            <button onclick="setFilter('new')" id="tab-new" class="filter-tab">New Only</button>
+            <button onclick="setFilter('contacted')" id="tab-contacted" class="filter-tab">Contacted</button>
+            <button onclick="setFilter('followup')" id="tab-followup" class="filter-tab flex items-center gap-1.5">
+              <span>Follow-Up</span>
+              <span id="tabCountFollowup" class="tab-count mono-tag text-[10px] px-1.5 py-0.2 rounded-full bg-white/10 text-white/75 tabular-nums">0</span>
+            </button>
+            <button onclick="setFilter('archived')" id="tab-archived" class="filter-tab">Archived</button>
+            <button onclick="setFilter('ai_filtered')" id="tab-ai_filtered" class="filter-tab flex items-center gap-1.5">
+              <i class="fa-solid fa-wand-magic-sparkles text-[#b9abff] text-[11px]"></i>
+              <span>AI Filtered</span>
+              <span id="tabCountAiFiltered" class="tab-count mono-tag text-[10px] px-1.5 py-0.2 rounded-full bg-[#b9abff]/20 text-[#d6ceff] tabular-nums">0</span>
+            </button>
+          </div>
+
+          <button onclick="toggleHotOnly()" id="btnHotOnly" class="h-[36px] px-3.5 rounded-full bg-[#121418] border border-white/[0.08] hover:border-[#f59e0b]/45 text-xs font-medium text-white/70 flex items-center gap-2 transition">
+            <i class="fa-solid fa-fire text-[#f59e0b] text-xs"></i>
+            <span>Hot Only</span>
+            <span id="hotLeadCount" class="mono-tag text-[10.5px] px-1.5 py-0.5 rounded-full bg-[#f59e0b]/15 text-[#fbd38d] tabular-nums">0</span>
+          </button>
+
+          <button onclick="runAiAuditOnStoredLeads()" id="btnRunAiAudit" title="Run Gemini AI + Rant Filter across existing stored leads" class="h-[36px] px-3.5 rounded-full bg-[#b9abff]/12 hover:bg-[#b9abff]/22 border border-[#b9abff]/30 text-xs font-medium text-[#e0d9ff] flex items-center gap-2 transition">
+            <i id="aiAuditIcon" class="fa-solid fa-wand-magic-sparkles text-[#b9abff] text-xs"></i>
+            <span id="aiAuditLabel">AI Filter Stored Leads</span>
+          </button>
+
+          <button onclick="openSettingsModal()" id="btnNoiseGuard" title="Manage blocked spam keywords & muted authors" class="h-[36px] px-3 rounded-full bg-[#121418] border border-white/[0.08] hover:border-white/20 text-xs text-white/55 hover:text-white flex items-center gap-2 transition">
+            <i class="fa-solid fa-shield-halved text-[#e5fb80] text-xs"></i>
+            <span id="noiseGuardText">Noise Guard Active</span>
+          </button>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2.5 text-xs text-white/45">
+          <div class="bento-well h-[36px] px-3 flex items-center gap-2">
+            <label for="sortOrder" class="text-[10px] font-semibold uppercase tracking-wider text-white/40">Sort</label>
+            <select id="sortOrder" onchange="loadLeads()" class="bg-transparent text-xs font-medium text-white focus:outline-none cursor-pointer pr-1">
+              <option value="hot_first" class="bg-[#131519] text-white" selected>Hot &amp; Fresh First</option>
+              <option value="newest" class="bg-[#131519] text-white">Newest Posted First</option>
+              <option value="comments_first" class="bg-[#131519] text-white">Comments First</option>
+              <option value="keyword_match" class="bg-[#131519] text-white">Exact Keyword Match</option>
+            </select>
+          </div>
+
+          <button onclick="exportLeadsCsv()" id="btnExportCsv" title="Download current view as Excel / CSV" class="btn-dark-pill !h-[36px] px-3.5 flex items-center gap-1.5 text-xs">
+            <i class="fa-solid fa-download text-[11px] text-[#e5fb80]"></i>
+            <span>Export CSV</span>
+          </button>
+
+          <span id="visibleLeadCount" class="font-medium text-white/60 tabular-nums">Showing 0 leads</span>
+          <button onclick="resetSearch()" class="hover:text-white transition underline decoration-white/20 underline-offset-4">Reset</button>
+        </div>
+      </div>
+
+      <!-- LEAD CARDS FEED -->
+      <main>
+        <div id="leadsContainer" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-4"></div>
+
+        <div id="emptyState" class="hidden bento-card text-center py-20 px-6">
+          <div class="w-12 h-12 rounded-2xl bg-[#0d0e12] border border-white/[0.08] mx-auto mb-4 flex items-center justify-center">
+            <i class="fa-solid fa-satellite-dish text-base text-[#c8ff2e]/70"></i>
+          </div>
+          <h3 class="font-display text-lg font-semibold text-white">No leads stored for the current filters yet</h3>
+          <p class="text-sm text-white/50 mt-1.5 max-w-lg mx-auto leading-relaxed">
+            Select at least one platform above and click <strong class="text-white font-medium">Scan &amp; Search</strong> to pull live leads across Reddit, Comment Trees, Facebook, TikTok, Instagram, and Web Feeds.
           </p>
         </div>
-      </div>
+      </main>
 
-      <!-- Right: Unified Recessed KPI Bar + Settings Button (stays inline) -->
-      <div class="flex items-center gap-2.5 shrink-0 flex-wrap sm:flex-nowrap">
-        <div class="facet-well px-1 py-1.5 flex items-center divide-x divide-white/[0.07] overflow-x-auto">
-          <div class="px-2.5 py-0.5 shrink-0">
-            <span class="facet-eyebrow block text-[9px] tracking-[0.12em]">Total</span>
-            <span class="facet-counter text-[15px]" id="statTotal">0</span>
-          </div>
-          <div class="px-2.5 py-0.5 shrink-0">
-            <span class="facet-eyebrow flex items-center gap-1.5 text-[9px] tracking-[0.12em]">
-              <span class="w-1.5 h-1.5 rounded-full bg-[#36d67e]"></span>Jobseekers
-            </span>
-            <span class="facet-counter text-[15px]" id="statSeekers">0</span>
-          </div>
-          <div class="px-2.5 py-0.5 shrink-0">
-            <span class="facet-eyebrow flex items-center gap-1.5 text-[9px] tracking-[0.12em]">
-              <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>Employers
-            </span>
-            <span class="facet-counter text-[15px]" id="statEmployers">0</span>
-          </div>
-          <div class="px-2.5 py-0.5 shrink-0" title="Buyers & Sellers (Separate from Jobs)">
-            <span class="facet-eyebrow flex items-center gap-1.5 text-[9px] tracking-[0.12em]">
-              <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>Buy &amp; Sell
-            </span>
-            <span class="facet-counter text-[15px]" id="statMarket">0</span>
-          </div>
-          <div class="px-2.5 py-0.5 shrink-0">
-            <span class="facet-eyebrow flex items-center gap-1.5 text-[9px] tracking-[0.12em]">
-              <span class="w-1.5 h-1.5 rounded-full bg-[#b9abff]"></span>Comments
-            </span>
-            <span class="facet-counter text-[15px]" id="statComments">0</span>
-          </div>
-          <div class="px-2.5 py-0.5 shrink-0">
-            <span class="facet-eyebrow flex items-center gap-1.5 text-[9px] tracking-[0.12em]">
-              <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>Contacted
-            </span>
-            <span class="facet-counter text-[15px]" id="statContacted">0</span>
-          </div>
-        </div>
-
-        <button onclick="openSettingsModal()" class="btn-facet-ghost h-[38px] px-3.5 rounded-[8px] text-[12px] flex items-center gap-2 shrink-0 whitespace-nowrap">
-          <i class="fa-solid fa-sliders text-[11px] text-white/60"></i>
-          <span>Settings</span>
-        </button>
-      </div>
     </div>
-  </header>
-
-  <!-- MAIN PAGE FRAME: max-w-[1380px] with 14px vertical gaps between floating glass slabs -->
-  <div class="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8 pt-4 flex flex-col gap-[14px]">
-
-    <!-- 2. MULTI-PLATFORM SCANNER SLAB -->
-    <section class="facet-slab p-5 sm:p-6 flex flex-col gap-[14px]">
-      <!-- Top Bar: Clean Eyebrow Left (No Dot) + Supported Platforms Right -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-        <span class="facet-eyebrow">Live Multi-Platform Scanner</span>
-        <span class="facet-meta">
-          Reddit &middot; Comment Trees &middot; Facebook &middot; TikTok &middot; Instagram &middot; Web RSS
-        </span>
-      </div>
-
-      <!-- Control Row: Recessed Wells + Signature Facet Light CTA Pill -->
-      <div class="flex flex-col lg:flex-row items-stretch lg:items-center gap-2.5">
-        <!-- Search Input Well -->
-        <div class="facet-well h-[38px] relative flex-1 flex items-center">
-          <i class="fa-solid fa-magnifying-glass absolute left-3.5 text-white/30 text-[11.5px] pointer-events-none"></i>
-          <input
-            id="searchQuery"
-            type="text"
-            placeholder='Search keyword or phrase (e.g., "dishwasher", "interested po", "how to apply", "urgent hiring")...'
-            onkeydown="if(event.key === 'Enter') triggerLiveSearch()"
-            class="w-full h-full bg-transparent focus:outline-none pl-9 pr-8 text-[13px] text-[#e4e4e9] placeholder-white/30"
-          >
-          <button onclick="clearSearchInput()" id="btnClearInput" title="Clear keyword" class="hidden absolute right-3 text-white/40 hover:text-white text-xs">
-            <i class="fa-solid fa-xmark"></i>
-          </button>
-        </div>
-
-        <!-- Category Dropdown Well -->
-        <div class="facet-well h-[38px] px-3 flex items-center gap-2 shrink-0">
-          <label for="searchIntent" class="facet-eyebrow text-[9.5px] whitespace-nowrap">Category</label>
-          <select id="searchIntent" onchange="loadLeads()" class="bg-transparent text-[12.5px] font-medium text-[#e4e4e9] focus:outline-none cursor-pointer pr-1">
-            <option value="seeker,employer" class="bg-[#111115] text-white" selected>Jobs: Seekers &amp; Employers</option>
-            <option value="seeker" class="bg-[#111115] text-white">Jobseekers Only</option>
-            <option value="employer" class="bg-[#111115] text-white">Employers Hiring Only</option>
-            <option value="buyer,seller" class="bg-[#111115] text-white">Buy &amp; Sell: Buyers &amp; Sellers</option>
-            <option value="seller" class="bg-[#111115] text-white">Sellers (For Sale) Only</option>
-            <option value="buyer" class="bg-[#111115] text-white">Buyers (Looking For) Only</option>
-            <option value="seeker,employer,buyer,seller" class="bg-[#111115] text-white">All Categories</option>
-          </select>
-        </div>
-
-        <!-- Location Dropdown Well -->
-        <div class="facet-well h-[38px] px-3 flex items-center gap-2 shrink-0">
-          <label for="searchLocation" class="facet-eyebrow text-[9.5px] whitespace-nowrap">Location</label>
-          <select id="searchLocation" onchange="updateLocationBadge()" class="bg-transparent text-[12.5px] font-medium text-[#e4e4e9] focus:outline-none cursor-pointer pr-1">
-            <option value="Cebu" class="bg-[#111115] text-white" selected>Cebu</option>
-            <option value="Any" class="bg-[#111115] text-white">Any</option>
-          </select>
-        </div>
-
-        <!-- Posted Dropdown Well -->
-        <div class="facet-well h-[38px] px-3 flex items-center gap-2 shrink-0">
-          <label for="searchRecency" class="facet-eyebrow text-[9.5px] whitespace-nowrap">Posted</label>
-          <select id="searchRecency" onchange="loadLeads()" class="bg-transparent text-[12.5px] font-medium text-[#e4e4e9] focus:outline-none cursor-pointer pr-1">
-            <option value="1" class="bg-[#111115] text-white">Past 24 hours</option>
-            <option value="3" class="bg-[#111115] text-white">Past 3 days</option>
-            <option value="7" class="bg-[#111115] text-white" selected>Past week</option>
-            <option value="30" class="bg-[#111115] text-white">Past month</option>
-            <option value="365" class="bg-[#111115] text-white">Past year</option>
-          </select>
-        </div>
-
-        <!-- Primary Facet Light Pill CTA + Cancel Pill (shown while scanning) -->
-        <div class="flex items-center gap-2 shrink-0">
-          <button
-            onclick="triggerLiveSearch()"
-            id="btnLiveSearch"
-            class="btn-facet-primary px-5 flex items-center justify-center gap-2 whitespace-nowrap shrink-0 flex-1 lg:flex-initial"
-          >
-            <i class="fa-solid fa-bolt text-[11px]" id="searchBtnIcon"></i>
-            <span>Scan &amp; Search</span>
-          </button>
-          <button
-            onclick="cancelLiveSearch()"
-            id="btnCancelSearch"
-            class="hidden h-[38px] px-4 rounded-[6px] bg-rose-500/15 hover:bg-rose-500/25 text-rose-200 border border-rose-400/35 text-[12.5px] font-medium flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0 transition"
-          >
-            <i class="fa-solid fa-xmark text-[11px]"></i>
-            <span>Cancel</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Platform Toggles & Quick Try Row -->
-      <div class="pt-3 border-t border-white/[0.06] flex flex-col xl:flex-row xl:items-center justify-between gap-3">
-        <!-- Platform Toggle Chips (unchecked on load; manually select to scan) -->
-        <div id="platformPillsRow" class="flex flex-wrap items-center gap-2 rounded-xl transition">
-          <span class="facet-eyebrow mr-1">Platforms</span>
-
-          <label class="platform-pill">
-            <input type="checkbox" id="plat_reddit_posts" value="reddit_posts" onchange="syncPlatformPills(); loadLeads()" class="plat-cb sr-only">
-            <span class="plat-dot"></span>
-            <i class="fa-brands fa-reddit text-white/70 text-xs"></i>
-            <span>Reddit Posts</span>
-          </label>
-
-          <label class="platform-pill">
-            <input type="checkbox" id="plat_reddit_comments" value="reddit_comments" onchange="syncPlatformPills(); loadLeads()" class="plat-cb sr-only">
-            <span class="plat-dot"></span>
-            <i class="fa-regular fa-comments text-[#b9abff] text-xs"></i>
-            <span>Reddit Comments</span>
-          </label>
-
-          <label class="platform-pill">
-            <input type="checkbox" id="plat_facebook" value="facebook" onchange="syncPlatformPills(); loadLeads()" class="plat-cb sr-only">
-            <span class="plat-dot"></span>
-            <i class="fa-brands fa-facebook text-white/70 text-xs"></i>
-            <span>Facebook</span>
-          </label>
-
-          <label class="platform-pill">
-            <input type="checkbox" id="plat_tiktok" value="tiktok" onchange="syncPlatformPills(); loadLeads()" class="plat-cb sr-only">
-            <span class="plat-dot"></span>
-            <i class="fa-brands fa-tiktok text-white/70 text-xs"></i>
-            <span>TikTok</span>
-          </label>
-
-          <label class="platform-pill">
-            <input type="checkbox" id="plat_instagram" value="instagram" onchange="syncPlatformPills(); loadLeads()" class="plat-cb sr-only">
-            <span class="plat-dot"></span>
-            <i class="fa-brands fa-instagram text-white/70 text-xs"></i>
-            <span>Instagram</span>
-          </label>
-
-          <label class="platform-pill">
-            <input type="checkbox" id="plat_public_web" value="public_web" onchange="syncPlatformPills(); loadLeads()" class="plat-cb sr-only">
-            <span class="plat-dot"></span>
-            <i class="fa-solid fa-globe text-white/70 text-xs"></i>
-            <span>Public Web</span>
-          </label>
-        </div>
-
-        <!-- Quick Try Chips -->
-        <div id="quickTryContainer" class="flex flex-wrap items-center gap-1.5">
-          <span class="facet-eyebrow mr-1">Quick Try</span>
-          <button onclick="quickSearch('nangita kog trabaho', 'seeker')" class="quick-chip">
-            <span class="w-1.5 h-1.5 rounded-full bg-[#36d67e]"></span>nangita kog trabaho
-          </button>
-          <button onclick="quickSearch('interested po', 'seeker')" class="quick-chip">
-            <span class="w-1.5 h-1.5 rounded-full bg-[#b9abff]"></span>interested po
-          </button>
-          <button onclick="quickSearch('how to apply', 'seeker')" class="quick-chip">
-            <span class="w-1.5 h-1.5 rounded-full bg-[#b9abff]"></span>how to apply
-          </button>
-          <button onclick="quickSearch('we are hiring', 'employer')" class="quick-chip">
-            <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>we are hiring
-          </button>
-          <button onclick="quickSearch('gpu for sale', 'buyer,seller')" class="quick-chip">
-            <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>gpu for sale
-          </button>
-          <button onclick="quickSearch('ram', 'buyer,seller')" class="quick-chip">
-            <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>ram
-          </button>
-          <button onclick="quickSearch('pc set', 'buyer,seller')" class="quick-chip">
-            <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>pc set
-          </button>
-        </div>
-      </div>
-
-      <!-- Live Scan Progress & Per-Adapter Status Bar -->
-      <div id="scanProgressPanel" class="hidden pt-3 border-t border-white/[0.06]">
-        <div class="flex items-center justify-between gap-2 text-xs mb-2">
-          <div id="searchStatusText" class="text-white/80 font-medium flex items-center gap-2 min-w-0"></div>
-          <div class="flex items-center gap-2 shrink-0">
-            <button onclick="cancelLiveSearch()" id="btnCancelPanel" class="hidden h-[28px] px-3 rounded-[6px] bg-rose-500/15 hover:bg-rose-500/25 text-rose-200 border border-rose-400/35 text-[11.5px] font-medium flex items-center gap-1.5 transition">
-              <i class="fa-solid fa-xmark text-[10px]"></i>
-              <span>Cancel Search</span>
-            </button>
-            <button onclick="resetSearch()" class="btn-facet-ghost h-[28px] px-3 rounded-[6px] text-[11.5px]">
-              Reset Filters
-            </button>
-          </div>
-        </div>
-        <div id="adapterStatusGrid" class="flex flex-wrap gap-1.5"></div>
-      </div>
-    </section>
-
-    <!-- 3. FILTER & ACTION TOOLBAR SLAB -->
-    <div class="facet-slab px-4 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-3">
-      <!-- Left: Segmented Glass Tab Control -->
-      <div class="segmented-track w-full sm:w-auto justify-center sm:justify-start">
-        <button onclick="setFilter('all')" id="tab-all" class="filter-tab active-tab">All Leads</button>
-        <button onclick="setFilter('new')" id="tab-new" class="filter-tab">New Only</button>
-        <button onclick="setFilter('contacted')" id="tab-contacted" class="filter-tab">Contacted</button>
-      </div>
-
-      <!-- Right: Secondary Ghost Action + Primary Facet Action Pill -->
-      <div class="flex items-center gap-2.5 w-full sm:w-auto justify-end">
-        <button onclick="openAddModal()" class="btn-facet-ghost h-[38px] px-3.5 rounded-[6px] text-[12.5px] flex items-center gap-2">
-          <i class="fa-solid fa-plus text-[10.5px]"></i>
-          <span>Log Manual Lead</span>
-        </button>
-        <button onclick="triggerLiveSearch()" id="btnScan" class="btn-facet-primary px-4 flex items-center gap-2">
-          <i class="fa-solid fa-arrows-rotate text-[11px]" id="scanIcon"></i>
-          <span>Scan All Selected Platforms</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- 4. LEAD CARDS GRID (14px gap matching floating glass slabs) -->
-    <main>
-      <div id="leadsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-[14px]"></div>
-
-      <div id="emptyState" class="hidden facet-slab text-center py-20 px-6">
-        <div class="w-11 h-11 rounded-[12px] facet-well mx-auto mb-4 flex items-center justify-center">
-          <i class="fa-solid fa-satellite-dish text-sm text-white/40"></i>
-        </div>
-        <h3 class="text-[16px] facet-title">No leads stored for the current filters yet</h3>
-        <p class="facet-excerpt mt-1.5 max-w-lg mx-auto">
-          Click <strong class="text-white/80 font-medium">Scan &amp; Search</strong> above to run a live scan across Reddit Posts, Reddit Comment Trees, Facebook, TikTok, Instagram, and Web Feeds.
-        </p>
-      </div>
-    </main>
-
   </div>
 
   <!-- OUTREACH MODAL -->
   <div id="outreachModal" class="modal-backdrop fixed inset-0 z-50 hidden flex items-center justify-center p-4">
-    <div class="facet-slab max-w-lg w-full overflow-hidden">
+    <div class="bento-card max-w-lg w-full overflow-hidden">
       <div class="px-6 py-4 border-b border-white/[0.06] flex justify-between items-center">
         <div>
-          <span class="facet-eyebrow block">Direct Response</span>
-          <h3 class="text-[16px] facet-title mt-0.5">Tailored Outreach Message</h3>
+          <span class="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[#c8ff2e]">Direct Response</span>
+          <h3 class="font-display text-base font-bold text-white mt-0.5">Tailored Outreach Message</h3>
         </div>
-        <button onclick="closeModal('outreachModal')" class="w-7 h-7 rounded-[6px] btn-facet-ghost flex items-center justify-center text-sm">&times;</button>
+        <button onclick="closeModal('outreachModal')" class="w-8 h-8 rounded-full btn-dark-pill flex items-center justify-center text-sm">&times;</button>
       </div>
       <div class="p-6">
-        <p class="facet-excerpt mb-3">Copy and paste this reply comment or direct message:</p>
+        <p class="text-xs text-white/55 mb-3">Copy and paste this personalized reply comment or direct message:</p>
         <div class="relative">
-          <textarea id="pitchText1" rows="4" class="facet-input w-full p-3.5 text-[13px] leading-relaxed resize-none"></textarea>
-          <button onclick="copyToClipboard('pitchText1', 'btnCopy1')" id="btnCopy1" class="btn-facet-ghost absolute bottom-3 right-3 h-[28px] px-3 rounded-[6px] text-xs">Copy</button>
+          <textarea id="pitchText1" rows="4" class="bento-input w-full p-4 text-[13px] leading-relaxed resize-none"></textarea>
+          <button onclick="copyToClipboard('pitchText1', 'btnCopy1')" id="btnCopy1" class="btn-dark-pill !h-7 px-3 text-xs absolute bottom-3 right-3">Copy</button>
         </div>
       </div>
-      <div class="px-6 py-3.5 border-t border-white/[0.06] flex justify-between items-center">
-        <button onclick="markLeadContacted()" class="btn-facet-primary px-4 flex items-center gap-1.5">
-          <i class="fa-solid fa-check text-[11px]"></i>
+      <div class="px-6 py-4 border-t border-white/[0.06] flex justify-between items-center bg-[#0f1115]">
+        <button onclick="markLeadContacted()" class="btn-lime !h-9 px-5 flex items-center gap-1.5 text-xs">
+          <i class="fa-solid fa-check"></i>
           <span>Mark as Contacted</span>
         </button>
-        <button onclick="closeModal('outreachModal')" class="btn-facet-ghost h-[38px] px-4 rounded-[6px] text-xs">Close</button>
+        <button onclick="closeModal('outreachModal')" class="btn-dark-pill !h-9 px-4 text-xs">Close</button>
       </div>
     </div>
   </div>
 
-  <!-- 5. SETTINGS MODAL -->
+  <!-- SETTINGS MODAL -->
   <div id="settingsModal" class="modal-backdrop fixed inset-0 z-50 hidden flex items-center justify-center p-4">
-    <div class="facet-slab max-w-2xl w-full max-h-[88vh] flex flex-col overflow-hidden">
-      <!-- Sticky Glass Header -->
+    <div class="bento-card max-w-2xl w-full max-h-[88vh] flex flex-col overflow-hidden">
       <div class="px-6 py-4 border-b border-white/[0.06] flex justify-between items-center shrink-0">
         <div>
-          <span class="facet-eyebrow block">Configuration</span>
-          <h3 class="text-[16px] facet-title mt-0.5">Multi-Platform Scanner Settings</h3>
+          <span class="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[#c8ff2e]">Configuration</span>
+          <h3 class="font-display text-base font-bold text-white mt-0.5">Multi-Platform Scanner Settings</h3>
         </div>
-        <button onclick="closeModal('settingsModal')" class="w-7 h-7 rounded-[6px] btn-facet-ghost flex items-center justify-center text-sm">&times;</button>
+        <button onclick="closeModal('settingsModal')" class="w-8 h-8 rounded-full btn-dark-pill flex items-center justify-center text-sm">&times;</button>
       </div>
 
-      <!-- Scrollable Form Body -->
       <div class="p-6 overflow-y-auto space-y-5 text-xs">
-        <p class="facet-excerpt">
-          Reddit and Public Search-Index mode work out of the box. To unlock deep chronological scraping of Facebook Groups/Comments, TikTok Comments, and Instagram Hashtag Comments, paste your <a href="https://console.apify.com/settings/integrations" target="_blank" class="text-white/85 underline decoration-white/30 hover:decoration-white">Apify API Token</a> below.
+        <p class="text-white/55 leading-relaxed">
+          Reddit and Public Search-Index mode work out of the box. Use Apify for deep chronological Facebook/TikTok/IG comments, or add any free-tier alternative Search API key (or Custom JSON API) below to stretch or replace Apify credits.
         </p>
-
-        <div>
-          <label class="facet-eyebrow block mb-2">Apify API Token (Facebook / TikTok / Instagram Deep Scraper)</label>
-          <input id="cfgApifyToken" type="password" placeholder="apify_api_..." class="facet-input w-full h-[38px] px-3.5 text-[13px]">
-        </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label class="facet-eyebrow block mb-2">Subreddits (comma-separated)</label>
-            <input id="cfgSubreddits" type="text" placeholder="Cebu, phclassifieds, Philippines" class="facet-input w-full h-[38px] px-3.5 text-[13px]">
+            <label class="text-[10.5px] font-semibold uppercase tracking-wider text-white/50 block mb-2">Scanner Mode</label>
+            <select id="cfgSearchMode" class="bento-input w-full h-10 px-3 text-[12.5px]">
+              <option value="auto" class="bg-[#131519]">Auto (Apify + Alt API Fallback)</option>
+              <option value="alternative_only" class="bg-[#131519]">Save Apify Credits (Alt / Free APIs Only)</option>
+              <option value="apify_only" class="bg-[#131519]">Apify Deep Scraper Only</option>
+            </select>
           </div>
           <div>
-            <label class="facet-eyebrow block mb-2">Instagram Hashtags (comma-separated)</label>
-            <input id="cfgIgHashtags" type="text" placeholder="cebuhiring, cebujobs, trabahocebu" class="facet-input w-full h-[38px] px-3.5 text-[13px]">
+            <label class="text-[10.5px] font-semibold uppercase tracking-wider text-white/50 block mb-2">Apify Cache Reuse Window</label>
+            <select id="cfgApifyCacheMinutes" class="bento-input w-full h-10 px-3 text-[12.5px]">
+              <option value="10" class="bg-[#131519]">10 minutes (Default)</option>
+              <option value="30" class="bg-[#131519]">30 minutes (Save Credits)</option>
+              <option value="60" class="bg-[#131519]">1 hour (High Savings)</option>
+              <option value="360" class="bg-[#131519]">6 hours (Max Cache)</option>
+            </select>
           </div>
         </div>
 
         <div>
-          <label class="facet-eyebrow block mb-2">Public Facebook Group URLs (one per line)</label>
-          <textarea id="cfgFbGroups" rows="3" placeholder="https://www.facebook.com/groups/cebujobhiring" class="facet-input w-full p-3.5 text-[13px] leading-relaxed"></textarea>
+          <label class="text-[10.5px] font-semibold uppercase tracking-wider text-white/50 block mb-2">
+            Apify API Token &middot; <a href="https://console.apify.com/settings/integrations" target="_blank" class="text-[#c8ff2e] hover:underline">Get Token</a>
+          </label>
+          <input id="cfgApifyToken" type="password" placeholder="apify_api_..." class="bento-input w-full h-10 px-3.5 text-[13px]">
+        </div>
+
+        <!-- GEMINI AI LEAD ALIGNMENT FILTER & CRM AUTO-ARCHIVE -->
+        <div class="pt-4 border-t border-white/[0.06] space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <span class="text-[10.5px] font-semibold uppercase tracking-wider text-[#b9abff]">Gemini AI Lead Alignment Filter (Separates Rants Into "AI Filtered")</span>
+            <span class="text-[11px] text-white/40">Reads English, Bisaya &amp; Tagalog context</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="text-[10.5px] font-semibold uppercase tracking-wider text-white/50 block mb-2">
+                Gemini API Key (Free Tier) &middot; <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-[#e5fb80] hover:underline">Get Key</a>
+              </label>
+              <input id="cfgGeminiKey" type="password" placeholder="AQ... or AIzaSy..." class="bento-input w-full h-10 px-3.5 text-[13px]">
+            </div>
+            <div>
+              <label class="text-[10.5px] font-semibold uppercase tracking-wider text-white/50 block mb-2">Gemini Model</label>
+              <select id="cfgGeminiModel" class="bento-input w-full h-10 px-3 text-[12.5px]">
+                <option value="gemini-3.5-flash-lite" class="bg-[#131519]">gemini-3.5-flash-lite (Fastest / Free Tier)</option>
+                <option value="gemini-4-hydrogen" class="bg-[#131519]">gemini-4-hydrogen (Balanced Reasoning)</option>
+                <option value="gemini-4-argon" class="bg-[#131519]">gemini-4-argon (Deep Reasoning)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <label class="bento-input h-10 px-3.5 flex items-center justify-between cursor-pointer">
+              <span class="text-[12.5px] text-white/85 font-medium">Auto-Route Rants to "AI Filtered" Page</span>
+              <input id="cfgAiFilterEnabled" type="checkbox" checked class="accent-[#b9abff] w-4 h-4">
+            </label>
+            <div>
+              <select id="cfgAutoArchiveDays" class="bento-input w-full h-10 px-3 text-[12.5px]" title="Auto-Archive Old Uncontacted Leads">
+                <option value="14" class="bg-[#131519]">Auto-Archive New Leads Older Than 14 Days</option>
+                <option value="7" class="bg-[#131519]">Auto-Archive New Leads Older Than 7 Days</option>
+                <option value="30" class="bg-[#131519]">Auto-Archive New Leads Older Than 30 Days</option>
+                <option value="0" class="bg-[#131519]">Disable Auto-Archive</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-4 border-t border-white/[0.06] space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <span class="text-[10.5px] font-semibold uppercase tracking-wider text-white/75">Alternative Free-Tier Search APIs</span>
+            <span class="text-[11px] text-white/40">Priority: Custom &rarr; Serper &rarr; Tavily &rarr; Brave &rarr; Free Web</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="text-[10.5px] font-semibold uppercase tracking-wider text-white/50 block mb-2">
+                Serper.dev Key &middot; <a href="https://serper.dev" target="_blank" class="text-[#c8ff2e] hover:underline">Get Key</a>
+              </label>
+              <input id="cfgSerperKey" type="password" placeholder="Serper X-API-KEY..." class="bento-input w-full h-10 px-3.5 text-[13px]">
+            </div>
+            <div>
+              <label class="text-[10.5px] font-semibold uppercase tracking-wider text-white/50 block mb-2">
+                Tavily Key &middot; <a href="https://tavily.com" target="_blank" class="text-[#c8ff2e] hover:underline">Get Key</a>
+              </label>
+              <input id="cfgTavilyKey" type="password" placeholder="tvly-..." class="bento-input w-full h-10 px-3.5 text-[13px]">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="text-[10.5px] font-semibold uppercase tracking-wider text-white/50 block mb-2">
+                Brave Search Key &middot; <a href="https://brave.com/search/api/" target="_blank" class="text-[#c8ff2e] hover:underline">Get Key</a>
+              </label>
+              <input id="cfgBraveKey" type="password" placeholder="BSA..." class="bento-input w-full h-10 px-3.5 text-[13px]">
+            </div>
+            <div>
+              <label class="text-[10.5px] font-semibold uppercase tracking-wider text-white/50 block mb-2">Custom JSON API Key (Optional)</label>
+              <input id="cfgCustomApiKey" type="password" placeholder="Bearer / X-API-Key..." class="bento-input w-full h-10 px-3.5 text-[13px]">
+            </div>
+          </div>
+
+          <div>
+            <label class="text-[10.5px] font-semibold uppercase tracking-wider text-white/50 block mb-2">Custom Alternative API Endpoint URL</label>
+            <input id="cfgCustomApiUrl" type="url" placeholder="http://localhost:8787/search or https://your-api.example/search" class="bento-input w-full h-10 px-3.5 text-[13px]">
+            <p class="text-[11px] text-white/40 mt-1.5">
+              Accepts <code class="mono-tag text-white/70">POST {query, platform, location, max_age_days}</code> and expects JSON <code class="mono-tag text-white/70">{"results": [{"url", "title", "snippet", "author", "posted_at"}]}</code>.
+            </p>
+          </div>
+        </div>
+
+        <div class="pt-4 border-t border-white/[0.06] grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="text-[10.5px] font-semibold uppercase tracking-wider text-white/50 block mb-2">Subreddits (comma-separated)</label>
+            <input id="cfgSubreddits" type="text" placeholder="Cebu, phclassifieds, Philippines" class="bento-input w-full h-10 px-3.5 text-[13px]">
+          </div>
+          <div>
+            <label class="text-[10.5px] font-semibold uppercase tracking-wider text-white/50 block mb-2">Instagram Hashtags (comma-separated)</label>
+            <input id="cfgIgHashtags" type="text" placeholder="cebuhiring, cebujobs, trabahocebu" class="bento-input w-full h-10 px-3.5 text-[13px]">
+          </div>
         </div>
 
         <div>
-          <label class="facet-eyebrow block mb-1.5">Search Queries / Keywords (Facebook, TikTok, Reddit &amp; All Platforms — one per line)</label>
-          <p class="facet-meta mb-2">Used when scanning Facebook Groups/Pages, TikTok, Reddit, and Web (e.g. job roles or buy &amp; sell items like <code class="mono-tag text-white/65">gpu for sale</code>, <code class="mono-tag text-white/65">ram</code>, <code class="mono-tag text-white/65">pc set</code>, <code class="mono-tag text-white/65">cebu hiring</code>).</p>
-          <textarea id="cfgTiktokQueries" rows="4" placeholder="gpu for sale&#10;ram&#10;pc set&#10;system unit&#10;laptop&#10;cebu hiring" class="facet-input w-full p-3.5 text-[13px] leading-relaxed"></textarea>
+          <label class="text-[10.5px] font-semibold uppercase tracking-wider text-white/50 block mb-2">Public Facebook Group URLs (one per line)</label>
+          <textarea id="cfgFbGroups" rows="3" placeholder="https://www.facebook.com/groups/cebujobhiring" class="bento-input w-full p-3.5 text-[13px] leading-relaxed"></textarea>
+        </div>
+
+        <div>
+          <label class="text-[10.5px] font-semibold uppercase tracking-wider text-white/50 block mb-1.5">Search Queries / Keywords (one per line)</label>
+          <textarea id="cfgTiktokQueries" rows="4" placeholder="gpu for sale&#10;ram&#10;pc set&#10;cebu hiring" class="bento-input w-full p-3.5 text-[13px] leading-relaxed"></textarea>
+        </div>
+
+        <!-- BACKGROUND AUTO-SCAN & INSTANT ALERTS -->
+        <div class="pt-4 border-t border-white/[0.06] space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <span class="text-[10.5px] font-semibold uppercase tracking-wider text-[#e5fb80]">Background Auto-Scan &amp; Instant Alerts</span>
+            <button type="button" id="btnTestAlert" onclick="triggerTestAlert()" class="btn-dark-pill !h-7 px-3 text-[11px] flex items-center gap-1.5">
+              <i class="fa-regular fa-bell text-[#e5fb80]"></i>
+              <span>Test Alert &amp; Sound</span>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="text-[10.5px] font-semibold uppercase tracking-wider text-white/50 block mb-2">Background Auto-Scan Interval ($0 Credit-Safe)</label>
+              <select id="cfgAutoScanMinutes" class="bento-input w-full h-10 px-3 text-[12.5px]">
+                <option value="0" class="bg-[#131519]">Off (Manual Scans Only)</option>
+                <option value="5" class="bg-[#131519]">Every 5 minutes</option>
+                <option value="10" class="bg-[#131519]">Every 10 minutes (Recommended)</option>
+                <option value="15" class="bg-[#131519]">Every 15 minutes</option>
+                <option value="30" class="bg-[#131519]">Every 30 minutes</option>
+                <option value="60" class="bg-[#131519]">Every 60 minutes</option>
+              </select>
+            </div>
+            <div class="flex flex-col justify-end">
+              <label class="bento-input h-10 px-3.5 flex items-center justify-between cursor-pointer">
+                <span class="text-[12.5px] text-white/85 font-medium">Desktop &amp; Chime Alerts</span>
+                <input id="cfgDesktopNotify" type="checkbox" checked class="accent-[#e5fb80] w-4 h-4">
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label class="text-[10.5px] font-semibold uppercase tracking-wider text-white/50 block mb-2">Discord / Slack / Webhook Alert URL (Optional)</label>
+            <input id="cfgWebhookUrl" type="url" placeholder="https://discord.com/api/webhooks/... or Slack/Telegram webhook" class="bento-input w-full h-10 px-3.5 text-[13px]">
+          </div>
+        </div>
+
+        <!-- NOISE & SPAM BLOCKER -->
+        <div class="pt-4 border-t border-white/[0.06] space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <span class="text-[10.5px] font-semibold uppercase tracking-wider text-[#f59e0b]">Noise &amp; Spam Blocker (Clean Feed Filter)</span>
+            <span class="text-[11px] text-white/40">Hides MLM, casino, and muted authors automatically</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="text-[10.5px] font-semibold uppercase tracking-wider text-white/50 block mb-2">Blocked / Negative Keywords (comma-separated)</label>
+              <textarea id="cfgBlockedKeywords" rows="3" placeholder="networking, frontrow, paluwagan, online casino, scatter, task scam" class="bento-input w-full p-3 text-[12.5px] leading-relaxed"></textarea>
+            </div>
+            <div>
+              <label class="text-[10.5px] font-semibold uppercase tracking-wider text-white/50 block mb-2">Muted Authors / Usernames (comma-separated)</label>
+              <textarea id="cfgBlockedAuthors" rows="3" placeholder="spam_user1, @scammer_handle" class="bento-input w-full p-3 text-[12.5px] leading-relaxed"></textarea>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Sticky Glass Footer -->
-      <div class="px-6 py-3.5 border-t border-white/[0.06] flex justify-end gap-2.5 shrink-0">
-        <button onclick="closeModal('settingsModal')" class="btn-facet-ghost h-[38px] px-4 rounded-[6px] text-xs">Cancel</button>
-        <button onclick="saveSettings()" class="btn-facet-primary px-5">Save Settings</button>
+      <div class="px-6 py-4 border-t border-white/[0.06] flex justify-end gap-2.5 shrink-0 bg-[#0f1115]">
+        <button onclick="closeModal('settingsModal')" class="btn-dark-pill !h-9 px-4 text-xs">Cancel</button>
+        <button onclick="saveSettings()" class="btn-lime !h-9 px-5 text-xs">Save Settings</button>
       </div>
     </div>
   </div>
 
   <!-- ADD MANUAL LEAD MODAL -->
   <div id="addModal" class="modal-backdrop fixed inset-0 z-50 hidden flex items-center justify-center p-4">
-    <div class="facet-slab max-w-md w-full overflow-hidden">
+    <div class="bento-card max-w-md w-full overflow-hidden">
       <div class="px-6 py-4 border-b border-white/[0.06] flex justify-between items-center">
         <div>
-          <span class="facet-eyebrow block">Manual Entry</span>
-          <h3 class="text-[16px] facet-title mt-0.5">Log Manual Lead</h3>
+          <span class="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[#c8ff2e]">Manual Entry</span>
+          <h3 class="font-display text-base font-bold text-white mt-0.5">Log Manual Lead</h3>
         </div>
-        <button onclick="closeModal('addModal')" class="w-7 h-7 rounded-[6px] btn-facet-ghost flex items-center justify-center text-sm">&times;</button>
+        <button onclick="closeModal('addModal')" class="w-8 h-8 rounded-full btn-dark-pill flex items-center justify-center text-sm">&times;</button>
       </div>
 
       <div class="p-6 space-y-4">
         <div>
-          <label class="facet-eyebrow block mb-1.5">Post Title or Thread Context *</label>
-          <input id="addTitle" type="text" placeholder="e.g. Nangita ug trabaho as dishwasher sa Cebu" class="facet-input w-full h-[38px] px-3.5 text-[13px]">
+          <label class="text-[10.5px] font-semibold uppercase tracking-wider text-white/50 block mb-1.5">Post Title or Context *</label>
+          <input id="addTitle" type="text" placeholder="e.g. Nangita ug trabaho as dishwasher sa Cebu" class="bento-input w-full h-10 px-3.5 text-[13px]">
         </div>
         <div>
-          <label class="facet-eyebrow block mb-1.5">Exact Comment or Post Text</label>
-          <textarea id="addContent" rows="2" placeholder="e.g. Interested po! Willing to start ASAP." class="facet-input w-full p-3.5 text-[13px]"></textarea>
+          <label class="text-[10.5px] font-semibold uppercase tracking-wider text-white/50 block mb-1.5">Exact Comment or Post Text</label>
+          <textarea id="addContent" rows="2" placeholder="e.g. Interested po! Willing to start ASAP." class="bento-input w-full p-3.5 text-[13px]"></textarea>
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="facet-eyebrow block mb-1.5">Platform</label>
-            <select id="addSource" class="facet-input w-full h-[38px] px-3 text-[12.5px]">
-              <option value="Facebook Group" class="bg-[#111115]">Facebook Group</option>
-              <option value="Facebook Comment" class="bg-[#111115]">Facebook Comment</option>
-              <option value="TikTok Comment" class="bg-[#111115]">TikTok Comment</option>
-              <option value="Instagram Comment" class="bg-[#111115]">Instagram Comment</option>
-              <option value="Reddit Comment (r/Cebu)" class="bg-[#111115]">Reddit Comment (r/Cebu)</option>
+            <label class="text-[10.5px] font-semibold uppercase tracking-wider text-white/50 block mb-1.5">Platform</label>
+            <select id="addSource" class="bento-input w-full h-10 px-3 text-[12.5px]">
+              <option value="Facebook Group" class="bg-[#131519]">Facebook Group</option>
+              <option value="Facebook Comment" class="bg-[#131519]">Facebook Comment</option>
+              <option value="TikTok Comment" class="bg-[#131519]">TikTok Comment</option>
+              <option value="Instagram Comment" class="bg-[#131519]">Instagram Comment</option>
+              <option value="Reddit Comment (r/Cebu)" class="bg-[#131519]">Reddit Comment (r/Cebu)</option>
             </select>
           </div>
           <div>
-            <label class="facet-eyebrow block mb-1.5">Lead Type</label>
-            <select id="addIntent" class="facet-input w-full h-[38px] px-3 text-[12.5px]">
-              <option value="seeker" class="bg-[#111115]">Jobseeker</option>
-              <option value="employer" class="bg-[#111115]">Employer Hiring</option>
-              <option value="seller" class="bg-[#111115]">Seller (For Sale)</option>
-              <option value="buyer" class="bg-[#111115]">Buyer (Looking For)</option>
+            <label class="text-[10.5px] font-semibold uppercase tracking-wider text-white/50 block mb-1.5">Lead Type</label>
+            <select id="addIntent" class="bento-input w-full h-10 px-3 text-[12.5px]">
+              <option value="seeker" class="bg-[#131519]">Jobseeker</option>
+              <option value="employer" class="bg-[#131519]">Employer Hiring</option>
+              <option value="seller" class="bg-[#131519]">Seller (For Sale)</option>
+              <option value="buyer" class="bg-[#131519]">Buyer (Looking For)</option>
             </select>
           </div>
         </div>
         <div>
-          <label class="facet-eyebrow block mb-1.5">Permalink URL *</label>
-          <input id="addUrl" type="url" placeholder="https://..." class="facet-input w-full h-[38px] px-3.5 text-[13px]">
+          <label class="text-[10.5px] font-semibold uppercase tracking-wider text-white/50 block mb-1.5">Permalink URL *</label>
+          <input id="addUrl" type="url" placeholder="https://..." class="bento-input w-full h-10 px-3.5 text-[13px]">
         </div>
         <div>
-          <label class="facet-eyebrow block mb-1.5">Author / Username</label>
-          <input id="addAuthor" type="text" placeholder="e.g. u/username or @handle" class="facet-input w-full h-[38px] px-3.5 text-[13px]">
+          <label class="text-[10.5px] font-semibold uppercase tracking-wider text-white/50 block mb-1.5">Author / Username</label>
+          <input id="addAuthor" type="text" placeholder="e.g. u/username or @handle" class="bento-input w-full h-10 px-3.5 text-[13px]">
         </div>
       </div>
 
-      <div class="px-6 py-3.5 border-t border-white/[0.06] flex justify-end gap-2.5">
-        <button onclick="closeModal('addModal')" class="btn-facet-ghost h-[38px] px-4 rounded-[6px] text-xs">Cancel</button>
-        <button onclick="submitManualLead()" class="btn-facet-primary px-5">Save Lead</button>
+      <div class="px-6 py-4 border-t border-white/[0.06] flex justify-end gap-2.5 bg-[#0f1115]">
+        <button onclick="closeModal('addModal')" class="btn-dark-pill !h-9 px-4 text-xs">Cancel</button>
+        <button onclick="submitManualLead()" class="btn-lime !h-9 px-5 text-xs">Save Lead</button>
       </div>
+    </div>
+  </div>
+
+  <!-- LIVE TOAST ALERT BANNER (Bottom-Right) -->
+  <div id="liveAlertToast" class="fixed bottom-5 right-5 z-50 hidden max-w-sm w-full bento-card p-4 border border-[#e5fb80]/40 shadow-2xl">
+    <div class="flex items-start justify-between gap-3">
+      <div class="flex items-start gap-3 min-w-0">
+        <div class="w-9 h-9 rounded-xl bg-[#e5fb80]/15 border border-[#e5fb80]/35 flex items-center justify-center text-[#e5fb80] shrink-0 mt-0.5">
+          <i class="fa-solid fa-bell text-sm animate-bounce"></i>
+        </div>
+        <div class="min-w-0">
+          <span class="text-[10px] font-bold uppercase tracking-[0.14em] text-[#e5fb80] block">Live Signal Alert</span>
+          <h4 id="toastAlertTitle" class="font-display text-sm font-bold text-white mt-0.5 truncate">New Leads Captured!</h4>
+          <p id="toastAlertSub" class="text-xs text-white/60 mt-1 line-clamp-2"></p>
+        </div>
+      </div>
+      <button onclick="hideLiveToast()" class="text-white/40 hover:text-white text-sm px-1">&times;</button>
+    </div>
+    <div class="mt-3 pt-2.5 border-t border-white/[0.06] flex justify-end gap-2">
+      <button onclick="hideLiveToast(); setFilter('new')" class="btn-lime !h-7 px-3 text-[11px]">View New Leads</button>
     </div>
   </div>
 
@@ -862,11 +1505,27 @@
     let currentConfig = {};
     let pollTimer = null;
     let activeSearchController = null;
+    let hotOnlyFilter = false;
+    let autoScanIntervalMins = 0;
+    let autoScanRemainingSec = 0;
+    let lastNotifiedScanStart = null;
+    const DEFAULT_BLOCKED_WORDS = [
+      'networking', 'frontrow', 'paluwagan', 'online casino', 'scatter',
+      'crypto investment', 'forex signal', 'binary option', 'task scam'
+    ];
 
-    // Track pointer coordinates (--mx, --my) across slabs & cards for Facet lavender emission + rim iridescence
+    // Keyboard shortcut Cmd+K / Ctrl+K for quick search focus
+    document.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        focusSearch();
+      }
+    });
+
+    // Pointer-tracked studio glow & specular rim iridescence (from Facet Smoked-Glass design)
     if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       document.addEventListener('pointermove', (e) => {
-        const slab = e.target.closest('.facet-slab, .card, .card-comment');
+        const slab = e.target.closest('.bento-card, .bento-card-lime, .card, .card-comment');
         if (!slab) return;
         const rect = slab.getBoundingClientRect();
         slab.style.setProperty('--mx', `${e.clientX - rect.left}px`);
@@ -874,12 +1533,75 @@
       }, { passive: true });
     }
 
+    function applySidebarState(expanded) {
+      const sb = document.getElementById('leftSidebar');
+      const icon = document.getElementById('sidebarToggleIcon');
+      const text = document.getElementById('sidebarToggleText');
+      if (!sb) return;
+      sb.classList.toggle('is-expanded', expanded);
+      if (icon) icon.style.transform = expanded ? 'rotate(180deg)' : 'rotate(0deg)';
+      if (text) text.innerText = expanded ? 'Collapse Sidebar' : 'Expand Sidebar';
+    }
+
+    function toggleSidebar() {
+      const sb = document.getElementById('leftSidebar');
+      if (!sb) return;
+      const next = !sb.classList.contains('is-expanded');
+      applySidebarState(next);
+      try { localStorage.setItem('uls_sidebar_expanded', next ? '1' : '0'); } catch (e) {}
+    }
+
+    // Restore sidebar state (default collapsed, click to expand anytime)
+    try {
+      if (localStorage.getItem('uls_sidebar_expanded') === '1') {
+        applySidebarState(true);
+      }
+    } catch (e) {}
+
+    function focusSearch() {
+      const inp = document.getElementById('searchQuery');
+      if (inp) {
+        inp.focus();
+        inp.select();
+      }
+    }
+
+    function setTopNav(mode, btn) {
+      document.querySelectorAll('.top-pill').forEach(p => {
+        if (p !== document.getElementById('btnToggleStats')) p.classList.remove('active');
+      });
+      if (btn) btn.classList.add('active');
+      if (mode === 'overview') resetSearch();
+    }
+
+    function toggleBentoStats(btn) {
+      const row = document.getElementById('bentoStatsRow');
+      if (!row) return;
+      const isHidden = row.classList.toggle('hidden');
+      if (btn) btn.classList.toggle('active', !isHidden);
+    }
+
+    function railNavigate(target, btn) {
+      document.querySelectorAll('.rail-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+
+      if (target === 'contacted' || target === 'ai_filtered' || target === 'followup' || target === 'archived') {
+        setFilter(target);
+        return;
+      }
+      setFilter('all');
+      const intentSel = document.getElementById('searchIntent');
+      if (intentSel) {
+        if (target === 'all') intentSel.value = 'seeker,employer';
+        else intentSel.value = target;
+      }
+      loadLeads();
+    }
+
     function syncPlatformPills() {
       document.querySelectorAll('.platform-pill').forEach(label => {
         const cb = label.querySelector('input.plat-cb');
-        if (cb) {
-          label.classList.toggle('is-active', cb.checked);
-        }
+        if (cb) label.classList.toggle('is-active', cb.checked);
       });
     }
 
@@ -934,13 +1656,14 @@
         if (query) clearBtn.classList.remove('hidden');
         else clearBtn.classList.add('hidden');
 
+        const isAuditView = currentFilter === 'ai_filtered' || currentFilter === 'archived';
         const params = new URLSearchParams({
           status: currentFilter,
           q: query,
-          location: location,
+          location: isAuditView ? 'Any' : location,
           platforms: platforms,
           intents: intents,
-          max_age_days: getMaxAgeDays()
+          max_age_days: isAuditView || currentFilter === 'followup' ? 365 : getMaxAgeDays()
         });
 
         const res = await fetch(`/api/leads?${params.toString()}`);
@@ -970,7 +1693,7 @@
         btnSearch.classList.toggle('is-scanning', isScanning);
       }
       if (btnScan) btnScan.classList.toggle('is-scanning', isScanning);
-      if (icon) icon.className = isScanning ? "fa-solid fa-spinner fa-spin text-[11px]" : "fa-solid fa-bolt text-[11px]";
+      if (icon) icon.className = isScanning ? "fa-solid fa-spinner fa-spin text-xs" : "fa-solid fa-bolt text-xs";
       if (scanIcon) scanIcon.classList.toggle('fa-spin', isScanning);
       if (btnCancelSearch) btnCancelSearch.classList.toggle('hidden', !isScanning);
       if (btnCancelPanel) btnCancelPanel.classList.toggle('hidden', !isScanning);
@@ -986,12 +1709,12 @@
       if (panel) panel.classList.remove('hidden');
       if (grid) grid.innerHTML = '';
       if (text) {
-        text.innerHTML = `<span class="micro-dot bg-[#d4a359]"></span> <span class="text-[12px] text-white/75">${escapeHtml(message)}</span>`;
+        text.innerHTML = `<span class="micro-dot bg-[#ff9429]"></span> <span class="text-xs text-white/85">${escapeHtml(message)}</span>`;
       }
       if (row) {
-        row.classList.add('ring-1', 'ring-[#b9abff]/40', 'rounded-xl', 'p-1', '-m-1', 'transition');
+        row.classList.add('ring-1', 'ring-[#c8ff2e]/50', 'p-1.5', '-m-1.5');
         setTimeout(() => {
-          row.classList.remove('ring-1', 'ring-[#b9abff]/40', 'rounded-xl', 'p-1', '-m-1');
+          row.classList.remove('ring-1', 'ring-[#c8ff2e]/50', 'p-1.5', '-m-1.5');
         }, 1600);
       }
     }
@@ -1005,26 +1728,24 @@
       setScanningUiState(Boolean(scan.running));
 
       if (scan.running) {
-        text.innerHTML = `<span class="micro-dot bg-[#36d67e] animate-pulse"></span> <span class="text-[12px] text-white/75">Scanning live platforms&hellip; (<strong class="text-white font-medium">${scan.matched_total || 0}</strong> matched, <strong class="text-[#36d67e] font-medium">${scan.new_total || 0}</strong> new)</span>`;
+        text.innerHTML = `<span class="micro-dot bg-[#c8ff2e] animate-pulse"></span> <span class="text-xs text-white/80">Scanning live platforms&hellip; (<strong class="text-white">${scan.matched_total || 0}</strong> matched, <strong class="text-[#c8ff2e]">${scan.new_total || 0}</strong> new)</span>`;
       } else if (scan.cancelled) {
-        text.innerHTML = `<span class="micro-dot bg-rose-400"></span> <span class="text-[12px] text-white/70">Scan cancelled by user. <span class="text-white/45">&middot; ${scan.matched_total || 0} matched (${scan.new_total || 0} saved before cancel)</span></span>`;
+        text.innerHTML = `<span class="micro-dot bg-rose-400"></span> <span class="text-xs text-white/75">Scan cancelled &middot; <span class="text-white/50">${scan.matched_total || 0} matched (${scan.new_total || 0} saved)</span></span>`;
       } else {
-        text.innerHTML = `<span class="micro-dot bg-[#36d67e]"></span> <span class="text-[12px] text-white/65">Scan complete &middot; <strong class="text-white/90 font-medium">${scan.matched_total || 0}</strong> matched (<strong class="text-white/90 font-medium">${scan.new_total || 0}</strong> new leads saved)</span>`;
+        text.innerHTML = `<span class="micro-dot bg-[#c8ff2e]"></span> <span class="text-xs text-white/75">Scan complete &middot; <strong class="text-white">${scan.matched_total || 0}</strong> matched (<strong class="text-[#c8ff2e]">${scan.new_total || 0}</strong> new leads saved)</span>`;
       }
 
       grid.innerHTML = '';
       Object.entries(scan.adapters || {}).forEach(([key, a]) => {
         const dotColor = a.status === 'ok'
-          ? 'bg-[#36d67e]'
+          ? 'bg-[#c8ff2e]'
           : a.status === 'running' || a.status === 'queued'
-          ? 'bg-[#d4a359] animate-pulse'
-          : a.status === 'cancelled'
-          ? 'bg-rose-400/80'
+          ? 'bg-[#ff9429] animate-pulse'
           : 'bg-rose-400';
         const pill = document.createElement('div');
-        pill.className = 'glass-tag text-[11px] py-1 px-2.5';
+        pill.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#0d0e12] border border-white/[0.08] text-[11px]';
         pill.title = a.message || '';
-        pill.innerHTML = `<span class="micro-dot ${dotColor}"></span><span class="text-white/80 font-medium">${escapeHtml(a.label)}:</span> <span class="text-white/50">${escapeHtml(a.status)} (${a.matched || 0}/${a.fetched || 0})</span>`;
+        pill.innerHTML = `<span class="micro-dot ${dotColor}"></span><span class="text-white/85 font-medium">${escapeHtml(a.label)}:</span> <span class="text-white/50">${escapeHtml(a.status)} (${a.matched || 0}/${a.fetched || 0})</span>`;
         grid.appendChild(pill);
       });
     }
@@ -1055,9 +1776,7 @@
         return;
       }
 
-      if (activeSearchController) {
-        activeSearchController.abort();
-      }
+      if (activeSearchController) activeSearchController.abort();
       activeSearchController = new AbortController();
       const controller = activeSearchController;
 
@@ -1068,7 +1787,7 @@
       const grid = document.getElementById('adapterStatusGrid');
       panel.classList.remove('hidden');
       if (grid) grid.innerHTML = '';
-      statusText.innerHTML = `<span class="micro-dot bg-[#36d67e] animate-pulse"></span> <span class="text-[12px] text-white/75">Scanning live platforms (${platforms.join(', ')})&hellip;</span>`;
+      statusText.innerHTML = `<span class="micro-dot bg-[#c8ff2e] animate-pulse"></span> <span class="text-xs text-white/80">Scanning live platforms (${platforms.join(', ')})&hellip;</span>`;
 
       let isPolling = false;
       try {
@@ -1077,10 +1796,7 @@
           headers: { 'Content-Type': 'application/json' },
           signal: controller.signal,
           body: JSON.stringify({
-            query: query,
-            platforms: platforms,
-            intents: intents,
-            location: location,
+            query, platforms, intents, location,
             status: currentFilter,
             max_age_days: getMaxAgeDays(),
             wait_seconds: 2
@@ -1097,18 +1813,12 @@
           }
         }
       } catch (err) {
-        if (err && err.name === 'AbortError') {
-          return;
-        }
+        if (err && err.name === 'AbortError') return;
         console.error("Live search error", err);
         loadLeads();
       } finally {
-        if (activeSearchController === controller) {
-          activeSearchController = null;
-        }
-        if (!isPolling) {
-          setScanningUiState(false);
-        }
+        if (activeSearchController === controller) activeSearchController = null;
+        if (!isPolling) setScanningUiState(false);
       }
     }
 
@@ -1127,7 +1837,7 @@
       const statusText = document.getElementById('searchStatusText');
       if (panel) panel.classList.remove('hidden');
       if (statusText) {
-        statusText.innerHTML = `<span class="micro-dot bg-rose-400"></span> <span class="text-[12px] text-white/70">Cancelling active scan&hellip;</span>`;
+        statusText.innerHTML = `<span class="micro-dot bg-rose-400"></span> <span class="text-xs text-white/75">Cancelling active scan&hellip;</span>`;
       }
 
       try {
@@ -1156,6 +1866,7 @@
             clearInterval(pollTimer);
             pollTimer = null;
             setScanningUiState(false);
+            if (data.scan) notifyIfNewScanLeads(data.scan);
             await loadLeads();
           }
         } catch (e) {
@@ -1166,11 +1877,9 @@
 
     function quickSearch(keyword, intentMode) {
       document.getElementById('searchQuery').value = keyword;
-      if (intentMode) {
-        document.getElementById('searchIntent').value = intentMode;
-      } else {
-        autoSyncCategoryForQuery(keyword);
-      }
+      if (intentMode) document.getElementById('searchIntent').value = intentMode;
+      else autoSyncCategoryForQuery(keyword);
+
       if (getSelectedPlatforms().length === 0) {
         loadLeads();
         showPlatformSelectHint("Filtered saved leads. Select a platform pill above to also run a live scan.");
@@ -1190,22 +1899,102 @@
       document.getElementById('btnClearInput').classList.add('hidden');
       document.querySelectorAll('.plat-cb').forEach(cb => cb.checked = false);
       syncPlatformPills();
+      hotOnlyFilter = false;
+      const hotBtn = document.getElementById('btnHotOnly');
+      if (hotBtn) hotBtn.classList.remove('bg-[#f59e0b]/20', 'border-[#f59e0b]', 'text-white');
+      const sortEl = document.getElementById('sortOrder');
+      if (sortEl) sortEl.value = 'hot_first';
       document.getElementById('searchIntent').value = 'seeker,employer';
       document.getElementById('searchLocation').value = 'Cebu';
       document.getElementById('searchRecency').value = '7';
       document.getElementById('scanProgressPanel').classList.add('hidden');
+      document.querySelectorAll('.rail-btn').forEach(b => b.classList.remove('active'));
+      const railAll = document.getElementById('rail-all');
+      if (railAll) railAll.classList.add('active');
+      setFilter('all');
       updateLocationBadge();
     }
 
     function renderStats(stats) {
       if (!stats) return;
-      document.getElementById('statTotal').innerText = stats.total || 0;
-      document.getElementById('statSeekers').innerText = stats.seekers || 0;
-      document.getElementById('statEmployers').innerText = stats.employers || 0;
+      const total = stats.total || 0;
+      const seekers = stats.seekers || 0;
+      const employers = stats.employers || 0;
+      const market = stats.market || ((stats.buyers || 0) + (stats.sellers || 0));
+      const comments = stats.comments || 0;
+      const contacted = stats.contacted || 0;
+
+      document.getElementById('statTotal').innerText = total;
+      document.getElementById('statSeekers').innerText = seekers;
+      document.getElementById('statEmployers').innerText = employers;
       const mktEl = document.getElementById('statMarket');
-      if (mktEl) mktEl.innerText = stats.market || ((stats.buyers || 0) + (stats.sellers || 0));
-      document.getElementById('statComments').innerText = stats.comments || 0;
-      document.getElementById('statContacted').innerText = stats.contacted || 0;
+      if (mktEl) mktEl.innerText = market;
+      document.getElementById('statComments').innerText = comments;
+      document.getElementById('statContacted').innerText = contacted;
+
+      // Sync expandable sidebar counts & filter tab badges
+      const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+      setTxt('railCountTotal', total);
+      setTxt('railCountSeekers', seekers);
+      setTxt('railCountEmployers', employers);
+      setTxt('railCountMarket', market);
+      setTxt('railCountContacted', contacted);
+      setTxt('railCountAiFiltered', stats.ai_filtered || 0);
+      setTxt('tabCountFollowup', stats.followup || 0);
+      setTxt('tabCountAiFiltered', stats.ai_filtered || 0);
+
+      // Update Dark Outreach Card Segmented Progress & Rate Badge
+      const rate = total > 0 ? Math.round((contacted / total) * 100) : 0;
+      const badge = document.getElementById('contactRateBadge');
+      if (badge) badge.innerText = `${rate}%`;
+
+      const bar = document.getElementById('segmentedProgressBar');
+      if (bar) {
+        const filledCount = total > 0 ? Math.max(contacted > 0 ? 1 : 0, Math.round((contacted / total) * 10)) : 0;
+        bar.innerHTML = Array.from({ length: 10 }, (_, idx) => {
+          const filled = idx < filledCount;
+          return `<div class="rounded-md transition-all duration-300 ${filled ? 'bg-[#e5fb80] shadow-[0_0_10px_rgba(229,251,128,0.35)]' : 'bg-[#0b0c0f] border border-white/[0.07]'}"></div>`;
+        }).join('');
+      }
+    }
+
+    function renderChannelCapsuleChart(leads) {
+      const container = document.getElementById('channelCapsuleChart');
+      if (!container) return;
+
+      const counts = { Reddit: 0, Facebook: 0, TikTok: 0, Instagram: 0, Web: 0 };
+      (leads || []).forEach(l => {
+        const s = (l.source || l.platform || '').toLowerCase();
+        if (s.includes('reddit')) counts.Reddit++;
+        else if (s.includes('facebook')) counts.Facebook++;
+        else if (s.includes('tiktok')) counts.TikTok++;
+        else if (s.includes('instagram')) counts.Instagram++;
+        else counts.Web++;
+      });
+
+      const maxVal = Math.max(1, ...Object.values(counts));
+      const palette = {
+        Reddit: 'bg-[#e5fb80] text-[#090a0c]',
+        Facebook: 'bg-white text-[#090a0c]',
+        TikTok: 'bg-[#f59e0b] text-[#090a0c]',
+        Instagram: 'bg-[#b9abff] text-[#090a0c]',
+        Web: 'bg-sky-400 text-[#090a0c]'
+      };
+
+      container.innerHTML = Object.entries(counts).map(([label, val]) => {
+        const pct = val > 0 ? Math.max(28, Math.round((val / maxVal) * 76)) : 20;
+        const barStyle = val > 0 ? palette[label] : 'bg-white/[0.05] text-white/35 border border-dashed border-white/15';
+        return `
+          <div class="flex flex-col items-center justify-end h-full gap-1.5">
+            <div class="w-full max-w-[40px] h-[84px] rounded-full bg-[#0b0c0f] border border-white/[0.05] p-1 flex items-end justify-center">
+              <div class="w-full rounded-full flex items-start justify-center pt-1.5 text-[10px] font-bold tabular-nums capsule-bar ${barStyle}" style="height: ${pct}px;">
+                ${val}
+              </div>
+            </div>
+            <span class="text-[10.5px] text-white/45 font-medium truncate">${label}</span>
+          </div>
+        `;
+      }).join('');
     }
 
     function checkBackendVersion(adapters) {
@@ -1215,8 +2004,8 @@
         if (!banner) {
           banner = document.createElement('div');
           banner.id = 'versionNoticeBanner';
-          banner.className = 'mb-3.5 p-3.5 facet-slab text-white/75 text-xs flex items-center justify-between gap-3';
-          banner.innerHTML = '<div><span class="micro-dot bg-[#d4a359] inline-block mr-2"></span><strong class="text-white font-medium">Backend restart needed once:</strong> Press <code class="mono-tag">Ctrl+C</code> and run <code class="mono-tag">python3 app.py</code> once to activate the latest URL verifier &amp; hot-reloader.</div>';
+          banner.className = 'mb-3.5 p-3.5 bento-card text-white/80 text-xs flex items-center justify-between gap-3';
+          banner.innerHTML = '<div><span class="micro-dot bg-[#ff9429] inline-block mr-2"></span><strong class="text-white font-semibold">Backend restart needed once:</strong> Press <code class="mono-tag">Ctrl+C</code> and run <code class="mono-tag">python3 app.py</code> once to activate the latest URL verifier &amp; hot-reloader.</div>';
           const mainEl = document.querySelector('main');
           if (mainEl) mainEl.prepend(banner);
         }
@@ -1251,7 +2040,7 @@
           && (/(\/@[^/]+\/(video|photo)\/|\/(v|t)\/|\/tag\/|\/discover\/)/.test(path));
       }
       if (plat === 'instagram' || (l.source || '').toLowerCase().includes('instagram')) {
-        return (host === 'instagram.com' || host.endswith?.('.instagram.com') || host.includes('instagram.com'))
+        return (host === 'instagram.com' || host.endsWith?.('.instagram.com') || host.includes('instagram.com'))
           && (/(\/(p|reel|reels|tv)\/|\/explore\/tags\/)/.test(path));
       }
       if (plat === 'reddit' || (l.source || '').toLowerCase().includes('reddit')) {
@@ -1260,11 +2049,190 @@
       return true;
     }
 
+    async function deleteLeadById(leadId) {
+      try {
+        await fetch('/api/lead/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: leadId })
+        });
+        loadLeads();
+      } catch (e) {
+        console.error('Delete lead error', e);
+      }
+    }
+
+    function getActiveBlockedKeywords() {
+      const s = (currentConfig && currentConfig.search_settings) || {};
+      const raw = s.blocked_keywords !== undefined ? s.blocked_keywords : currentConfig.blocked_keywords;
+      if (Array.isArray(raw)) return raw.map(w => String(w).trim().toLowerCase()).filter(Boolean);
+      if (typeof raw === 'string' && raw.trim()) return raw.split(/[\n,]/).map(w => w.trim().toLowerCase()).filter(Boolean);
+      return DEFAULT_BLOCKED_WORDS;
+    }
+
+    function getActiveBlockedAuthors() {
+      const s = (currentConfig && currentConfig.search_settings) || {};
+      const raw = s.blocked_authors || currentConfig.blocked_authors || [];
+      const arr = Array.isArray(raw) ? raw : String(raw).split(/[\n,]/);
+      return arr.map(a => String(a).trim().toLowerCase().replace(/^(@|u\/)/, '')).filter(Boolean);
+    }
+
+    function isNoisyLead(l) {
+      const authorNorm = String(l.author || '').trim().toLowerCase().replace(/^(@|u\/)/, '');
+      const blockedAuthors = getActiveBlockedAuthors();
+      if (authorNorm && blockedAuthors.some(ba => authorNorm === ba || authorNorm.includes(ba))) {
+        return true;
+      }
+      const hay = `${l.title || ''} ${l.content || ''}`.toLowerCase();
+      const blockedWords = getActiveBlockedKeywords();
+      return blockedWords.some(bw => bw && hay.includes(bw));
+    }
+
+    async function muteLeadAuthor(authorName) {
+      if (!authorName) return;
+      const clean = String(authorName).trim();
+      if (!currentConfig.search_settings) currentConfig.search_settings = {};
+      const existing = getActiveBlockedAuthors();
+      const norm = clean.toLowerCase().replace(/^(@|u\/)/, '');
+      if (!existing.includes(norm)) existing.push(norm);
+      currentConfig.search_settings.blocked_authors = existing;
+      await fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(currentConfig)
+      });
+      showLiveToast('Author Muted', `Hid all posts & comments from ${clean}. You can edit muted authors in Settings.`);
+      loadLeads();
+    }
+
+    function computeLeadPriority(l) {
+      let score = 0;
+      const reasons = [];
+      const text = `${l.title || ''} ${l.content || ''} ${l.matched_keyword || ''}`.toLowerCase();
+      const isComment = l.kind === 'comment' || (l.source || '').toLowerCase().includes('comment');
+      if (isComment) {
+        score += 2;
+        reasons.push('Comment');
+      }
+      if (/(\basap\b|\burgent\b|\burgently\b|\bimmediate\b|\bimmediately\b|\bwalk-in\b|\bwalk in\b|\bhiring today\b|\bneed work\b|\bneed a job\b|\bhow to apply\b|\bunsaon pag apply\b|\bpwede mo apply\b|\bpwede pa mo apply\b|\binterested po\b|\bnangita kog trabaho\b)/.test(text)) {
+        score += 3;
+        reasons.push('High Intent');
+      }
+      const tsStr = l.posted_at || l.found_at;
+      if (tsStr) {
+        const d = new Date(String(tsStr).replace(' ', 'T') + 'Z');
+        if (!isNaN(d)) {
+          const hrs = (Date.now() - d.getTime()) / 3600000;
+          if (hrs <= 3) {
+            score += 3;
+            reasons.push('Fresh <3h');
+          } else if (hrs <= 12) {
+            score += 1;
+          }
+        }
+      }
+      return { score, isHot: score >= 4, label: reasons[0] || 'Hot Signal' };
+    }
+
+    function toggleHotOnly() {
+      hotOnlyFilter = !hotOnlyFilter;
+      const btn = document.getElementById('btnHotOnly');
+      if (btn) {
+        btn.classList.toggle('bg-[#f59e0b]/20', hotOnlyFilter);
+        btn.classList.toggle('border-[#f59e0b]', hotOnlyFilter);
+        btn.classList.toggle('text-white', hotOnlyFilter);
+      }
+      loadLeads();
+    }
+
+    function renderSparkline(leads) {
+      const sArea = document.getElementById('sparklineSeekersArea');
+      const sPath = document.getElementById('sparklineSeekersPath');
+      const ePath = document.getElementById('sparklineEmployersPath');
+      if (!sArea || !sPath || !ePath || !Array.isArray(leads) || leads.length === 0) return;
+
+      const now = Date.now();
+      const sBins = [0, 0, 0, 0, 0, 0, 0];
+      const eBins = [0, 0, 0, 0, 0, 0, 0];
+      leads.forEach(l => {
+        const d = new Date(String(l.posted_at || l.found_at || '').replace(' ', 'T') + 'Z');
+        const daysAgo = isNaN(d) ? 0 : Math.min(6, Math.max(0, Math.floor((now - d.getTime()) / 86400000)));
+        const slot = 6 - daysAgo;
+        if (l.intent === 'employer') eBins[slot]++;
+        else if (l.intent === 'seeker') sBins[slot]++;
+      });
+
+      const maxV = Math.max(2, ...sBins, ...eBins);
+      const xs = [0, 60, 120, 180, 240, 300, 360];
+      const toPts = (bins) => bins.map((v, i) => [xs[i], Math.round(38 - (v / maxV) * 30)]);
+      const toSmoothD = (pts) => pts.map((p, i) => (i === 0 ? `M${p[0]} ${p[1]}` : `L ${p[0]} ${p[1]}`)).join(' ');
+      const sPts = toPts(sBins);
+      const ePts = toPts(eBins);
+      const sLine = toSmoothD(sPts);
+      sPath.setAttribute('d', sLine);
+      sArea.setAttribute('d', `${sLine} L 360 44 L 0 44 Z`);
+      ePath.setAttribute('d', toSmoothD(ePts));
+    }
+
     function renderLeads(leads) {
       const container = document.getElementById('leadsContainer');
       const emptyState = document.getElementById('emptyState');
+      const countEl = document.getElementById('visibleLeadCount');
+      const hotCountEl = document.getElementById('hotLeadCount');
+      const noiseTextEl = document.getElementById('noiseGuardText');
       container.innerHTML = '';
-      leads = (leads || []).filter(isValidClientLead);
+
+      const isAuditTab = currentFilter === 'ai_filtered' || currentFilter === 'archived';
+      const validLeads = (leads || []).filter(isValidClientLead);
+      let blockedCount = 0;
+      let cleanLeads = validLeads.filter(l => {
+        if (!isAuditTab && isNoisyLead(l)) {
+          blockedCount++;
+          return false;
+        }
+        return true;
+      });
+
+      if (noiseTextEl) {
+        noiseTextEl.innerText = blockedCount > 0 ? `Noise Guard (${blockedCount} hidden)` : 'Noise Guard Active';
+      }
+
+      // Compute priority & hot status for each lead
+      cleanLeads = cleanLeads.map(l => ({ ...l, _prio: computeLeadPriority(l) }));
+      const totalHot = cleanLeads.filter(l => l._prio.isHot).length;
+      if (hotCountEl) hotCountEl.innerText = totalHot;
+
+      renderChannelCapsuleChart(cleanLeads);
+      renderSparkline(cleanLeads);
+
+      if (hotOnlyFilter && !isAuditTab) {
+        cleanLeads = cleanLeads.filter(l => l._prio.isHot);
+      }
+
+      // Apply sort order
+      const sortMode = (document.getElementById('sortOrder') || {}).value || 'hot_first';
+      const activeQuery = (document.getElementById('searchQuery') || {}).value?.trim().toLowerCase() || '';
+      cleanLeads.sort((a, b) => {
+        const tsA = new Date(String(a.posted_at || a.found_at || '').replace(' ', 'T') + 'Z').getTime() || 0;
+        const tsB = new Date(String(b.posted_at || b.found_at || '').replace(' ', 'T') + 'Z').getTime() || 0;
+        if (sortMode === 'newest') return tsB - tsA;
+        if (sortMode === 'comments_first') {
+          const cA = a.kind === 'comment' ? 1 : 0;
+          const cB = b.kind === 'comment' ? 1 : 0;
+          if (cB !== cA) return cB - cA;
+          return tsB - tsA;
+        }
+        if (sortMode === 'keyword_match' && activeQuery) {
+          const mA = `${a.title || ''} ${a.content || ''}`.toLowerCase().includes(activeQuery) ? 1 : 0;
+          const mB = `${b.title || ''} ${b.content || ''}`.toLowerCase().includes(activeQuery) ? 1 : 0;
+          if (mB !== mA) return mB - mA;
+        }
+        if (b._prio.score !== a._prio.score) return b._prio.score - a._prio.score;
+        return tsB - tsA;
+      });
+
+      leads = cleanLeads;
+      if (countEl) countEl.innerText = `Showing ${leads.length} lead${leads.length === 1 ? '' : 's'}`;
 
       if (!leads || leads.length === 0) {
         emptyState.classList.remove('hidden');
@@ -1273,16 +2241,16 @@
         const emptySub = emptyState.querySelector('p');
         if (totalStored > 0) {
           emptyTitle.innerText = `No leads match this exact filter (${totalStored} total leads stored)`;
-          emptySub.innerHTML = `Click <button onclick="resetSearch()" class="underline text-white/85 hover:text-white font-medium">Reset Filters</button> to view all ${totalStored} saved leads.`;
+          emptySub.innerHTML = `Click <button onclick="resetSearch()" class="underline text-[#e5fb80] hover:text-white font-medium">Reset Filters</button> to view all ${totalStored} saved leads.`;
         } else {
           emptyTitle.innerText = 'No leads stored for the current filters yet';
-          emptySub.innerHTML = 'Click <strong class="text-white/80 font-medium">Scan &amp; Search</strong> above to run a live scan across Reddit Posts, Reddit Comment Trees, Facebook, TikTok, Instagram, and Web Feeds.';
+          emptySub.innerHTML = 'Select at least one platform above and click <strong class="text-white font-medium">Scan &amp; Search</strong> to pull live leads across Reddit, Comment Trees, Facebook, TikTok, Instagram, and Web Feeds.';
         }
         return;
       }
       emptyState.classList.add('hidden');
 
-      leads.forEach(l => {
+      leads.forEach((l, idx) => {
         const isNew = l.status === 'new';
         const isComment = l.kind === 'comment' || (l.source || '').toLowerCase().includes('comment');
         const srcLower = (l.source || '').toLowerCase();
@@ -1294,77 +2262,124 @@
           : 'fa-solid fa-globe';
 
         const intentBadge = l.intent === 'employer'
-          ? '<span class="text-[11px] px-2.5 py-0.5 rounded-full bg-amber-400/[0.11] text-amber-200/90 border border-amber-400/25 font-medium shrink-0">Employer Hiring</span>'
+          ? '<span class="text-[11px] px-2.5 py-0.5 rounded-full bg-[#f59e0b]/15 text-[#fbd38d] border border-[#f59e0b]/30 font-medium shrink-0">Employer Hiring</span>'
           : l.intent === 'seller'
-          ? '<span class="text-[11px] px-2.5 py-0.5 rounded-full bg-sky-400/[0.11] text-sky-200/90 border border-sky-400/25 font-medium shrink-0">Seller &middot; For Sale</span>'
+          ? '<span class="text-[11px] px-2.5 py-0.5 rounded-full bg-sky-400/15 text-sky-300 border border-sky-400/30 font-medium shrink-0">Seller &middot; For Sale</span>'
           : l.intent === 'buyer'
-          ? '<span class="text-[11px] px-2.5 py-0.5 rounded-full bg-cyan-400/[0.11] text-cyan-200/90 border border-cyan-400/25 font-medium shrink-0">Buyer &middot; Looking For</span>'
-          : '<span class="text-[11px] px-2.5 py-0.5 rounded-full bg-[#36d67e]/[0.11] text-[#36d67e] border border-[#36d67e]/25 font-medium shrink-0">Jobseeker</span>';
+          ? '<span class="text-[11px] px-2.5 py-0.5 rounded-full bg-cyan-400/15 text-cyan-200 border border-cyan-400/30 font-medium shrink-0">Buyer &middot; Looking For</span>'
+          : '<span class="text-[11px] px-2.5 py-0.5 rounded-full bg-[#e5fb80]/14 text-[#ecfc94] border border-[#e5fb80]/30 font-medium shrink-0">Jobseeker</span>';
 
-        const statusBadge = isNew
-          ? '<span class="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-0.5 rounded-full bg-[#36d67e]/10 text-[#36d67e] border border-[#36d67e]/25 font-medium shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-[#36d67e]"></span>New</span>'
-          : '<span class="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-0.5 rounded-full bg-[#b9abff]/10 text-[#b9abff] border border-[#b9abff]/25 font-medium shrink-0">Contacted</span>';
+        const hotBadge = l._prio && l._prio.isHot
+          ? `<span class="inline-flex items-center gap-1 text-[10.5px] px-2 py-0.5 rounded-full bg-[#f59e0b]/18 text-[#fbd38d] border border-[#f59e0b]/35 font-semibold shrink-0"><i class="fa-solid fa-fire text-[#f59e0b] text-[9px]"></i>${escapeHtml(l._prio.label)}</span>`
+          : '';
+
+        const statusVal = l.status || 'new';
+        const statusClass = `st-${statusVal}`;
+
+        const statusBadge = `
+          <select onchange="changeLeadStatus(${l.id}, this.value)" title="Update CRM pipeline stage" class="status-pill-select focus:outline-none ${statusClass}">
+            <option value="new" class="bg-[#131519] text-white" ${statusVal === 'new' ? 'selected' : ''}>New</option>
+            <option value="contacted" class="bg-[#131519] text-white" ${statusVal === 'contacted' ? 'selected' : ''}>Contacted</option>
+            <option value="followup" class="bg-[#131519] text-white" ${statusVal === 'followup' ? 'selected' : ''}>Follow-Up</option>
+            <option value="closed" class="bg-[#131519] text-white" ${statusVal === 'closed' ? 'selected' : ''}>Closed / Hired</option>
+            <option value="archived" class="bg-[#131519] text-white" ${statusVal === 'archived' ? 'selected' : ''}>Archived</option>
+            <option value="ai_filtered" class="bg-[#131519] text-white" ${statusVal === 'ai_filtered' ? 'selected' : ''}>AI Filtered</option>
+          </select>
+        `;
+
+        const aiReasonBanner = (statusVal === 'ai_filtered' || l.ai_verdict === 'filtered')
+          ? `<div class="mt-3 p-3 rounded-2xl bg-rose-500/10 border border-rose-400/30 flex items-start justify-between gap-2.5 text-xs">
+               <div class="text-rose-200/90 leading-relaxed">
+                 <span class="font-semibold text-rose-300 block mb-0.5"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>AI Filtered Out (Misaligned / Rant)</span>
+                 ${escapeHtml(l.ai_reason || 'Post matched keyword but context appears to be a rant or non-actionable post.')}
+               </div>
+               <button onclick="changeLeadStatus(${l.id}, 'new')" class="shrink-0 h-7 px-2.5 rounded-full bg-white/10 hover:bg-[#e5fb80] text-white hover:text-[#090a0c] text-[11px] font-semibold transition">
+                 Approve Lead
+               </button>
+             </div>`
+          : (l.ai_reason && String(l.ai_reason).startsWith('Gemini AI:')
+             ? `<div class="mt-2.5 text-[11px] text-[#d6ceff]/80 flex items-center gap-1.5"><i class="fa-solid fa-wand-magic-sparkles text-[#b9abff] text-[10px]"></i><span class="truncate">${escapeHtml(l.ai_reason)}</span></div>`
+             : '');
 
         const sourceBadge = isComment
-          ? `<span class="text-[11px] px-2.5 py-0.5 rounded-full bg-[#b9abff]/[0.11] text-[#d6ceff] font-medium border border-[#b9abff]/25 inline-flex items-center gap-1.5"><i class="${platIcon} text-[10px]"></i>${escapeHtml(l.source)}</span>`
-          : `<span class="text-[11px] px-2.5 py-0.5 rounded-full bg-white/[0.05] text-white/80 font-medium border border-white/[0.09] inline-flex items-center gap-1.5"><i class="${platIcon} text-[10px] text-white/60"></i>${escapeHtml(l.source)}</span>`;
+          ? `<span class="text-[11px] px-2.5 py-0.5 rounded-full bg-[#b9abff]/12 text-[#d6ceff] font-medium border border-[#b9abff]/25 inline-flex items-center gap-1.5"><i class="${platIcon} text-[10px]"></i>${escapeHtml(l.source)}</span>`
+          : `<span class="text-[11px] px-2.5 py-0.5 rounded-full bg-white/[0.05] text-white/85 font-medium border border-white/[0.09] inline-flex items-center gap-1.5"><i class="${platIcon} text-[10px] text-white/65"></i>${escapeHtml(l.source)}</span>`;
 
         const ago = timeAgo(l.posted_at || l.found_at);
         const locTimeMeta = `<span class="text-[11.5px] text-white/40 font-normal">${escapeHtml(l.location || 'Cebu')}${ago ? ` &middot; ${ago}` : ''}</span>`;
 
         const kwBadge = l.matched_keyword
-          ? `<span class="mono-tag inline-flex items-center px-2.5 py-0.5 rounded-md bg-white/[0.03] text-white/50 border border-white/[0.07]">matched: "${escapeHtml(l.matched_keyword)}"</span>`
+          ? `<span class="mono-tag text-[10.5px] inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#0b0c0f] text-white/55 border border-white/[0.07]">matched: "${escapeHtml(l.matched_keyword)}"</span>`
           : '';
 
         const card = document.createElement('div');
-        card.className = `${isComment ? 'card-comment' : 'card'} p-5 sm:p-6 flex flex-col justify-between h-full`;
+        card.className = `${isComment ? 'card-comment' : 'card'} animate-card-in p-5 sm:p-6 flex flex-col justify-between h-full`;
+        card.style.animationDelay = `${Math.min(idx * 30, 240)}ms`;
 
         const sanitizedBody = cleanExcerpt(l.content);
         const contentBlock = isComment
-          ? `<div class="mt-2.5 p-3 rounded-xl bg-[#09090d]/85 border-l-2 border-[#b9abff]/60 facet-excerpt line-clamp-3">
-               <span class="facet-eyebrow block text-[9.5px] text-[#b9abff]/80 mb-1">Comment Reply</span>
+          ? `<div class="mt-3 p-3.5 rounded-2xl bg-[#0b0c0f] border-l-2 border-[#b9abff]/70 text-[13px] text-white/65 leading-relaxed line-clamp-3">
+               <span class="text-[9.5px] font-semibold uppercase tracking-[0.14em] text-[#b9abff] block mb-1">Comment Reply</span>
                "${escapeHtml(sanitizedBody)}"
              </div>`
-          : (sanitizedBody ? `<p class="facet-excerpt mt-2 line-clamp-3">${escapeHtml(sanitizedBody)}</p>` : '');
+          : (sanitizedBody ? `<p class="text-[13px] text-white/55 leading-relaxed mt-2.5 line-clamp-3">${escapeHtml(sanitizedBody)}</p>` : '');
 
         card.innerHTML = `
           <div>
-            <!-- 1. Meta Row -->
-            <div class="flex items-start justify-between gap-2 mb-2.5">
+            <div class="flex items-start justify-between gap-2 mb-3">
               <div class="flex flex-wrap items-center gap-1.5">
                 ${sourceBadge}
                 ${intentBadge}
+                ${hotBadge}
                 ${locTimeMeta}
               </div>
-              ${statusBadge}
+              <div class="flex items-center gap-1 shrink-0">
+                ${statusBadge}
+                <button onclick="muteLeadAuthor('${escapeHtml(l.author)}')" title="Mute all posts from ${escapeHtml(l.author)}" class="w-6 h-6 rounded-full hover:bg-white/10 text-white/25 hover:text-amber-400 flex items-center justify-center transition text-[10.5px]">
+                  <i class="fa-solid fa-user-slash"></i>
+                </button>
+                <button onclick="deleteLeadById(${l.id})" title="Dismiss lead" class="w-6 h-6 rounded-full hover:bg-white/10 text-white/25 hover:text-rose-400 flex items-center justify-center transition text-[11px]">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </div>
             </div>
 
-            <!-- 2. 2-Line Clamped Headline -->
-            <h3 class="facet-headline line-clamp-2 hover:text-[#36d67e] transition cursor-pointer" onclick="window.open('${escapeHtml(l.url)}', '_blank')">
+            <h3 class="font-display text-[15.5px] font-semibold tracking-tight text-white/95 leading-snug line-clamp-2 hover:text-[#c8ff2e] transition cursor-pointer" onclick="window.open('${escapeHtml(l.url)}', '_blank')">
               ${escapeHtml(cleanExcerpt(l.title))}
             </h3>
 
-            <!-- 3. 3-Line Clamped Excerpt + Inline Matched Tag -->
             ${contentBlock}
+            ${aiReasonBanner}
             ${kwBadge ? `<div class="mt-3 flex items-center">${kwBadge}</div>` : ''}
+
+            <div class="mt-3 relative">
+              <input
+                type="text"
+                value="${escapeHtml(l.notes || '')}"
+                placeholder="Add CRM note (e.g. sent DM, waiting for resume)..."
+                onblur="saveLeadNote(${l.id}, this)"
+                onkeydown="if(event.key==='Enter'){this.blur();}"
+                class="w-full h-8 px-3 pr-14 rounded-xl bg-[#0b0c0f] border border-white/[0.06] focus:border-[#e5fb80]/40 focus:outline-none text-[11.5px] text-white/80 placeholder-white/30"
+              >
+              <span id="noteSaved_${l.id}" class="hidden absolute right-2.5 top-1.5 text-[10px] text-[#e5fb80] font-medium">Saved ✓</span>
+            </div>
           </div>
 
-          <!-- 4. Hairline-Separated Footer -->
           <div class="border-t border-white/[0.06] pt-3.5 mt-4 flex items-center justify-between gap-3">
             <div class="flex items-center gap-2 min-w-0">
-              <span class="w-5 h-5 rounded-full bg-white/[0.06] border border-white/[0.08] flex items-center justify-center text-[10px] text-white/50 shrink-0">
+              <span class="w-6 h-6 rounded-full bg-white/[0.06] border border-white/[0.09] flex items-center justify-center text-[10px] text-white/60 shrink-0">
                 <i class="fa-regular fa-user"></i>
               </span>
-              <span class="text-white/75 text-xs font-medium truncate">${escapeHtml(l.author)}</span>
+              <span class="text-white/80 text-xs font-medium truncate">${escapeHtml(l.author)}</span>
             </div>
 
             <div class="flex items-center gap-2 shrink-0">
-              <a href="${escapeHtml(l.url)}" target="_blank" title="${escapeHtml(l.url)}" class="btn-facet-ghost h-[30px] px-2.5 rounded-[6px] text-[11.5px] flex items-center gap-1.5">
+              <a href="${escapeHtml(l.url)}" target="_blank" title="${escapeHtml(l.url)}" class="btn-dark-pill !h-8 px-3 text-[11.5px] flex items-center gap-1.5">
                 <span>${isComment ? 'Comment' : 'Open'}</span>
                 <span class="mono-tag text-[10px] text-white/40">${escapeHtml(getHostLabel(l.url))}</span>
-                <i class="fa-solid fa-arrow-up-right-from-square text-[9px] text-white/40"></i>
+                <i class="fa-solid fa-arrow-up-right-from-square text-[9px] text-white/45"></i>
               </a>
-              <button onclick="openOutreach('${encodeURIComponent(JSON.stringify(l))}')" class="h-[30px] px-3 rounded-[6px] bg-[#36d67e]/12 hover:bg-[#36d67e]/22 text-[#36d67e] border border-[#36d67e]/30 transition flex items-center gap-1.5 text-[11.5px] font-medium">
+              <button onclick="openOutreach('${encodeURIComponent(JSON.stringify(l))}')" class="h-8 px-3.5 rounded-full bg-[#c8ff2e]/15 hover:bg-[#c8ff2e] text-[#c8ff2e] hover:text-[#090a0c] border border-[#c8ff2e]/35 transition flex items-center gap-1.5 text-[11.5px] font-semibold">
                 <i class="fa-regular fa-paper-plane text-[10px]"></i>
                 <span>Reach Out</span>
               </button>
@@ -1377,9 +2392,12 @@
 
     function setFilter(filter) {
       currentFilter = filter;
-      document.querySelectorAll('.filter-tab').forEach(b => {
-        b.classList.remove('active-tab');
-      });
+      if ((filter === 'ai_filtered' || filter === 'archived') && hotOnlyFilter) {
+        hotOnlyFilter = false;
+        const hotBtn = document.getElementById('btnHotOnly');
+        if (hotBtn) hotBtn.classList.remove('bg-[#f59e0b]/20', 'border-[#f59e0b]', 'text-white');
+      }
+      document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active-tab'));
       const activeBtn = document.getElementById(`tab-${filter}`);
       if (activeBtn) activeBtn.classList.add('active-tab');
       loadLeads();
@@ -1418,21 +2436,114 @@
       loadLeads();
     }
 
+    async function changeLeadStatus(leadId, newStatus) {
+      await fetch('/api/lead/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: leadId, status: newStatus })
+      });
+      loadLeads();
+    }
+
+    async function saveLeadNote(leadId, inputEl) {
+      if (!inputEl) return;
+      await fetch('/api/lead/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: leadId, notes: inputEl.value.trim() })
+      });
+      const badge = document.getElementById(`noteSaved_${leadId}`);
+      if (badge) {
+        badge.classList.remove('hidden');
+        setTimeout(() => badge.classList.add('hidden'), 1800);
+      }
+    }
+
+    function exportLeadsCsv() {
+      const params = new URLSearchParams({
+        status: currentFilter,
+        q: document.getElementById('searchQuery').value.trim(),
+        location: document.getElementById('searchLocation').value,
+        platforms: getSelectedPlatforms().join(','),
+        intents: getSelectedIntents().join(','),
+        max_age_days: getMaxAgeDays()
+      });
+      window.open(`/api/leads/export?${params.toString()}`, '_blank');
+    }
+
+    async function runAiAuditOnStoredLeads() {
+      const btn = document.getElementById('btnRunAiAudit');
+      const icon = document.getElementById('aiAuditIcon');
+      const lbl = document.getElementById('aiAuditLabel');
+      if (btn) btn.disabled = true;
+      if (icon) icon.className = 'fa-solid fa-spinner fa-spin text-[#b9abff] text-xs';
+      if (lbl) lbl.innerText = 'AI Screening Leads...';
+      try {
+        const res = await fetch('/api/leads/ai-audit', { method: 'POST' });
+        const data = await res.json();
+        if (data.stats) renderStats(data.stats);
+        await loadLeads();
+        const moved = data.filtered_count || 0;
+        showLiveToast(
+          `AI Audit Complete (${data.checked_count || 0} checked)`,
+          moved > 0
+            ? `Moved ${moved} misaligned/rant post(s) to the separate "AI Filtered" page.`
+            : 'All active leads passed alignment checks!'
+        );
+      } catch (e) {
+        console.error('AI audit error', e);
+      } finally {
+        if (btn) btn.disabled = false;
+        if (icon) icon.className = 'fa-solid fa-wand-magic-sparkles text-[#b9abff] text-xs';
+        if (lbl) lbl.innerText = 'AI Filter Stored Leads';
+      }
+    }
+
     async function openSettingsModal() {
       const res = await fetch('/api/config');
       currentConfig = await res.json();
       const social = currentConfig.social || {};
+      const providers = currentConfig.providers || {};
+      const sCfg = currentConfig.search_settings || {};
+      document.getElementById('cfgSearchMode').value = providers.search_mode || currentConfig.search_mode || 'auto';
+      document.getElementById('cfgApifyCacheMinutes').value = String(providers.apify_cache_minutes || currentConfig.apify_cache_minutes || 10);
       document.getElementById('cfgApifyToken').value = currentConfig.apify_token || '';
+      document.getElementById('cfgGeminiKey').value = providers.gemini_api_key || currentConfig.gemini_api_key || '';
+      document.getElementById('cfgGeminiModel').value = providers.gemini_model || currentConfig.gemini_model || 'gemini-3.5-flash-lite';
+      document.getElementById('cfgAiFilterEnabled').checked = providers.ai_filter_enabled !== false;
+      document.getElementById('cfgAutoArchiveDays').value = String(providers.auto_archive_days ?? sCfg.auto_archive_days ?? 14);
+      document.getElementById('cfgSerperKey').value = providers.serper_api_key || currentConfig.serper_api_key || '';
+      document.getElementById('cfgTavilyKey').value = providers.tavily_api_key || currentConfig.tavily_api_key || '';
+      document.getElementById('cfgBraveKey').value = providers.brave_api_key || currentConfig.brave_api_key || '';
+      document.getElementById('cfgCustomApiUrl').value = providers.custom_api_url || currentConfig.custom_api_url || '';
+      document.getElementById('cfgCustomApiKey').value = providers.custom_api_key || currentConfig.custom_api_key || '';
       document.getElementById('cfgSubreddits').value = (currentConfig.subreddits || []).join(', ');
       document.getElementById('cfgIgHashtags').value = (social.instagram_hashtags || []).join(', ');
       document.getElementById('cfgFbGroups').value = (social.facebook_groups || []).join('\n');
       const queries = social.search_queries || social.tiktok_search_queries || [];
       document.getElementById('cfgTiktokQueries').value = queries.join('\n');
+      document.getElementById('cfgAutoScanMinutes').value = String(sCfg.autoscan_minutes || currentConfig.autoscan_minutes || 0);
+      document.getElementById('cfgDesktopNotify').checked = sCfg.desktop_notifications !== false;
+      document.getElementById('cfgWebhookUrl').value = sCfg.alert_webhook_url || currentConfig.alert_webhook_url || '';
+      document.getElementById('cfgBlockedKeywords').value = getActiveBlockedKeywords().join(', ');
+      document.getElementById('cfgBlockedAuthors').value = getActiveBlockedAuthors().join(', ');
       document.getElementById('settingsModal').classList.remove('hidden');
     }
 
     async function saveSettings() {
       currentConfig.apify_token = document.getElementById('cfgApifyToken').value.trim();
+      currentConfig.providers = currentConfig.providers || {};
+      currentConfig.providers.search_mode = document.getElementById('cfgSearchMode').value || 'auto';
+      currentConfig.providers.apify_cache_minutes = parseInt(document.getElementById('cfgApifyCacheMinutes').value || '10', 10);
+      currentConfig.providers.gemini_api_key = document.getElementById('cfgGeminiKey').value.trim();
+      currentConfig.providers.gemini_model = document.getElementById('cfgGeminiModel').value || 'gemini-3.5-flash-lite';
+      currentConfig.providers.ai_filter_enabled = document.getElementById('cfgAiFilterEnabled').checked;
+      currentConfig.providers.auto_archive_days = parseInt(document.getElementById('cfgAutoArchiveDays').value || '0', 10);
+      currentConfig.providers.serper_api_key = document.getElementById('cfgSerperKey').value.trim();
+      currentConfig.providers.tavily_api_key = document.getElementById('cfgTavilyKey').value.trim();
+      currentConfig.providers.brave_api_key = document.getElementById('cfgBraveKey').value.trim();
+      currentConfig.providers.custom_api_url = document.getElementById('cfgCustomApiUrl').value.trim();
+      currentConfig.providers.custom_api_key = document.getElementById('cfgCustomApiKey').value.trim();
       currentConfig.subreddits = document.getElementById('cfgSubreddits').value.split(',').map(s => s.trim()).filter(Boolean);
       currentConfig.social = currentConfig.social || {};
       currentConfig.social.instagram_hashtags = document.getElementById('cfgIgHashtags').value.split(',').map(s => s.trim().replace(/^#/, '')).filter(Boolean);
@@ -1441,12 +2552,199 @@
       currentConfig.social.search_queries = qList;
       currentConfig.social.tiktok_search_queries = qList;
 
+      currentConfig.search_settings = currentConfig.search_settings || {};
+      const mins = parseInt(document.getElementById('cfgAutoScanMinutes').value || '0', 10);
+      currentConfig.search_settings.autoscan_minutes = mins;
+      currentConfig.search_settings.desktop_notifications = document.getElementById('cfgDesktopNotify').checked;
+      currentConfig.search_settings.alert_webhook_url = document.getElementById('cfgWebhookUrl').value.trim();
+      currentConfig.search_settings.blocked_keywords = document.getElementById('cfgBlockedKeywords').value.split(/[\n,]/).map(s => s.trim()).filter(Boolean);
+      currentConfig.search_settings.blocked_authors = document.getElementById('cfgBlockedAuthors').value.split(/[\n,]/).map(s => s.trim()).filter(Boolean);
+
+      if (currentConfig.search_settings.desktop_notifications && 'Notification' in window && Notification.permission === 'default') {
+        try { await Notification.requestPermission(); } catch (e) {}
+      }
+
       await fetch('/api/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(currentConfig)
       });
+      syncAutoScanTimer(mins);
       closeModal('settingsModal');
+      loadLeads();
+    }
+
+    function playAlertChime() {
+      try {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return;
+        const ctx = new Ctx();
+        [587.33, 880].forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0.08, ctx.currentTime + idx * 0.12);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.12 + 0.28);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(ctx.currentTime + idx * 0.12);
+          osc.stop(ctx.currentTime + idx * 0.12 + 0.3);
+        });
+      } catch (e) {}
+    }
+
+    function showLiveToast(title, subtitle) {
+      const toast = document.getElementById('liveAlertToast');
+      const tEl = document.getElementById('toastAlertTitle');
+      const sEl = document.getElementById('toastAlertSub');
+      if (!toast) return;
+      if (tEl) tEl.innerText = title || 'New Leads Captured!';
+      if (sEl) sEl.innerText = subtitle || '';
+      toast.classList.remove('hidden');
+    }
+
+    function hideLiveToast() {
+      const toast = document.getElementById('liveAlertToast');
+      if (toast) toast.classList.add('hidden');
+    }
+
+    async function triggerTestAlert() {
+      playAlertChime();
+      showLiveToast('Test Alert Verified!', 'Browser chime, live Bento toast, and desktop notifications are working.');
+      if ('Notification' in window) {
+        if (Notification.permission === 'default') {
+          try { await Notification.requestPermission(); } catch (e) {}
+        }
+        if (Notification.permission === 'granted') {
+          new Notification('Unified Lead Scout — Test Alert', {
+            body: 'Instant lead alerts are active!'
+          });
+        }
+      }
+      const whInput = document.getElementById('cfgWebhookUrl');
+      const whUrl = whInput ? whInput.value.trim() : '';
+      if (whUrl) {
+        try {
+          await fetch('/api/alerts/test', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ webhook_url: whUrl })
+          });
+        } catch (e) {}
+      }
+    }
+
+    function notifyIfNewScanLeads(scan) {
+      if (!scan || scan.running || !scan.started_at || !scan.new_total || scan.new_total <= 0) return;
+      if (lastNotifiedScanStart === scan.started_at) return;
+      lastNotifiedScanStart = scan.started_at;
+
+      const sCfg = (currentConfig && currentConfig.search_settings) || {};
+      if (sCfg.desktop_notifications === false) return;
+
+      const sample = (scan.latest_new && scan.latest_new[0])
+        ? `${scan.latest_new[0].source}: "${scan.latest_new[0].title}"`
+        : `${scan.new_total} fresh lead(s) saved to your pipeline.`;
+
+      playAlertChime();
+      showLiveToast(`${scan.new_total} New Lead${scan.new_total === 1 ? '' : 's'} Found!`, sample);
+      if ('Notification' in window && Notification.permission === 'granted') {
+        try {
+          new Notification(`Unified Lead Scout: ${scan.new_total} New Lead(s)`, { body: sample });
+        } catch (e) {}
+      }
+    }
+
+    function syncAutoScanTimer(mins) {
+      autoScanIntervalMins = Math.max(0, parseInt(mins || 0, 10));
+      autoScanRemainingSec = autoScanIntervalMins * 60;
+      renderAutoScanPill();
+    }
+
+    function renderAutoScanPill() {
+      const dot = document.getElementById('autoScanDot');
+      const lbl = document.getElementById('autoScanLabel');
+      const btn = document.getElementById('btnAutoScanToggle');
+      if (!dot || !lbl || !btn) return;
+      if (autoScanIntervalMins <= 0) {
+        dot.className = 'w-2 h-2 rounded-full bg-white/25';
+        lbl.innerText = 'Auto-Scan: Off';
+        btn.classList.remove('border-[#e5fb80]/40', 'text-white');
+      } else {
+        dot.className = 'w-2 h-2 rounded-full bg-[#e5fb80] animate-pulse';
+        const m = String(Math.floor(autoScanRemainingSec / 60)).padStart(2, '0');
+        const s = String(autoScanRemainingSec % 60).padStart(2, '0');
+        lbl.innerText = `Auto-Scan: ${autoScanIntervalMins}m (${m}:${s})`;
+        btn.classList.add('border-[#e5fb80]/40', 'text-white');
+      }
+    }
+
+    async function toggleAutoScanQuick() {
+      const nextMins = autoScanIntervalMins > 0 ? 0 : 10;
+      if (!currentConfig.search_settings) currentConfig.search_settings = {};
+      currentConfig.search_settings.autoscan_minutes = nextMins;
+      syncAutoScanTimer(nextMins);
+      await fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(currentConfig)
+      });
+      if (nextMins > 0) {
+        showLiveToast('Background Auto-Scan Enabled', `Scanning credit-safe feeds automatically every ${nextMins} minutes.`);
+      } else {
+        showLiveToast('Background Auto-Scan Paused', 'Switched back to manual scanning.');
+      }
+    }
+
+    async function runScheduledAutoScan() {
+      if (activeSearchController || pollTimer) return;
+      const selected = getSelectedPlatforms();
+      const platforms = selected.length > 0 ? selected : ['reddit_posts', 'reddit_comments', 'public_web', 'facebook', 'tiktok', 'instagram'];
+      try {
+        const res = await fetch('/api/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: document.getElementById('searchQuery').value.trim(),
+            platforms,
+            intents: getSelectedIntents(),
+            location: document.getElementById('searchLocation').value,
+            status: currentFilter,
+            max_age_days: getMaxAgeDays(),
+            trigger: 'auto',
+            wait_seconds: 1
+          })
+        });
+        const data = await res.json();
+        if (data.scan) {
+          renderScanState(data.scan);
+          if (data.scan.running) startPollingScan();
+          else notifyIfNewScanLeads(data.scan);
+        }
+      } catch (e) {}
+    }
+
+    setInterval(() => {
+      if (autoScanIntervalMins <= 0) return;
+      if (autoScanRemainingSec > 0) {
+        autoScanRemainingSec--;
+        renderAutoScanPill();
+      }
+      if (autoScanRemainingSec <= 0) {
+        autoScanRemainingSec = autoScanIntervalMins * 60;
+        renderAutoScanPill();
+        runScheduledAutoScan();
+      }
+    }, 1000);
+
+    async function initConfigAndAutoScan() {
+      try {
+        const res = await fetch('/api/config');
+        currentConfig = await res.json();
+        const sCfg = currentConfig.search_settings || {};
+        syncAutoScanTimer(sCfg.autoscan_minutes || currentConfig.autoscan_minutes || 0);
+      } catch (e) {}
       loadLeads();
     }
 
@@ -1494,10 +2792,10 @@
       const btn = document.getElementById(btnId);
       const original = btn.innerText;
       btn.innerText = "Copied!";
-      btn.className = "btn-facet-primary absolute bottom-3 right-3 !h-[28px] px-3 text-xs";
+      btn.className = "btn-lime !h-7 px-3 text-xs absolute bottom-3 right-3";
       setTimeout(() => {
         btn.innerText = original;
-        btn.className = "btn-facet-ghost absolute bottom-3 right-3 h-[28px] px-3 rounded-[6px] text-xs";
+        btn.className = "btn-dark-pill !h-7 px-3 text-xs absolute bottom-3 right-3";
       }, 2000);
     }
 
@@ -1512,7 +2810,7 @@
     }
 
     syncPlatformPills();
-    loadLeads();
+    initConfigAndAutoScan();
   </script>
 </body>
 </html>

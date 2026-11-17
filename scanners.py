@@ -7,6 +7,7 @@ so product/marketplace results never mix into Jobseeker or Employer Hiring views
 """
 import base64
 import email.utils
+import gzip
 import hashlib
 import html as html_lib
 import json
@@ -136,6 +137,12 @@ class ScanError(Exception):
 # SETTINGS & TEXT HELPERS
 # =====================================================================
 
+DEFAULT_BLOCKED_KEYWORDS = [
+    "networking", "frontrow", "paluwagan", "online casino", "scatter",
+    "crypto investment", "forex signal", "binary option", "task scam",
+]
+
+
 def _as_list(value):
     if isinstance(value, str):
         value = re.split(r"[\n,]", value)
@@ -147,6 +154,17 @@ def get_settings(config):
     s = config.get("search_settings", {})
     social = config.get("social", {})
     reddit = config.get("reddit", {})
+    providers = config.get("providers", {}) if isinstance(config.get("providers"), dict) else {}
+    raw_mode = str(providers.get("search_mode") or config.get("search_mode") or "auto").strip().lower()
+    search_mode = raw_mode if raw_mode in ("auto", "alternative_only", "apify_only") else "auto"
+    cache_mins = int(providers.get("apify_cache_minutes", config.get("apify_cache_minutes", 10)) or 10)
+    raw_blocked_kw = s.get("blocked_keywords") if "blocked_keywords" in s else config.get("blocked_keywords")
+    blocked_keywords = [k.lower() for k in (_as_list(raw_blocked_kw) if raw_blocked_kw is not None else DEFAULT_BLOCKED_KEYWORDS)]
+    raw_blocked_authors = s.get("blocked_authors") if "blocked_authors" in s else config.get("blocked_authors")
+    blocked_authors = [re.sub(r"^(@|u/)", "", a.lower()) for a in _as_list(raw_blocked_authors)]
+    autoscan_minutes = max(0, int(s.get("autoscan_minutes", config.get("autoscan_minutes", 0)) or 0))
+    desktop_notifications = bool(s.get("desktop_notifications", config.get("desktop_notifications", True)))
+    alert_webhook_url = str(s.get("alert_webhook_url") or config.get("alert_webhook_url") or "").strip()
     # Filter out any buy/sell terms that might have been in config.json seeker/employer lists
     raw_seeker = [k for k in _as_list(s.get("seeker_keywords")) if not is_buy_sell_keyword(k)]
     raw_employer = [k for k in _as_list(s.get("employer_keywords")) if not is_buy_sell_keyword(k)]
@@ -163,13 +181,29 @@ def get_settings(config):
         "employer_keywords": employer_kw,
         "seller_keywords": list(DEFAULT_SELLER_KEYWORDS),
         "buyer_keywords": list(DEFAULT_BUYER_KEYWORDS),
+        "blocked_keywords": blocked_keywords,
+        "blocked_authors": blocked_authors,
+        "autoscan_minutes": autoscan_minutes,
+        "desktop_notifications": desktop_notifications,
+        "alert_webhook_url": alert_webhook_url,
         "custom_queries": custom_queries,
         "location_terms": {k.lower(): v for k, v in
                            (s.get("location_terms") or DEFAULT_LOCATION_TERMS).items()},
         "subreddits": [re.sub(r"^/?r/", "", x) for x in (_as_list(config.get("subreddits")) or ["Cebu", "phclassifieds", "buhaydigital"])],
         "reddit_client_id": reddit.get("client_id", ""),
         "reddit_client_secret": reddit.get("client_secret", ""),
-        "apify_token": os.environ.get("APIFY_TOKEN") or config.get("apify_token", ""),
+        "apify_token": (os.environ.get("APIFY_TOKEN") or config.get("apify_token", "")).strip(),
+        "search_mode": search_mode,
+        "apify_cache_seconds": max(60, cache_mins * 60),
+        "gemini_api_key": (os.environ.get("GEMINI_API_KEY") or providers.get("gemini_api_key") or config.get("gemini_api_key") or "").strip(),
+        "gemini_model": (providers.get("gemini_model") or config.get("gemini_model") or "gemini-3.5-flash-lite").strip(),
+        "ai_filter_enabled": bool(providers.get("ai_filter_enabled", config.get("ai_filter_enabled", True))),
+        "auto_archive_days": int(providers.get("auto_archive_days", s.get("auto_archive_days", config.get("auto_archive_days", 14))) or 0),
+        "serper_api_key": (os.environ.get("SERPER_API_KEY") or providers.get("serper_api_key") or config.get("serper_api_key") or "").strip(),
+        "tavily_api_key": (os.environ.get("TAVILY_API_KEY") or providers.get("tavily_api_key") or config.get("tavily_api_key") or "").strip(),
+        "brave_api_key": (os.environ.get("BRAVE_API_KEY") or providers.get("brave_api_key") or config.get("brave_api_key") or "").strip(),
+        "custom_api_url": (providers.get("custom_api_url") or config.get("custom_api_url") or "").strip(),
+        "custom_api_key": (providers.get("custom_api_key") or config.get("custom_api_key") or "").strip(),
         "facebook_groups": _as_list(social.get("facebook_groups")),
         "facebook_pages": _as_list(social.get("facebook_pages")),
         "instagram_hashtags": [t.lstrip("#") for t in _as_list(social.get("instagram_hashtags"))],
@@ -344,6 +378,25 @@ def to_epoch(value):
         return None
 
 
+def _parse_search_ts(value):
+    ts = to_epoch(value)
+    if ts:
+        return ts
+    if not value:
+        return None
+    s = str(value).strip().lower()
+    now_ts = get_reference_now()
+    if s == "yesterday":
+        return now_ts - 86400
+    m = re.match(r"^(\d+)\s*(min|mins|minute|minutes|hr|hrs|hour|hours|day|days|wk|wks|week|weeks|mo|month|months)\s+ago$", s)
+    if m:
+        qty = int(m.group(1))
+        unit = m.group(2)
+        mult = 60 if unit.startswith("min") else 3600 if unit.startswith(("hr", "hour")) else 86400 if unit.startswith("day") else 604800 if unit.startswith(("wk", "week")) else 2592000
+        return now_ts - qty * mult
+    return None
+
+
 def _record_remote_date(date_hdr):
     global _LAST_REMOTE_UTC
     ts = to_epoch(date_hdr)
@@ -416,6 +469,8 @@ def http_request(url, method="GET", body=None, headers=None, timeout=20, raw=Fal
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             _record_remote_date(resp.headers.get("Date"))
             payload = resp.read()
+            if (resp.headers.get("Content-Encoding") or "").lower() == "gzip":
+                payload = gzip.decompress(payload)
     except urllib.error.HTTPError as e:
         _record_remote_date(e.headers.get("Date") if e.headers else None)
         raise ScanError(f"HTTP {e.code} from {host}") from None
@@ -746,6 +801,13 @@ def evaluate_item(it, ctx):
     own_text = _norm(body if it["kind"] == "comment" else f"{title} {body}")
     context = _norm(f"{own_text} {it.get('parent_text', '')}")
 
+    # 2b. Noise & Spam Blocker (blocked authors + negative keywords)
+    author_norm = re.sub(r"^(@|u/)", "", _norm(it.get("author") or ""))
+    if author_norm and any(author_norm == ba or ba in author_norm for ba in ctx.settings.get("blocked_authors", []) if ba):
+        return None
+    if any(phrase_in(context, bw) for bw in ctx.settings.get("blocked_keywords", []) if bw):
+        return None
+
     # 3. 4-Way Intent Classification ('seeker' | 'employer' | 'buyer' | 'seller')
     intent, keyword = classify_intent(
         own_text, it["kind"], ctx.settings,
@@ -811,12 +873,33 @@ def register_adapter(key, label, description="", needs=None):
     return decorator
 
 
+def active_alt_provider_labels(settings):
+    labels = []
+    if settings.get("custom_api_url"):
+        labels.append("Custom API")
+    if settings.get("serper_api_key"):
+        labels.append("Serper")
+    if settings.get("tavily_api_key"):
+        labels.append("Tavily")
+    if settings.get("brave_api_key"):
+        labels.append("Brave")
+    return labels
+
+
 def adapter_readiness(key, settings):
     s = settings
+    alt_labels = active_alt_provider_labels(s)
+    alt_str = " + ".join(alt_labels) if alt_labels else "Free Public Index"
     if key in ("facebook", "instagram", "tiktok"):
+        if s.get("search_mode") == "alternative_only":
+            return True, f"Ready ({SCANNER_VERSION} {alt_str})"
         if s["apify_token"]:
-            return True, f"Ready ({SCANNER_VERSION} Apify Deep Scraper)"
-        return True, f"Ready ({SCANNER_VERSION} Verified Public Index)"
+            if s.get("search_mode") == "apify_only":
+                return True, f"Ready ({SCANNER_VERSION} Apify Only)"
+            return True, f"Ready ({SCANNER_VERSION} Apify + {alt_str} Fallback)"
+        return True, f"Ready ({SCANNER_VERSION} {alt_str})"
+    if key == "public_web":
+        return True, f"Ready ({SCANNER_VERSION} {alt_str})"
     if key in ("reddit_posts", "reddit_comments") and not s["subreddits"]:
         return False, "Add subreddits (Settings)."
     return True, f"Ready ({SCANNER_VERSION})"
@@ -922,26 +1005,232 @@ def _search_yahoo_html(dork_query, max_age_days=7, platform=""):
     return results
 
 
-def _search_public_index(dork_query, max_age_days=7, platform=""):
+def _search_serper(dork_query, api_key, max_age_days=7, platform=""):
+    tbs = "qdr:d" if max_age_days <= 1 else ("qdr:w" if max_age_days <= 7 else "qdr:m")
+    body = {"q": dork_query, "gl": "ph", "hl": "en", "num": 20, "tbs": tbs}
+    data = http_request(
+        "https://google.serper.dev/search",
+        method="POST",
+        body=body,
+        headers={"X-API-KEY": api_key},
+        timeout=20,
+    )
+    results = []
+    seen = set()
+    for row in (data or {}).get("organic", []) or []:
+        if not isinstance(row, dict):
+            continue
+        href = (row.get("link") or "").strip()
+        if not href.startswith(("http://", "https://")) or href in seen:
+            continue
+        if platform and not is_valid_lead_url(platform, href):
+            continue
+        title = _short(row.get("title") or "", 180)
+        snippet = _short(row.get("snippet") or "", 500)
+        if title or snippet:
+            seen.add(href)
+            results.append({
+                "url": href,
+                "title": title,
+                "snippet": snippet,
+                "posted_ts": _parse_search_ts(row.get("date")),
+                "provider": "Serper.dev",
+            })
+    return results
+
+
+def _search_tavily(dork_query, api_key, max_age_days=7, platform=""):
+    time_range = "day" if max_age_days <= 1 else ("week" if max_age_days <= 7 else "month")
+    body = {
+        "api_key": api_key,
+        "query": dork_query,
+        "search_depth": "basic",
+        "time_range": time_range,
+        "max_results": 20,
+    }
+    data = http_request(
+        "https://api.tavily.com/search",
+        method="POST",
+        body=body,
+        headers={"Authorization": f"Bearer {api_key}"},
+        timeout=20,
+    )
+    results = []
+    seen = set()
+    for row in (data or {}).get("results", []) or []:
+        if not isinstance(row, dict):
+            continue
+        href = (row.get("url") or "").strip()
+        if not href.startswith(("http://", "https://")) or href in seen:
+            continue
+        if platform and not is_valid_lead_url(platform, href):
+            continue
+        title = _short(row.get("title") or "", 180)
+        snippet = _short(row.get("content") or row.get("raw_content") or "", 500)
+        if title or snippet:
+            seen.add(href)
+            results.append({
+                "url": href,
+                "title": title,
+                "snippet": snippet,
+                "posted_ts": _parse_search_ts(row.get("published_date")),
+                "provider": "Tavily",
+            })
+    return results
+
+
+def _search_brave(dork_query, api_key, max_age_days=7, platform=""):
+    freshness = "pd" if max_age_days <= 1 else ("pw" if max_age_days <= 7 else "pm")
+    qs = urllib.parse.urlencode({"q": dork_query, "freshness": freshness, "count": 20})
+    url = f"https://api.search.brave.com/res/v1/web/search?{qs}"
+    data = http_request(
+        url,
+        method="GET",
+        headers={
+            "X-Subscription-Token": api_key,
+            "Accept": "application/json",
+            "Accept-Encoding": "identity",
+        },
+        timeout=20,
+    )
+    results = []
+    seen = set()
+    rows = ((data or {}).get("web") or {}).get("results", []) or []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        href = (row.get("url") or "").strip()
+        if not href.startswith(("http://", "https://")) or href in seen:
+            continue
+        if platform and not is_valid_lead_url(platform, href):
+            continue
+        title = _short(row.get("title") or "", 180)
+        snippet = _short(row.get("description") or "", 500)
+        if title or snippet:
+            seen.add(href)
+            results.append({
+                "url": href,
+                "title": title,
+                "snippet": snippet,
+                "posted_ts": _parse_search_ts(row.get("page_age") or row.get("age")),
+                "provider": "Brave",
+            })
+    return results
+
+
+def _search_custom_api(dork_query, endpoint_url, api_key="", max_age_days=7,
+                       platform="", raw_query="", location="", intents=None):
+    headers = {"Accept": "application/json"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+        headers["X-API-Key"] = api_key
+
+    if "{query}" in endpoint_url:
+        req_url = endpoint_url.format(
+            query=urllib.parse.quote_plus(dork_query),
+            raw_query=urllib.parse.quote_plus(raw_query or ""),
+            platform=urllib.parse.quote_plus(platform or ""),
+            location=urllib.parse.quote_plus(location or ""),
+            max_age_days=max_age_days,
+        )
+        data = http_request(req_url, method="GET", headers=headers, timeout=25)
+    else:
+        data = http_request(
+            endpoint_url,
+            method="POST",
+            body={
+                "query": dork_query,
+                "raw_query": raw_query,
+                "platform": platform,
+                "location": location,
+                "max_age_days": max_age_days,
+                "intents": list(intents or []),
+            },
+            headers=headers,
+            timeout=25,
+        )
+
+    rows = []
+    if isinstance(data, list):
+        rows = data
+    elif isinstance(data, dict):
+        for k in ("results", "items", "organic", "leads", "data"):
+            if isinstance(data.get(k), list):
+                rows = data[k]
+                break
+
+    results = []
+    seen = set()
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        href = str(pick(row, "url", "link", "commentUrl", "postUrl", "permalink", "webVideoUrl") or "").strip()
+        if not href.startswith(("http://", "https://")) or href in seen:
+            continue
+        if platform and not is_valid_lead_url(platform, href):
+            continue
+        title = _short(str(pick(row, "title", "name", "postTitle") or ""), 180)
+        snippet = _short(str(pick(row, "snippet", "text", "content", "description", "body", "message") or ""), 500)
+        if title or snippet:
+            seen.add(href)
+            raw_kind = str(row.get("kind") or "").lower()
+            results.append({
+                "url": href,
+                "title": title,
+                "snippet": snippet,
+                "author": _name(pick(row, "author", "username", "profileName", "authorMeta.name")) or "",
+                "posted_ts": _parse_search_ts(pick(row, "posted_at", "published_date", "date", "timestamp", "createTimeISO", "created_at")),
+                "kind": raw_kind if raw_kind in ("comment", "post") else "",
+                "source": str(row.get("source") or ""),
+                "provider": "Custom API",
+            })
+    return results
+
+
+def _search_public_index(dork_query, max_age_days=7, platform="", settings=None,
+                         raw_query="", location="", intents=None):
+    s = settings or {}
+    providers = []
+    if s.get("custom_api_url"):
+        providers.append(("Custom API", lambda: _search_custom_api(
+            dork_query, s["custom_api_url"], s.get("custom_api_key", ""),
+            max_age_days=max_age_days, platform=platform,
+            raw_query=raw_query, location=location, intents=intents,
+        )))
+    if s.get("serper_api_key"):
+        providers.append(("Serper.dev", lambda: _search_serper(
+            dork_query, s["serper_api_key"], max_age_days=max_age_days, platform=platform,
+        )))
+    if s.get("tavily_api_key"):
+        providers.append(("Tavily", lambda: _search_tavily(
+            dork_query, s["tavily_api_key"], max_age_days=max_age_days, platform=platform,
+        )))
+    if s.get("brave_api_key"):
+        providers.append(("Brave", lambda: _search_brave(
+            dork_query, s["brave_api_key"], max_age_days=max_age_days, platform=platform,
+        )))
+    providers.append(("DuckDuckGo", lambda: _search_duckduckgo_html(dork_query, max_age_days=max_age_days, platform=platform)))
+    providers.append(("Yahoo", lambda: _search_yahoo_html(dork_query, max_age_days=max_age_days, platform=platform)))
+
     hits = []
     errors = []
-    for fn in (_search_duckduckgo_html, _search_yahoo_html):
+    for pname, fn in providers:
         try:
-            res = fn(dork_query, max_age_days=max_age_days, platform=platform)
+            res = fn()
             if res:
                 hits.extend(res)
                 break
         except ScanError as e:
-            errors.append(str(e))
+            errors.append(f"{pname}: {e}")
     dedup, seen = [], set()
     for h in hits:
-        if h["url"] not in seen and is_valid_lead_url(platform, h["url"]):
+        if h["url"] not in seen and (not platform or is_valid_lead_url(platform, h["url"])):
             seen.add(h["url"])
             dedup.append(h)
     return dedup, errors
 
 
-def _scan_public_social(platform, label, dork_prefixes, ctx):
+def _scan_public_social(platform, label, dork_prefixes, ctx, extra_note=""):
     loc_term = ctx.location if (ctx.location and ctx.location.lower() != "any") else "Philippines"
     is_loc_scoped = bool(ctx.location and ctx.location.lower() != "any")
 
@@ -961,22 +1250,28 @@ def _scan_public_social(platform, label, dork_prefixes, ctx):
 
     items, errors, fetched = [], [], 0
     seen_urls = set()
+    used_providers = []
     now_ts = get_reference_now()
 
     for dork in queries[:3]:
         if ctx.is_cancelled():
             return result("cancelled", "Cancelled by user.", items, fetched)
-        hits, errs = _search_public_index(dork, max_age_days=ctx.max_age_days, platform=platform)
+        hits, errs = _search_public_index(
+            dork, max_age_days=ctx.max_age_days, platform=platform,
+            settings=ctx.settings, raw_query=ctx.query, location=ctx.location, intents=ctx.intents,
+        )
         errors.extend(errs)
         for h in hits:
+            if h.get("provider") and h["provider"] not in used_providers:
+                used_providers.append(h["provider"])
             if h["url"] in seen_urls or not is_valid_lead_url(platform, h["url"]):
                 continue
             seen_urls.add(h["url"])
             fetched += 1
             combined = f"{h['title']} {h['snippet']}".lower()
             is_comment = any(k in combined for k in ("interested po", "how to apply", "pwede pa mo apply"))
-            kind = "comment" if is_comment else "post"
-            src_name = f"{label} {'Comment' if kind == 'comment' else 'Post'}"
+            kind = h.get("kind") or ("comment" if is_comment else "post")
+            src_name = h.get("source") or f"{label} {'Comment' if kind == 'comment' else 'Post'}"
             items.append(
                 item(
                     platform=platform,
@@ -984,18 +1279,22 @@ def _scan_public_social(platform, label, dork_prefixes, ctx):
                     source=src_name,
                     external_id=f"{platform}_{stable_id(h['url'])}",
                     text=h["snippet"] or h["title"],
-                    author=f"{label} User",
+                    author=h.get("author") or f"{label} User",
                     url=h["url"],
-                    posted_ts=now_ts,
+                    posted_ts=h.get("posted_ts") or now_ts,
                     title=h["title"],
                     scoped=is_loc_scoped or location_scoped(combined, ctx.location, ctx.settings),
                 )
             )
 
-    note = ""
+    notes = []
+    if used_providers:
+        notes.append(f"via {', '.join(used_providers)}")
+    if extra_note:
+        notes.append(extra_note)
     if not items and not errors:
-        note = f"0 public {label} post links indexed for this filter."
-    return _finish(items, fetched, errors if not items else [], note=note)
+        notes.append(f"0 public {label} post links indexed for this filter.")
+    return _finish(items, fetched, errors if not items else [], note=" · ".join(notes))
 
 
 def get_registered_adapters(config=None):
@@ -1283,18 +1582,31 @@ def _post_matches_configured_groups(post, configured_keys):
     return False
 
 
+def _fb_public_prefixes(settings):
+    prefixes = []
+    for g in (settings.get("facebook_groups") or [])[:2]:
+        key = _url_group_key(g)
+        if key and not key.startswith("http"):
+            prefixes.append(f"site:facebook.com/groups/{key}")
+    for p in ("site:facebook.com/groups", "site:facebook.com"):
+        if p not in prefixes:
+            prefixes.append(p)
+    return prefixes
+
+
 @register_adapter("facebook", "Facebook",
                   "Newest posts + comments in your configured public Facebook groups/pages.",
                   needs="apify")
 def adapter_facebook(ctx):
     s = ctx.settings
-    if not s["apify_token"] or not (s["facebook_groups"] or s["facebook_pages"]):
+    if ctx.trigger == "auto" or s.get("search_mode") == "alternative_only" or not s["apify_token"] or not (s["facebook_groups"] or s["facebook_pages"]):
         return _scan_public_social(
             "facebook", "Facebook",
-            ["site:facebook.com/groups", "site:facebook.com"],
+            _fb_public_prefixes(s),
             ctx,
         )
     token, limit = s["apify_token"], s["results_per_source"]
+    cache_s = s["apify_cache_seconds"]
     items, errors, fetched, threads = [], [], 0, []
     seen_post_ids = set()
     configured_keys = {_url_group_key(u) for u in s["facebook_groups"]}
@@ -1331,10 +1643,10 @@ def adapter_facebook(ctx):
     }
     missing_groups = [u for u in s["facebook_groups"] if _url_group_key(u) not in covered_keys]
 
-    # 2. Run a fresh Apify scrape for any newly added group or if the last run is >10 minutes old
+    # 2. Run a fresh Apify scrape for any newly added group or if the last run exceeds cache window
     jobs = []
-    if s["facebook_groups"] and (missing_groups or latest_age_s > 600 or not cached_matching):
-        target_groups = missing_groups if (missing_groups and latest_age_s <= 600) else s["facebook_groups"]
+    if s["facebook_groups"] and (missing_groups or latest_age_s > cache_s or not cached_matching):
+        target_groups = missing_groups if (missing_groups and latest_age_s <= cache_s) else s["facebook_groups"]
         jobs.append((APIFY_ACTORS["facebook_groups"], False, {
             "startUrls": [{"url": u} for u in target_groups], "resultsLimit": limit,
             "viewOption": "CHRONOLOGICAL", "onlyPostsNewerThan": ctx.since_phrase()}))
@@ -1389,6 +1701,14 @@ def adapter_facebook(ctx):
         except ScanError as e:
             errors.append(f"comments: {e}")
 
+    if not items and errors and s.get("search_mode") == "auto":
+        return _scan_public_social(
+            "facebook", "Facebook",
+            _fb_public_prefixes(s),
+            ctx,
+            extra_note=f"Apify fallback ({errors[0]})",
+        )
+
     return _finish(items, fetched, errors)
 
 
@@ -1421,25 +1741,33 @@ def _ig_comment_item(c, parent, ctx):
                   "Newest posts + comments on Instagram (strictly verified instagram.com/p/ & /reel/ links).", needs="apify")
 def adapter_instagram(ctx):
     s = ctx.settings
-    if not s["apify_token"] or not s["instagram_hashtags"]:
+    if ctx.trigger == "auto" or s.get("search_mode") == "alternative_only" or not s["apify_token"] or not s["instagram_hashtags"]:
         return _scan_public_social(
             "instagram", "Instagram",
             ["site:instagram.com/p/", "site:instagram.com/reel/"],
             ctx,
         )
     token = s["apify_token"]
+    cache_s = s["apify_cache_seconds"]
     items, errors, fetched, threads = [], [], 0, []
     try:
         data, age_s = apify_fetch_recent_runs(APIFY_ACTORS["instagram_hashtags"], token, max_runs=1)
         if ctx.is_cancelled():
             return result("cancelled", "Cancelled by user.", items, fetched)
-        if not data or age_s > 600:
+        if not data or age_s > cache_s:
             data = apify_run(APIFY_ACTORS["instagram_hashtags"], {
                 "hashtags": s["instagram_hashtags"], "resultsLimit": s["results_per_source"],
                 "resultsType": "posts", "onlyPostsNewerThan": ctx.since_phrase()}, token, ctx=ctx)
     except ScanCancelled:
         return result("cancelled", "Cancelled by user.", items, fetched)
     except ScanError as e:
+        if s.get("search_mode") == "auto":
+            return _scan_public_social(
+                "instagram", "Instagram",
+                ["site:instagram.com/p/", "site:instagram.com/reel/"],
+                ctx,
+                extra_note=f"Apify fallback ({e})",
+            )
         return result("error", str(e))
 
     for post in data:
@@ -1492,13 +1820,14 @@ def _tt_comment_item(c, parent, ctx):
                   needs="apify")
 def adapter_tiktok(ctx):
     s = ctx.settings
-    if not s["apify_token"] or not (s["tiktok_search_queries"] or s["tiktok_hashtags"] or ctx.query):
+    if ctx.trigger == "auto" or s.get("search_mode") == "alternative_only" or not s["apify_token"] or not (s["tiktok_search_queries"] or s["tiktok_hashtags"] or ctx.query):
         return _scan_public_social(
             "tiktok", "TikTok",
             ["site:tiktok.com"],
             ctx,
         )
     token = s["apify_token"]
+    cache_s = s["apify_cache_seconds"]
     queries = [("ram" if q.lower() == "rame" else q) for q in s["tiktok_search_queries"]]
     if ctx.query:
         q_clean = "ram" if ctx.query.lower() == "rame" else ctx.query
@@ -1516,11 +1845,18 @@ def adapter_tiktok(ctx):
         data, age_s = apify_fetch_recent_runs(APIFY_ACTORS["tiktok_search"], token, max_runs=2)
         if ctx.is_cancelled():
             return result("cancelled", "Cancelled by user.", items, fetched)
-        if not data or age_s > 600:
+        if not data or age_s > cache_s:
             data = apify_run(APIFY_ACTORS["tiktok_search"], run_input, token, ctx=ctx)
     except ScanCancelled:
         return result("cancelled", "Cancelled by user.", items, fetched)
     except ScanError as e:
+        if s.get("search_mode") == "auto":
+            return _scan_public_social(
+                "tiktok", "TikTok",
+                ["site:tiktok.com"],
+                ctx,
+                extra_note=f"Apify fallback ({e})",
+            )
         return result("error", str(e))
     for v in data:
         url = pick(v, "webVideoUrl")
@@ -1599,14 +1935,18 @@ def adapter_public_web(ctx):
         if ctx.is_cancelled():
             return result("cancelled", "Cancelled by user.", items, fetched)
         dork = f"site:{site_domain} {loc_q} {q_expr}"
-        hits, errs = _search_public_index(dork, max_age_days=ctx.max_age_days, platform="web")
+        hits, errs = _search_public_index(
+            dork, max_age_days=ctx.max_age_days, platform="web",
+            settings=ctx.settings, raw_query=ctx.query, location=ctx.location, intents=ctx.intents,
+        )
         errors.extend(errs)
         now_ts = get_reference_now()
         for h in hits:
             fetched += 1
             host = urllib.parse.urlparse(h["url"]).netloc.replace("www.", "")
-            items.append(item("web", "post", f"Web ({host})", f"web_{stable_id(h['url'])}",
-                              h["snippet"] or h["title"], host, h["url"], now_ts,
+            items.append(item("web", "post", h.get("source") or f"Web ({host})", f"web_{stable_id(h['url'])}",
+                              h["snippet"] or h["title"], h.get("author") or host, h["url"],
+                              h.get("posted_ts") or now_ts,
                               title=h["title"], scoped=(ctx.location.lower() != "any")))
 
     return _finish(items, fetched, errors if not items else [])
@@ -1616,6 +1956,232 @@ def adapter_public_web(ctx):
 # SCAN MANAGER (background scans + progress)
 # =====================================================================
 
+def detect_rant_or_misaligned_heuristic(lead):
+    """
+    Fast contextual check for posts that matched a keyword like 'need work' or 'hiring'
+    but are actually rants, workplace venting, repair requests, or general discussions.
+    Returns (is_aligned: bool, reason: str).
+    """
+    title = (lead.get("title") or "").strip()
+    body = (lead.get("content") or "").strip()
+    text = _norm(f"{title} {body}")
+    kw = _norm(lead.get("matched_keyword") or "")
+
+    # 1. Misaligned "need work" / "looking for work" uses (repairs, work-life balance, relationship/self work)
+    misaligned_work_patterns = (
+        r"\bneed(?:s)?\s+work[- ]life\b",
+        r"\bneed(?:s)?\s+work\s+(?:done|on\s+my|on\s+the)\b",
+        r"\b(?:car|motor|motorcycle|bike|laptop|phone|aircon|house|roof|brake|engine)\s+needs?\s+work\b",
+        r"\bi\s+just\s+need\s+to\s+vent\b",
+        r"\brant\s*[:\-]\b",
+        r"\bjust\s+ranting\b",
+        r"\bventing\s+about\b",
+    )
+    for pat in misaligned_work_patterns:
+        if re.search(pat, text):
+            return False, f"Matched '{kw}', but context is a rant, personal vent, or repair phrase rather than job-seeking."
+
+    # 2. Workplace rants / complaints that mention work/hiring without seeking or offering a job
+    rant_markers = (
+        "hate my job", "tired of my job", "toxic workplace", "toxic boss",
+        "toxic management", "kapoy kaayo sa work", "kapoy na sa trabaho",
+        "burnout", "burned out", "worst company", "delayed sweldo",
+        "walay klaro nga management", "resign na ba ko", "should i resign",
+        "why is hiring so", "fake hiring", "ghost job",
+    )
+    actionable_markers = (
+        "hire me", "for hire", "looking for a job", "looking for part time",
+        "willing to start", "send resume", "send your resume", "apply now",
+        "dm me", "pm me", "interested po", "pwede mo apply", "how to apply",
+    )
+    if any(rm in text for rm in rant_markers) and not any(am in text for am in actionable_markers):
+        return False, "Detected workplace rant/complaint rather than an actionable jobseeker or hiring post."
+
+    return True, "Context aligns with target lead category."
+
+
+def _extract_interaction_text(resp):
+    if not isinstance(resp, dict):
+        return ""
+    if isinstance(resp.get("output_text"), str) and resp["output_text"].strip():
+        return resp["output_text"].strip()
+    for step in reversed(resp.get("steps") or []):
+        if isinstance(step, dict) and step.get("type") == "model_output":
+            parts = []
+            for c in step.get("content") or []:
+                if isinstance(c, dict) and c.get("type") == "text" and c.get("text"):
+                    parts.append(str(c["text"]))
+            if parts:
+                return "".join(parts).strip()
+    for out in reversed(resp.get("outputs") or []):
+        if isinstance(out, dict) and out.get("text"):
+            return str(out["text"]).strip()
+    return ""
+
+
+def gemini_screen_leads_batch(leads_batch, api_key, model="gemini-3.5-flash-lite"):
+    """
+    Calls the Gemini Interactions API with structured JSON output to verify whether
+    each scraped post/comment is genuinely an actionable lead or a rant/misaligned post.
+    """
+    if not api_key or not leads_batch:
+        return {}
+    chosen_model = model if model in ("gemini-3.5-flash-lite", "gemini-4-hydrogen", "gemini-4-argon", "gemini-3.1-flash-lite") else "gemini-3.5-flash-lite"
+
+    compact_input = []
+    for idx, ld in enumerate(leads_batch):
+        key = str(ld.get("external_id") or ld.get("id") or idx)
+        compact_input.append({
+            "id": key,
+            "kind": ld.get("kind", "post"),
+            "source": ld.get("source", ""),
+            "detected_intent": ld.get("intent", "seeker"),
+            "matched_keyword": ld.get("matched_keyword", ""),
+            "title": _short(ld.get("title") or "", 140),
+            "text": _short(ld.get("content") or "", 360),
+        })
+
+    prompt = (
+        "Evaluate each social media post/comment below for a Cebu/Philippines lead finder.\n"
+        "Mark aligned=true ONLY if the author is genuinely:\n"
+        "- 'seeker': looking for work/gig or commenting to apply ('interested po', 'how to apply', 'nangita kog trabaho')\n"
+        "- 'employer': hiring staff/applicants ('we are hiring', 'urgent hiring', 'looking for crew')\n"
+        "- 'seller': selling PC parts/items ('for sale', 'fs', 'rfs')\n"
+        "- 'buyer': looking to buy items ('lf', 'wtb', 'looking for gpu/ram')\n\n"
+        "Mark aligned=false if the post is just ranting/venting about work/boss/life, asking general career advice without seeking/offering a job, "
+        "talking about needing repair work on an object ('my car needs work'), or unrelated discussion.\n"
+        "Provide a concise 1-sentence reason for each item.\n\n"
+        f"ITEMS_JSON:\n{json.dumps(compact_input, ensure_ascii=False)}"
+    )
+
+    body = {
+        "model": chosen_model,
+        "store": False,
+        "input": prompt,
+        "response_format": {
+            "type": "text",
+            "mime_type": "application/json",
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "decisions": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {"type": "string"},
+                                "aligned": {"type": "boolean"},
+                                "intent": {"type": "string"},
+                                "reason": {"type": "string"},
+                            },
+                            "required": ["id", "aligned", "reason"],
+                        },
+                    }
+                },
+                "required": ["decisions"],
+            },
+        },
+    }
+
+    url = "https://generativelanguage.googleapis.com/v1beta/interactions"
+    resp = http_request(
+        url,
+        method="POST",
+        body=body,
+        headers={
+            "x-goog-api-key": api_key,
+            "Api-Revision": "2026-05-20",
+        },
+        timeout=30,
+    )
+    raw_txt = _extract_interaction_text(resp)
+    if not raw_txt:
+        return {}
+    parsed = json.loads(raw_txt)
+    decisions = parsed.get("decisions") if isinstance(parsed, dict) else (parsed if isinstance(parsed, list) else [])
+    out = {}
+    for d in decisions or []:
+        if isinstance(d, dict) and d.get("id") is not None:
+            out[str(d["id"])] = {
+                "aligned": bool(d.get("aligned", True)),
+                "intent": str(d.get("intent") or "").lower().strip(),
+                "reason": _short(str(d.get("reason") or ""), 200),
+            }
+    return out
+
+
+def screen_leads_with_ai(leads_list, settings):
+    """
+    Screens a list of lead dicts in-place:
+    1. Runs contextual rant/misaligned heuristic check.
+    2. If ai_filter_enabled and gemini_api_key is configured, batches remaining leads to Gemini.
+    3. Any lead with aligned=False gets status='ai_filtered', ai_verdict='filtered', and ai_reason.
+    """
+    if not leads_list:
+        return leads_list
+    s = settings or {}
+    ai_enabled = bool(s.get("ai_filter_enabled", True))
+    api_key = (s.get("gemini_api_key") or "").strip()
+    model = (s.get("gemini_model") or "gemini-3.5-flash-lite").strip()
+
+    to_gemini = []
+    for ld in leads_list:
+        aligned, reason = detect_rant_or_misaligned_heuristic(ld)
+        if not aligned and ai_enabled:
+            ld["ai_verdict"] = "filtered"
+            ld["ai_reason"] = reason
+            ld["status"] = "ai_filtered"
+        else:
+            ld["ai_verdict"] = ld.get("ai_verdict") or "approved"
+            ld["ai_reason"] = ld.get("ai_reason") or reason
+            to_gemini.append(ld)
+
+    if ai_enabled and api_key and to_gemini:
+        for i in range(0, len(to_gemini), 15):
+            chunk = to_gemini[i : i + 15]
+            try:
+                verdicts = gemini_screen_leads_batch(chunk, api_key, model=model)
+                for ld in chunk:
+                    key = str(ld.get("external_id") or ld.get("id") or "")
+                    v = verdicts.get(key)
+                    if not v:
+                        continue
+                    if not v["aligned"]:
+                        ld["ai_verdict"] = "filtered"
+                        ld["ai_reason"] = f"Gemini AI: {v['reason']}"
+                        ld["status"] = "ai_filtered"
+                    else:
+                        ld["ai_verdict"] = "approved"
+                        ld["ai_reason"] = f"Gemini AI: {v['reason']}"
+                        if v.get("intent") in ("seeker", "employer", "buyer", "seller"):
+                            ld["intent"] = v["intent"]
+            except Exception as e:
+                print(f"[gemini-ai] Batch screening fallback: {e}")
+
+    return leads_list
+
+
+def send_webhook_notification(webhook_url, new_leads, trigger="auto"):
+    webhook_url = (webhook_url or "").strip()
+    if not webhook_url or not new_leads:
+        return False
+    lines = [f"🔔 Unified Lead Scout ({trigger}): {len(new_leads)} new lead(s) found!"]
+    for ld in new_leads[:5]:
+        lines.append(f"• [{ld.get('source', 'Lead')}] {_short(ld.get('title') or ld.get('content'), 90)} -> {ld.get('url')}")
+    summary = "\n".join(lines)
+    try:
+        http_request(
+            webhook_url,
+            method="POST",
+            body={"content": summary, "text": summary, "new_count": len(new_leads), "leads": new_leads[:5]},
+            timeout=10,
+        )
+        return True
+    except Exception as e:
+        print(f"[webhook] Notification failed: {e}")
+        return False
+
+
 class ScanManager:
     def __init__(self):
         self._lock = threading.Lock()
@@ -1624,7 +2190,7 @@ class ScanManager:
         self._active_ctx = None
         self.last_finished_epoch = 0.0
         self.state = {"running": False, "cancelled": False, "finished_at": None, "adapters": {},
-                      "new_total": 0, "matched_total": 0}
+                      "new_total": 0, "matched_total": 0, "latest_new": []}
 
     def status(self):
         with self._lock:
@@ -1652,7 +2218,7 @@ class ScanManager:
                 "params": {k: params.get(k) for k in ("query", "location", "max_age_days", "intents")},
                 "adapters": {k: {"label": PLATFORM_ADAPTERS[k]["label"], "status": "queued",
                                  "message": "", "fetched": 0, "matched": 0, "new": 0} for k in platforms},
-                "new_total": 0, "matched_total": 0,
+                "new_total": 0, "matched_total": 0, "latest_new": [],
             }
         threading.Thread(target=self._run, args=(config, params, platforms, seq, cancel_ev), daemon=True).start()
         return True
@@ -1696,6 +2262,7 @@ class ScanManager:
             except Exception as e:
                 return key, result("error", f"Unexpected error: {e}")
 
+        newly_saved_leads = []
         try:
             with ThreadPoolExecutor(max_workers=max(1, len(platforms))) as pool:
                 for fut in as_completed([pool.submit(run_one, k) for k in platforms]):
@@ -1704,6 +2271,7 @@ class ScanManager:
                         continue
                     matched = new = 0
                     seen = set()
+                    candidates = []
                     for raw in res["items"]:
                         if cancel_ev.is_set():
                             break
@@ -1711,19 +2279,41 @@ class ScanManager:
                         if not lead or lead["external_id"] in seen:
                             continue
                         seen.add(lead["external_id"])
+                        candidates.append(lead)
+
+                    if candidates and not cancel_ev.is_set():
+                        screen_leads_with_ai(candidates, ctx.settings)
+
+                    for lead in candidates:
+                        if cancel_ev.is_set():
+                            break
                         is_saved = save_lead(**lead)
-                        if lead_matches_active_filters(lead, ctx):
+                        if lead.get("status") != "ai_filtered" and lead_matches_active_filters(lead, ctx):
                             matched += 1
                             if is_saved:
                                 new += 1
+                                if len(newly_saved_leads) < 5:
+                                    newly_saved_leads.append({
+                                        "title": lead.get("title", ""),
+                                        "source": lead.get("source", ""),
+                                        "url": lead.get("url", ""),
+                                        "intent": lead.get("intent", ""),
+                                    })
                     self._update(key, seq=seq, status=res["status"], message=res["message"],
                                  fetched=res["fetched"], matched=matched, new=new)
                     with self._lock:
                         if seq == self._scan_seq:
                             self.state["new_total"] += new
                             self.state["matched_total"] += matched
+                            self.state["latest_new"] = list(newly_saved_leads)
                     if res["status"] in ("error", "partial"):
                         print(f"[scan] {key}: {res['message']}")
         finally:
             self.last_finished_epoch = time.time()
             self._update(seq=seq, running=False, finished_at=utc_now_sql())
+            if newly_saved_leads and not cancel_ev.is_set() and ctx.settings.get("alert_webhook_url"):
+                threading.Thread(
+                    target=send_webhook_notification,
+                    args=(ctx.settings["alert_webhook_url"], newly_saved_leads, ctx.trigger),
+                    daemon=True,
+                ).start()

@@ -1,5 +1,7 @@
+import csv
 import http.server
 import importlib
+import io
 import json
 import os
 import re
@@ -98,6 +100,7 @@ class LeadScoutHandler(http.server.BaseHTTPRequestHandler):
                     content = f.read()
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
                 self.send_header("Content-Length", str(len(content)))
                 self.end_headers()
                 self.wfile.write(content)
@@ -109,6 +112,9 @@ class LeadScoutHandler(http.server.BaseHTTPRequestHandler):
 
         if path == "/api/leads":
             cfg = load_config()
+            settings = scanners.get_settings(cfg)
+            if settings.get("auto_archive_days", 0) > 0:
+                database.auto_archive_old_leads(settings["auto_archive_days"])
             status_filter = query.get("status", ["all"])[0]
             q_kw = query.get("q", [""])[0]
             location = query.get("location", ["Any"])[0]
@@ -132,6 +138,58 @@ class LeadScoutHandler(http.server.BaseHTTPRequestHandler):
                 "scan": SCAN_MANAGER.status(),
                 "adapters": scanners.get_registered_adapters(cfg),
             })
+            return
+
+        if path == "/api/leads/export":
+            status_filter = query.get("status", ["all"])[0]
+            q_kw = query.get("q", [""])[0]
+            location = query.get("location", ["Any"])[0]
+            max_age_days = int(query.get("max_age_days", ["365"])[0] or 365)
+            platforms_raw = query.get("platforms", [""])[0]
+            platforms = [p.strip() for p in platforms_raw.split(",") if p.strip()] if platforms_raw else None
+            intents_raw = query.get("intents", [""])[0]
+            intents = [i.strip() for i in intents_raw.split(",") if i.strip()] if intents_raw else None
+
+            leads = database.search_leads(
+                query=q_kw,
+                platforms=platforms,
+                intents=intents,
+                location=location,
+                status_filter=status_filter,
+                max_age_days=max_age_days,
+                limit=2000,
+            )
+            buf = io.StringIO()
+            writer = csv.writer(buf)
+            writer.writerow([
+                "ID", "Status", "Intent", "AI_Verdict", "AI_Reason",
+                "Source", "Author", "Location", "Posted_At",
+                "Matched_Keyword", "Title", "Content", "Notes", "URL"
+            ])
+            for ld in leads:
+                writer.writerow([
+                    ld.get("id", ""),
+                    ld.get("status", ""),
+                    ld.get("intent", ""),
+                    ld.get("ai_verdict", ""),
+                    ld.get("ai_reason", ""),
+                    ld.get("source", ""),
+                    ld.get("author", ""),
+                    ld.get("location", ""),
+                    ld.get("posted_at") or ld.get("found_at") or "",
+                    ld.get("matched_keyword", ""),
+                    ld.get("title", ""),
+                    ld.get("content", ""),
+                    ld.get("notes", ""),
+                    ld.get("url", ""),
+                ])
+            csv_bytes = buf.getvalue().encode("utf-8-sig")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/csv; charset=utf-8")
+            self.send_header("Content-Disposition", 'attachment; filename="unified_leads_export.csv"')
+            self.send_header("Content-Length", str(len(csv_bytes)))
+            self.end_headers()
+            self.wfile.write(csv_bytes)
             return
 
         if path == "/api/scan/status":
@@ -183,7 +241,8 @@ class LeadScoutHandler(http.server.BaseHTTPRequestHandler):
                 "location": location,
                 "max_age_days": max_age_days,
             }
-            started = SCAN_MANAGER.start(cfg, params, trigger="search" if path == "/api/search" else "scan")
+            req_trigger = payload.get("trigger") or ("search" if path == "/api/search" else "scan")
+            started = SCAN_MANAGER.start(cfg, params, trigger=req_trigger)
 
             wait_deadline = time.time() + float(payload.get("wait_seconds", 2))
             while SCAN_MANAGER.status().get("running") and time.time() < wait_deadline:
@@ -293,12 +352,80 @@ class LeadScoutHandler(http.server.BaseHTTPRequestHandler):
             })
             return
 
+        if path == "/api/alerts/test":
+            cfg = load_config()
+            s_cfg = cfg.get("search_settings", {})
+            wh_url = (payload.get("webhook_url") or s_cfg.get("alert_webhook_url") or cfg.get("alert_webhook_url") or "").strip()
+            sample = [{
+                "title": "Test Alert: Urgent hiring barista / jobseeker lead in Cebu",
+                "source": "Unified Lead Scout (Test)",
+                "url": "http://localhost:5050",
+                "intent": "seeker",
+            }]
+            sent = scanners.send_webhook_notification(wh_url, sample, trigger="test") if wh_url else False
+            self.send_json({"success": True, "webhook_configured": bool(wh_url), "webhook_sent": sent})
+            return
+
+        if path == "/api/leads/ai-audit":
+            cfg = load_config()
+            settings = scanners.get_settings(cfg)
+            active_leads = database.search_leads(status_filter="all", max_age_days=365, limit=300)
+            scanners.screen_leads_with_ai(active_leads, settings)
+            filtered_count = 0
+            for ld in active_leads:
+                verdict = ld.get("ai_verdict", "approved")
+                reason = ld.get("ai_reason", "")
+                if verdict == "filtered":
+                    filtered_count += 1
+                    database.update_lead_ai_verdict(ld["id"], verdict, reason, new_status="ai_filtered")
+                else:
+                    database.update_lead_ai_verdict(ld["id"], verdict, reason)
+            self.send_json({
+                "success": True,
+                "checked_count": len(active_leads),
+                "filtered_count": filtered_count,
+                "stats": database.get_stats(),
+            })
+            return
+
         self.send_response(404)
         self.end_headers()
 
 
+def _autoscan_loop():
+    last_auto_ts = time.time()
+    while True:
+        time.sleep(15)
+        try:
+            ensure_fresh_modules()
+            cfg = load_config()
+            s_cfg = cfg.get("search_settings", {})
+            mins = int(s_cfg.get("autoscan_minutes", cfg.get("autoscan_minutes", 0)) or 0)
+            if mins <= 0:
+                continue
+            if SCAN_MANAGER.status().get("running"):
+                continue
+            now = time.time()
+            last_done = max(last_auto_ts, getattr(SCAN_MANAGER, "last_finished_epoch", 0.0))
+            if (now - last_done) >= mins * 60:
+                last_auto_ts = now
+                platforms = ["reddit_posts", "reddit_comments", "public_web", "facebook", "tiktok", "instagram"]
+                params = {
+                    "query": "",
+                    "platforms": platforms,
+                    "intents": ["seeker", "employer", "buyer", "seller"],
+                    "location": s_cfg.get("location", "Cebu"),
+                    "max_age_days": int(s_cfg.get("max_age_days", 7) or 7),
+                }
+                print(f"[autoscan] Running scheduled credit-safe scan (every {mins}m)...")
+                SCAN_MANAGER.start(cfg, params, trigger="auto")
+        except Exception as e:
+            print(f"[autoscan] Error: {e}")
+
+
 def run_server():
     database.init_db()
+    threading.Thread(target=_autoscan_loop, daemon=True).start()
     server_address = ("127.0.0.1", PORT)
     httpd = ReusableTCPServer(server_address, LeadScoutHandler)
     print("=====================================================")

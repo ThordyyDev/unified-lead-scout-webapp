@@ -2,6 +2,21 @@
   "search_settings": {
     "location": "Cebu",
     "max_age_days": 7,
+    "autoscan_minutes": 0,
+    "desktop_notifications": true,
+    "alert_webhook_url": "",
+    "blocked_keywords": [
+      "networking",
+      "frontrow",
+      "paluwagan",
+      "online casino",
+      "scatter",
+      "crypto investment",
+      "forex signal",
+      "binary option",
+      "task scam"
+    ],
+    "blocked_authors": [],
     "seeker_keywords": [
       "looking for a job",
       "looking for job",
@@ -66,6 +81,19 @@
     "buhaydigital"
   ],
   "apify_token": "",
+  "providers": {
+    "search_mode": "auto",
+    "apify_cache_minutes": 10,
+    "gemini_api_key": "",
+    "gemini_model": "gemini-3.5-flash-lite",
+    "ai_filter_enabled": true,
+    "auto_archive_days": 14,
+    "serper_api_key": "",
+    "tavily_api_key": "",
+    "brave_api_key": "",
+    "custom_api_url": "",
+    "custom_api_key": ""
+  },
   "reddit": {
     "client_id": "",
     "client_secret": ""
