@@ -212,6 +212,8 @@ def is_valid_lead_url(platform, url, external_id=""):
     # 'web' / public_web
     if not any(host == d or host.endswith("." + d) for d in ALLOWED_WEB_DOMAINS):
         return False
+    if host == "linkedin.com" or host.endswith(".linkedin.com"):
+        return "/jobs/" in path
     return True
 
 
@@ -268,12 +270,20 @@ def init_db():
                                 OR LOWER(NEW.url) LIKE 'https://mbasic.facebook.com/%'
                                 OR LOWER(NEW.url) LIKE 'https://fb.com/%'
                                 OR LOWER(NEW.url) LIKE 'https://www.fb.com/%'
+                                OR LOWER(NEW.url) LIKE 'http://www.facebook.com/%'
+                                OR LOWER(NEW.url) LIKE 'http://facebook.com/%'
+                                OR LOWER(NEW.url) LIKE 'http://m.facebook.com/%'
+                                OR LOWER(NEW.url) LIKE 'http://web.facebook.com/%'
+                                OR LOWER(NEW.url) LIKE 'http://mbasic.facebook.com/%'
+                                OR LOWER(NEW.url) LIKE 'http://fb.com/%'
+                                OR LOWER(NEW.url) LIKE 'http://www.fb.com/%'
                             )
                             AND (
                                 LOWER(NEW.url) LIKE '%/groups/%'
                                 OR LOWER(NEW.url) LIKE '%/posts/%'
                                 OR LOWER(NEW.url) LIKE '%/permalink%'
                                 OR LOWER(NEW.url) LIKE '%story_fbid=%'
+                                OR LOWER(NEW.url) LIKE '%fbid=%'
                                 OR LOWER(NEW.url) LIKE '%/reel/%'
                                 OR LOWER(NEW.url) LIKE '%/videos/%'
                                 OR LOWER(NEW.url) LIKE '%/watch%'
@@ -290,7 +300,7 @@ def init_db():
                     )
                     OR (
                         NEW.platform = 'tiktok' AND NOT (
-                            LOWER(NEW.url) LIKE 'https://%tiktok.com/%'
+                            (LOWER(NEW.url) LIKE 'https://%tiktok.com/%' OR LOWER(NEW.url) LIKE 'http://%tiktok.com/%')
                             AND (
                                 LOWER(NEW.url) LIKE '%/@%/video/%'
                                 OR LOWER(NEW.url) LIKE '%/@%/photo/%'
@@ -306,7 +316,7 @@ def init_db():
                     )
                     OR (
                         NEW.platform = 'instagram' AND NOT (
-                            LOWER(NEW.url) LIKE 'https://%instagram.com/%'
+                            (LOWER(NEW.url) LIKE 'https://%instagram.com/%' OR LOWER(NEW.url) LIKE 'http://%instagram.com/%')
                             AND (
                                 LOWER(NEW.url) LIKE '%/p/%'
                                 OR LOWER(NEW.url) LIKE '%/reel/%'
@@ -320,21 +330,25 @@ def init_db():
                     )
                     OR (
                         NEW.platform = 'reddit' AND NOT (
-                            LOWER(NEW.url) LIKE 'https://%reddit.com/r/%/comments/%'
+                            LOWER(NEW.url) LIKE 'https://%reddit.com/%/comments/%'
+                            OR LOWER(NEW.url) LIKE 'https://%reddit.com/comments/%'
+                            OR LOWER(NEW.url) LIKE 'http://%reddit.com/%/comments/%'
+                            OR LOWER(NEW.url) LIKE 'http://%reddit.com/comments/%'
                         )
                     )
                     OR (
                         NEW.platform = 'web' AND NOT (
-                            LOWER(NEW.url) LIKE 'https://%mynimo.com/%'
-                            OR LOWER(NEW.url) LIKE 'https://%jobstreet.com.ph/%'
-                            OR LOWER(NEW.url) LIKE 'https://%indeed.com/%'
-                            OR LOWER(NEW.url) LIKE 'https://%bossjob.ph/%'
-                            OR LOWER(NEW.url) LIKE 'https://%onlinejobs.ph/%'
-                            OR LOWER(NEW.url) LIKE 'https://%kalibrr.com/%'
-                            OR LOWER(NEW.url) LIKE 'https://%philjobnet.gov.ph/%'
-                            OR LOWER(NEW.url) LIKE 'https://%foundit.ph/%'
-                            OR LOWER(NEW.url) LIKE 'https://%jora.com/%'
-                            OR LOWER(NEW.url) LIKE 'https://%linkedin.com/jobs/%'
+                            LOWER(NEW.url) LIKE 'http%://%mynimo.com/%'
+                            OR LOWER(NEW.url) LIKE 'http%://%jobstreet.com.ph/%'
+                            OR LOWER(NEW.url) LIKE 'http%://%indeed.com/%'
+                            OR LOWER(NEW.url) LIKE 'http%://%bossjob.ph/%'
+                            OR LOWER(NEW.url) LIKE 'http%://%onlinejobs.ph/%'
+                            OR LOWER(NEW.url) LIKE 'http%://%kalibrr.com/%'
+                            OR LOWER(NEW.url) LIKE 'http%://%philjobnet.gov.ph/%'
+                            OR LOWER(NEW.url) LIKE 'http%://%foundit.ph/%'
+                            OR LOWER(NEW.url) LIKE 'http%://%jora.com/%'
+                            OR LOWER(NEW.url) LIKE 'http%://%linkedin.com/jobs/%'
+                            OR LOWER(NEW.url) LIKE 'http%://%craigslist.org/%'
                         )
                     )
                 )
@@ -417,6 +431,15 @@ def init_db():
     conn.close()
 
 
+LOCATION_MATCH_TERMS = {
+    "cebu": (
+        "cebu", "mandaue", "lapu-lapu", "lapulapu", "lapu lapu", "talisay", "consolacion",
+        "liloan", "minglanilla", "carcar", "danao", "toledo", "it park", "banilad", "mabolo",
+        "lahug", "guadalupe", "fuente", "mactan", "cordova", "sm seaside", "ayala", "talamban",
+    ),
+}
+
+
 def save_lead(source, external_id, title, content, author, url, location="",
               posted_at=None, platform="", kind="post", intent="",
               matched_keyword="", parent_url="", status="new",
@@ -444,6 +467,18 @@ def save_lead(source, external_id, title, content, author, url, location="",
                  matched_keyword or "", parent_url or "", status or "new",
                  ai_verdict or "", ai_reason or ""),
             )
+            if cur.rowcount == 0 and (ai_verdict or status == "ai_filtered"):
+                conn.execute(
+                    """
+                    UPDATE leads
+                    SET ai_verdict = CASE WHEN status = 'new' THEN ? ELSE ai_verdict END,
+                        ai_reason = CASE WHEN status = 'new' THEN ? ELSE ai_reason END,
+                        status = CASE WHEN status = 'new' AND (? = 'ai_filtered' OR ? = 'filtered') THEN 'ai_filtered' ELSE status END,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE external_id = ?
+                    """,
+                    (ai_verdict or "filtered", ai_reason or "", status or "", ai_verdict or "", external_id),
+                )
             return cur.rowcount > 0
     finally:
         conn.close()
@@ -500,8 +535,10 @@ def search_leads(query="", platforms=None, intents=None, location="Any", status_
             continue
         haystack = " ".join(str(row.get(k) or "") for k in
                             ("title", "content", "author", "source", "location", "matched_keyword", "notes", "ai_reason")).lower()
-        if loc and loc != "any" and loc not in haystack and "remote" not in haystack:
-            continue
+        if loc and loc != "any":
+            loc_terms = LOCATION_MATCH_TERMS.get(loc, (loc,))
+            if not any(t in haystack for t in loc_terms) and "remote" not in haystack:
+                continue
         if q and not smart_query_matches(haystack, q):
             continue
         out.append(row)
@@ -580,25 +617,80 @@ def delete_lead(lead_id):
         conn.close()
 
 
-def get_stats():
+def get_stats(platforms=None):
     conn = get_db()
     try:
-        one = lambda sql: conn.execute(sql).fetchone()[0]
-        active_where = "status NOT IN ('ai_filtered', 'archived')"
-        return {
-            "total": one(f"SELECT COUNT(*) FROM leads WHERE {active_where}"),
-            "new": one("SELECT COUNT(*) FROM leads WHERE status = 'new'"),
-            "contacted": one("SELECT COUNT(*) FROM leads WHERE status IN ('contacted', 'followup', 'closed')"),
-            "followup": one("SELECT COUNT(*) FROM leads WHERE status = 'followup' OR (status = 'contacted' AND COALESCE(updated_at, found_at) <= datetime('now', '-2 days'))"),
-            "closed": one("SELECT COUNT(*) FROM leads WHERE status = 'closed'"),
-            "archived": one("SELECT COUNT(*) FROM leads WHERE status = 'archived'"),
-            "ai_filtered": one("SELECT COUNT(*) FROM leads WHERE status = 'ai_filtered'"),
-            "seekers": one(f"SELECT COUNT(*) FROM leads WHERE {active_where} AND intent = 'seeker'"),
-            "employers": one(f"SELECT COUNT(*) FROM leads WHERE {active_where} AND intent = 'employer'"),
-            "buyers": one(f"SELECT COUNT(*) FROM leads WHERE {active_where} AND intent = 'buyer'"),
-            "sellers": one(f"SELECT COUNT(*) FROM leads WHERE {active_where} AND intent = 'seller'"),
-            "market": one(f"SELECT COUNT(*) FROM leads WHERE {active_where} AND intent IN ('buyer', 'seller')"),
-            "comments": one(f"SELECT COUNT(*) FROM leads WHERE {active_where} AND kind = 'comment'"),
+        if platforms is None:
+            one = lambda sql: conn.execute(sql).fetchone()[0]
+            active_where = "status NOT IN ('ai_filtered', 'archived')"
+            return {
+                "total": one(f"SELECT COUNT(*) FROM leads WHERE {active_where}"),
+                "new": one("SELECT COUNT(*) FROM leads WHERE status = 'new'"),
+                "contacted": one("SELECT COUNT(*) FROM leads WHERE status IN ('contacted', 'followup', 'closed')"),
+                "followup": one("SELECT COUNT(*) FROM leads WHERE status = 'followup' OR (status = 'contacted' AND COALESCE(updated_at, found_at) <= datetime('now', '-2 days'))"),
+                "closed": one("SELECT COUNT(*) FROM leads WHERE status = 'closed'"),
+                "archived": one("SELECT COUNT(*) FROM leads WHERE status = 'archived'"),
+                "ai_filtered": one("SELECT COUNT(*) FROM leads WHERE status = 'ai_filtered'"),
+                "seekers": one(f"SELECT COUNT(*) FROM leads WHERE {active_where} AND intent = 'seeker'"),
+                "employers": one(f"SELECT COUNT(*) FROM leads WHERE {active_where} AND intent = 'employer'"),
+                "buyers": one(f"SELECT COUNT(*) FROM leads WHERE {active_where} AND intent = 'buyer'"),
+                "sellers": one(f"SELECT COUNT(*) FROM leads WHERE {active_where} AND intent = 'seller'"),
+                "market": one(f"SELECT COUNT(*) FROM leads WHERE {active_where} AND intent IN ('buyer', 'seller')"),
+                "comments": one(f"SELECT COUNT(*) FROM leads WHERE {active_where} AND kind = 'comment'"),
+            }
+
+        allowed = set(platforms)
+        rows = [
+            dict(r)
+            for r in conn.execute(
+                """
+                SELECT platform, source, kind, intent, status, url, external_id,
+                       (COALESCE(updated_at, found_at) <= datetime('now', '-2 days')) AS is_stale
+                FROM leads
+                """
+            ).fetchall()
+        ]
+        counts = {
+            "total": 0, "new": 0, "contacted": 0, "followup": 0,
+            "closed": 0, "archived": 0, "ai_filtered": 0,
+            "seekers": 0, "employers": 0, "buyers": 0, "sellers": 0,
+            "market": 0, "comments": 0,
         }
+        for row in rows:
+            plat = row.get("platform") or infer_platform(row.get("source"))
+            if not is_valid_lead_url(plat, row.get("url"), row.get("external_id", "")):
+                continue
+            if platform_key(row) not in allowed:
+                continue
+            st = row.get("status") or "new"
+            intent = row.get("intent") or ""
+            kind = row.get("kind") or "post"
+            if st == "new":
+                counts["new"] += 1
+            elif st == "ai_filtered":
+                counts["ai_filtered"] += 1
+            elif st == "archived":
+                counts["archived"] += 1
+            elif st == "closed":
+                counts["closed"] += 1
+            if st in ("contacted", "followup", "closed"):
+                counts["contacted"] += 1
+            if st == "followup" or (st == "contacted" and row.get("is_stale")):
+                counts["followup"] += 1
+            if st not in ("ai_filtered", "archived"):
+                counts["total"] += 1
+                if intent == "seeker":
+                    counts["seekers"] += 1
+                elif intent == "employer":
+                    counts["employers"] += 1
+                elif intent == "buyer":
+                    counts["buyers"] += 1
+                    counts["market"] += 1
+                elif intent == "seller":
+                    counts["sellers"] += 1
+                    counts["market"] += 1
+                if kind == "comment":
+                    counts["comments"] += 1
+        return counts
     finally:
         conn.close()
