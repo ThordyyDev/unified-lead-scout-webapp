@@ -68,15 +68,20 @@ DEFAULT_SEEKER_KEYWORDS = [
     "offering coaching", "errand runner", "currently unemployed", "unemployed for",
     "nangita kog trabaho", "nangita ug trabaho", "nangita ko trabaho",
     "ngita kog trabaho", "ngita ko trabaho", "ngita trabaho", "pangita trabaho",
-    "mangita trabaho", "naghahanap ng trabaho", "naghahanap ako ng trabaho",
-    "hanap trabaho", "pwede mo apply", "pwede pa mo apply", "pwede ko mo apply",
+    "mangita trabaho", "ngita unta ko work", "ngita unta kog work", "ngita unta ko trabaho",
+    "ngita unta kog trabaho", "nangita unta ko", "nangita unta kog",
+    "naghahanap ng trabaho", "naghahanap ako ng trabaho", "naghahanap po ako ng trabaho",
+    "naghahanap po ng trabaho", "hanap trabaho", "hanap po ako ng trabaho",
+    "pwede mo apply", "pwede pa mo apply", "pwede ko mo apply",
     "pwede pa apply", "pwede mag apply", "unsaon pag apply", "paano mag apply",
     "asa dapit mo apply", "how to apply", "where to apply", "interested po",
     "interested ako", "interested here", "interested ko", "interested maam",
     "interested sir", "i'm interested", "im interested", "interested",
     "willing to start asap", "willing to start immediately", "willing to start",
     "can start immediately", "can start asap", "available immediately",
-    "naay hiring", "naa bay hiring", "any hiring", "still hiring", "hiring pa",
+    "naay hiring", "naa bay hiring", "naa moy nahibaw-an nga hiring",
+    "kinsa naay hiring", "kinsay naay hiring", "any hiring", "still hiring", "hiring pa",
+    "pa-aplya ko", "pa aplya ko", "paaplya ko",
     "pa apply", "apply ko", "apply ta", "pa refer", "how po", "no experience",
     "mo duty", "pm sir", "pm boss", "pm maam", "nag message ko", "nag pm ko",
     "check message",
@@ -93,7 +98,8 @@ DEFAULT_EMPLOYER_KEYWORDS = [
     "looking for dishwasher", "looking for service crew", "looking for helper",
     "looking for cook", "looking for cashier", "looking for barista",
     "looking for virtual assistant", "accepting applicants", "walk-in applicants",
-    "walk in applicants", "nangita mi", "nangita kami", "nanginahanglan mi",
+    "walk in applicants", "nangita mi", "nangita kami", "ngita mi", "ngita kami",
+    "ngita mig", "nangita mig", "nanginahanglan mi", "nanginahanglan kami",
     "naghahanap kami", "kailangan namin", "hiring staff", "hiring crew",
     "we need staff",
 ]
@@ -106,6 +112,9 @@ DEFAULT_SELLER_KEYWORDS = [
 
 DEFAULT_BUYER_KEYWORDS = [
     "wtb", "want to buy", "lf:", "kuhaon dayon", "pila last price", "last price",
+    "buying", "drop offers", "hm", "how much", "pila ni",
+    "looking for gaming laptop", "looking for laptop", "looking for gpu",
+    "looking for ram", "looking for pc",
 ]
 
 DEFAULT_LOCATION_TERMS = {
@@ -143,6 +152,15 @@ DEFAULT_BLOCKED_KEYWORDS = [
 ]
 
 
+def _safe_int(val, default=0):
+    try:
+        if val in (None, ""):
+            return default
+        return int(val)
+    except (ValueError, TypeError):
+        return default
+
+
 def _as_list(value):
     if isinstance(value, str):
         value = re.split(r"[\n,]", value)
@@ -150,19 +168,19 @@ def _as_list(value):
 
 
 def get_settings(config):
-    config = config or {}
-    s = config.get("search_settings", {})
-    social = config.get("social", {})
-    reddit = config.get("reddit", {})
-    providers = config.get("providers", {}) if isinstance(config.get("providers"), dict) else {}
+    config = config if isinstance(config, dict) else {}
+    s = config.get("search_settings") if isinstance(config.get("search_settings"), dict) else {}
+    social = config.get("social") if isinstance(config.get("social"), dict) else {}
+    reddit = config.get("reddit") if isinstance(config.get("reddit"), dict) else {}
+    providers = config.get("providers") if isinstance(config.get("providers"), dict) else {}
     raw_mode = str(providers.get("search_mode") or config.get("search_mode") or "auto").strip().lower()
     search_mode = raw_mode if raw_mode in ("auto", "alternative_only", "apify_only") else "auto"
-    cache_mins = int(providers.get("apify_cache_minutes", config.get("apify_cache_minutes", 10)) or 10)
+    cache_mins = _safe_int(providers.get("apify_cache_minutes", config.get("apify_cache_minutes", 10)), 10)
     raw_blocked_kw = s.get("blocked_keywords") if "blocked_keywords" in s else config.get("blocked_keywords")
     blocked_keywords = [k.lower() for k in (_as_list(raw_blocked_kw) if raw_blocked_kw is not None else DEFAULT_BLOCKED_KEYWORDS)]
     raw_blocked_authors = s.get("blocked_authors") if "blocked_authors" in s else config.get("blocked_authors")
     blocked_authors = [re.sub(r"^(@|u/)", "", a.lower()) for a in _as_list(raw_blocked_authors)]
-    autoscan_minutes = max(0, int(s.get("autoscan_minutes", config.get("autoscan_minutes", 0)) or 0))
+    autoscan_minutes = max(0, _safe_int(s.get("autoscan_minutes", config.get("autoscan_minutes", 0)), 0))
     desktop_notifications = bool(s.get("desktop_notifications", config.get("desktop_notifications", True)))
     alert_webhook_url = str(s.get("alert_webhook_url") or config.get("alert_webhook_url") or "").strip()
     # Filter out any buy/sell terms that might have been in config.json seeker/employer lists
@@ -174,9 +192,10 @@ def get_settings(config):
         _as_list(social.get("search_queries"))
         + _as_list(social.get("tiktok_search_queries"))
     ))
+    raw_loc_terms = s.get("location_terms") if isinstance(s.get("location_terms"), dict) and s.get("location_terms") else DEFAULT_LOCATION_TERMS
     return {
-        "location": s.get("location", "Cebu"),
-        "max_age_days": int(s.get("max_age_days", 7) or 7),
+        "location": str(s.get("location") or "Cebu"),
+        "max_age_days": max(1, _safe_int(s.get("max_age_days", 7), 7)),
         "seeker_keywords": seeker_kw,
         "employer_keywords": employer_kw,
         "seller_keywords": list(DEFAULT_SELLER_KEYWORDS),
@@ -187,32 +206,31 @@ def get_settings(config):
         "desktop_notifications": desktop_notifications,
         "alert_webhook_url": alert_webhook_url,
         "custom_queries": custom_queries,
-        "location_terms": {k.lower(): v for k, v in
-                           (s.get("location_terms") or DEFAULT_LOCATION_TERMS).items()},
+        "location_terms": {str(k).lower(): v for k, v in raw_loc_terms.items()},
         "subreddits": [re.sub(r"^/?r/", "", x) for x in (_as_list(config.get("subreddits")) or ["Cebu", "phclassifieds", "buhaydigital"])],
-        "reddit_client_id": reddit.get("client_id", ""),
-        "reddit_client_secret": reddit.get("client_secret", ""),
-        "apify_token": (os.environ.get("APIFY_TOKEN") or config.get("apify_token", "")).strip(),
+        "reddit_client_id": str(reddit.get("client_id") or ""),
+        "reddit_client_secret": str(reddit.get("client_secret") or ""),
+        "apify_token": str(os.environ.get("APIFY_TOKEN") or config.get("apify_token") or "").strip(),
         "search_mode": search_mode,
         "apify_cache_seconds": max(60, cache_mins * 60),
-        "gemini_api_key": (os.environ.get("GEMINI_API_KEY") or providers.get("gemini_api_key") or config.get("gemini_api_key") or "").strip(),
-        "gemini_model": (providers.get("gemini_model") or config.get("gemini_model") or "gemini-3.5-flash-lite").strip(),
+        "gemini_api_key": str(os.environ.get("GEMINI_API_KEY") or providers.get("gemini_api_key") or config.get("gemini_api_key") or "").strip(),
+        "gemini_model": str(providers.get("gemini_model") or config.get("gemini_model") or "gemini-3.5-flash-lite").strip(),
         "ai_filter_enabled": bool(providers.get("ai_filter_enabled", config.get("ai_filter_enabled", True))),
-        "auto_archive_days": int(providers.get("auto_archive_days", s.get("auto_archive_days", config.get("auto_archive_days", 14))) or 0),
-        "serper_api_key": (os.environ.get("SERPER_API_KEY") or providers.get("serper_api_key") or config.get("serper_api_key") or "").strip(),
-        "tavily_api_key": (os.environ.get("TAVILY_API_KEY") or providers.get("tavily_api_key") or config.get("tavily_api_key") or "").strip(),
-        "brave_api_key": (os.environ.get("BRAVE_API_KEY") or providers.get("brave_api_key") or config.get("brave_api_key") or "").strip(),
-        "custom_api_url": (providers.get("custom_api_url") or config.get("custom_api_url") or "").strip(),
-        "custom_api_key": (providers.get("custom_api_key") or config.get("custom_api_key") or "").strip(),
+        "auto_archive_days": max(0, _safe_int(providers.get("auto_archive_days", s.get("auto_archive_days", config.get("auto_archive_days", 14))), 14)),
+        "serper_api_key": str(os.environ.get("SERPER_API_KEY") or providers.get("serper_api_key") or config.get("serper_api_key") or "").strip(),
+        "tavily_api_key": str(os.environ.get("TAVILY_API_KEY") or providers.get("tavily_api_key") or config.get("tavily_api_key") or "").strip(),
+        "brave_api_key": str(os.environ.get("BRAVE_API_KEY") or providers.get("brave_api_key") or config.get("brave_api_key") or "").strip(),
+        "custom_api_url": str(providers.get("custom_api_url") or config.get("custom_api_url") or "").strip(),
+        "custom_api_key": str(providers.get("custom_api_key") or config.get("custom_api_key") or "").strip(),
         "facebook_groups": _as_list(social.get("facebook_groups")),
         "facebook_pages": _as_list(social.get("facebook_pages")),
         "instagram_hashtags": [t.lstrip("#") for t in _as_list(social.get("instagram_hashtags"))],
         "tiktok_search_queries": custom_queries,
         "tiktok_hashtags": [t.lstrip("#") for t in _as_list(social.get("tiktok_hashtags"))],
-        "results_per_source": int(social.get("results_per_source", 30) or 30),
-        "comment_threads_per_platform": int(social.get("comment_threads_per_platform", 3) or 0),
-        "comments_per_thread": int(social.get("comments_per_thread", 50) or 50),
-        "rss_feeds": config.get("rss_feeds", []),
+        "results_per_source": max(1, _safe_int(social.get("results_per_source", 30), 30)),
+        "comment_threads_per_platform": max(0, _safe_int(social.get("comment_threads_per_platform", 3), 3)),
+        "comments_per_thread": max(1, _safe_int(social.get("comments_per_thread", 50), 50)),
+        "rss_feeds": config.get("rss_feeds") if isinstance(config.get("rss_feeds"), list) else [],
     }
 
 
@@ -242,11 +260,23 @@ UNAMBIGUOUS_JOB_WORDS = (
     "full time", "full-time", "for hire", "hire me", "freelance", "remote",
     "gig", "gigs", "unemployed", "opening", "dishwasher", "barista",
     "cashier", "helper", "cook", "driver", "errand", "coach",
+    "waiter", "waitress", "video editor", "graphic designer", "virtual assistant",
+    "bookkeeper", "carpenter", "electrician", "plumber", "welder", "mason",
+    "tindera", "yaya", "housekeeper", "caregiver", "encoder", "accountant",
+)
+
+JOB_ROLE_TERMS = (
+    "dishwasher", "barista", "cashier", "helper", "cook", "driver", "waiter",
+    "waitress", "service crew", "video editor", "graphic designer",
+    "virtual assistant", "bookkeeper", "carpenter", "electrician", "plumber",
+    "welder", "mason", "tindera", "yaya", "housekeeper", "caregiver",
+    "encoder", "accountant", "staff", "crew",
 )
 
 MERCH_SALE_INDICATORS = (
     "for sale", "fs:", "sale or swap", "fix price", "rfs:", "reason for selling",
     "decluttering", "reposting until sold", "brand new and sealed",
+    "slightly used", "good condition",
 )
 
 
@@ -276,9 +306,19 @@ def classify_intent(text_norm, kind, settings, query="", full_context="", source
     """
     ctx_check = full_context or text_norm
     src_low = (source_name or "").lower()
-    is_merch_group = any(g in src_low for g in ("sales & repairs", "buy and sell", "buy & sell", "marketplace"))
+    is_merch_group = any(g in src_low for g in ("sales & repairs", "buy and sell", "buy & sell", "marketplace", "pc market"))
     has_merch_indicator = is_merch_group or any(m in ctx_check for m in MERCH_SALE_INDICATORS)
     has_job_word = any(phrase_in(ctx_check, w) for w in UNAMBIGUOUS_JOB_WORDS)
+
+    applicant_looking_m = re.search(
+        r"\blooking\s+for\s+(?:a\s+)?(?:[a-z0-9/-]+(?:\s+(?:or|and)\s+[a-z0-9/-]+)?\s+){1,3}(?:job|work|gig|position)s?\b",
+        text_norm,
+    )
+    has_first_person_seeker = bool(
+        applicant_looking_m
+        or re.search(r"\b(?:for hire|hire me|hiring me|fresh grad ko|graduate of|experienced\s+[a-z]+\s+here|if you are hiring|who is hiring|anyone hiring|naa moy nahibaw-an|kinsa naay hiring|ngita unta ko|nangita kog|ngita kog|naghahanap(?:\s+po)?\s+ako)\b", text_norm)
+        or (re.search(r"\b(?:po ako|ko po)\b", text_norm) and any(w in text_norm for w in ("looking for", "naghahanap", "apply", "trabaho", "job", "work")))
+    )
 
     # 1. Check pure Jobseeker & Employer Hiring keywords first (unless it's a pure merchandise sale without job words)
     if not (has_merch_indicator and not has_job_word):
@@ -286,22 +326,44 @@ def classify_intent(text_norm, kind, settings, query="", full_context="", source
             p for p in settings["seeker_keywords"]
             if phrase_in(text_norm, p) and (p not in AMBIGUOUS_JOB_PHRASES or has_job_word)
         ]
+        if applicant_looking_m:
+            matched_app_phrase = applicant_looking_m.group(0).strip()
+            if matched_app_phrase not in s_hits:
+                s_hits.insert(0, matched_app_phrase)
+
         e_hits = [
             p for p in settings["employer_keywords"]
             if phrase_in(text_norm, p) and (p not in AMBIGUOUS_JOB_PHRASES or has_job_word)
         ]
-        if "hiring me" in text_norm and "hiring" in e_hits and not any(phrase_in(text_norm, w) for w in ("we are hiring", "now hiring", "urgent hiring")):
-            e_hits = [p for p in e_hits if p != "hiring"]
+
+        if has_first_person_seeker:
+            e_hits = [
+                p for p in e_hits
+                if not p.startswith("looking for ")
+                and p not in ("hiring", "are hiring", "is hiring")
+            ]
+        else:
+            if len(e_hits) > 1 and "hiring" in e_hits and any("hiring" in p and p != "hiring" for p in e_hits):
+                e_hits = [p for p in e_hits if p != "hiring"]
+
+        if not s_hits and not e_hits and not has_first_person_seeker:
+            for role in JOB_ROLE_TERMS:
+                if phrase_in(text_norm, role) and (
+                    re.search(r"(?<!\w)lf\s*:?\s*", text_norm)
+                    or re.search(r"\b(?:we\s+need|need\s+\d+|looking\s+for)\b", text_norm)
+                ):
+                    e_hits.append(f"lf: {role}" if "lf" in text_norm else f"looking for {role}")
+                    break
 
         if s_hits or e_hits:
             if kind == "comment":
-                # Comments on hiring threads or with seeker phrases are always jobseekers
                 return "seeker", (s_hits[0] if s_hits else e_hits[0])
             if s_hits and not e_hits:
                 return "seeker", s_hits[0]
             if e_hits and not s_hits:
                 return "employer", e_hits[0]
-            # Both matched on a post: if seeker phrase is explicit ("nangita kog trabaho", "for hire", "how to apply", "interested po"), pick seeker
+            if has_first_person_seeker:
+                return "seeker", s_hits[0]
             return ("seeker", s_hits[0]) if len(s_hits) >= len(e_hits) else ("employer", e_hits[0])
 
     # 2. Check active search bar query (if provided)
@@ -316,14 +378,20 @@ def classify_intent(text_norm, kind, settings, query="", full_context="", source
             continue
         if smart_query_matches(text_norm, cq_clean):
             intent_val = _classify_query_intent(text_norm, kind, cq_clean)
-            # Don't let ambiguous phrases like "interested po" match a non-job merchandise post as 'seeker'
             if intent_val in ("seeker", "employer") and has_merch_indicator and not has_job_word:
+                if kind == "comment":
+                    return "buyer", cq_clean
                 continue
             return intent_val, cq_clean
 
     # 4. Check Buy & Sell keywords ('buyer' and 'seller')
     b_hits = [p for p in settings["buyer_keywords"] if phrase_in(text_norm, p)]
     sel_hits = [p for p in settings["seller_keywords"] if phrase_in(text_norm, p)]
+    if not b_hits and kind == "comment" and has_merch_indicator and not has_job_word:
+        for merch_c_kw in ("interested po", "interested", "hm", "how much", "available pa", "last price", "pm sent"):
+            if phrase_in(text_norm, merch_c_kw):
+                b_hits.append(merch_c_kw)
+                break
     if b_hits or sel_hits:
         if kind == "comment" or (b_hits and not sel_hits):
             return "buyer", (b_hits[0] if b_hits else sel_hits[0])
@@ -818,17 +886,25 @@ def evaluate_item(it, ctx):
 
     # 4. Location check
     if ctx.location.lower() != "any":
+        has_target_loc_in_text = location_matches(context, ctx.location, ctx.settings)
+        has_non_cebu_city = (
+            ctx.location.lower() == "cebu"
+            and any(phrase_in(context, city) for city in NON_CEBU_CITIES)
+        )
+        if has_non_cebu_city and not has_target_loc_in_text:
+            return None
+
         is_direct_loc = (
-            it.get("scoped")
+            has_target_loc_in_text
+            or it.get("scoped")
             or it.get("from_configured_source")
-            or location_matches(context, ctx.location, ctx.settings)
         )
         is_remote_ph = (
             plat == "reddit"
             and any(sub in (it.get("source") or "").lower() for sub in ("phclassifieds", "buhaydigital"))
             and (
                 any(phrase_in(context, rt) for rt in REMOTE_WORK_TERMS)
-                or not any(phrase_in(context, city) for city in NON_CEBU_CITIES)
+                or not has_non_cebu_city
             )
         )
         if not (is_direct_loc or is_remote_ph):
@@ -1754,7 +1830,11 @@ def adapter_instagram(ctx):
         data, age_s = apify_fetch_recent_runs(APIFY_ACTORS["instagram_hashtags"], token, max_runs=1)
         if ctx.is_cancelled():
             return result("cancelled", "Cancelled by user.", items, fetched)
-        if not data or age_s > cache_s:
+        cache_matches_query = not ctx.query or any(
+            smart_query_matches(f"{pick(p, 'caption') or ''} {' '.join(pick(p, 'hashtags') or [])}".lower(), ctx.query)
+            for p in (data or [])
+        )
+        if not data or age_s > cache_s or not cache_matches_query:
             data = apify_run(APIFY_ACTORS["instagram_hashtags"], {
                 "hashtags": s["instagram_hashtags"], "resultsLimit": s["results_per_source"],
                 "resultsType": "posts", "onlyPostsNewerThan": ctx.since_phrase()}, token, ctx=ctx)
@@ -1776,11 +1856,12 @@ def adapter_instagram(ctx):
             continue
         fetched += 1
         tags = " ".join(pick(post, "hashtags") or []) + " " + str(pick(post, "inputUrl", "queryTag") or "")
+        caption = pick(post, "caption") or ""
         post_it = item("instagram", "post", "Instagram Post",
                        f"ig_post_{pick(post, 'id', 'shortCode') or stable_id(url)}",
-                       pick(post, "caption") or "", "@" + str(pick(post, "ownerUsername") or "unknown"),
+                       caption, "@" + str(pick(post, "ownerUsername") or "unknown"),
                        url, to_epoch(pick(post, "timestamp")),
-                       scoped=location_scoped(tags, ctx.location, ctx.settings) or True,
+                       scoped=location_scoped(f"{tags} {caption}", ctx.location, ctx.settings),
                        from_configured_source=True)
         items.append(post_it)
         latest = pick(post, "latestComments") or []
@@ -1845,7 +1926,11 @@ def adapter_tiktok(ctx):
         data, age_s = apify_fetch_recent_runs(APIFY_ACTORS["tiktok_search"], token, max_runs=2)
         if ctx.is_cancelled():
             return result("cancelled", "Cancelled by user.", items, fetched)
-        if not data or age_s > cache_s:
+        cache_matches_query = not ctx.query or any(
+            smart_query_matches(str(pick(v, "text") or "").lower(), ctx.query)
+            for v in (data or [])
+        )
+        if not data or age_s > cache_s or not cache_matches_query:
             data = apify_run(APIFY_ACTORS["tiktok_search"], run_input, token, ctx=ctx)
     except ScanCancelled:
         return result("cancelled", "Cancelled by user.", items, fetched)
@@ -2110,7 +2195,7 @@ def gemini_screen_leads_batch(leads_batch, api_key, model="gemini-3.5-flash-lite
     return out
 
 
-def screen_leads_with_ai(leads_list, settings):
+def screen_leads_with_ai(leads_list, settings, skip_already_approved=False):
     """
     Screens a list of lead dicts in-place:
     1. Runs contextual rant/misaligned heuristic check.
@@ -2126,6 +2211,8 @@ def screen_leads_with_ai(leads_list, settings):
 
     to_gemini = []
     for ld in leads_list:
+        if skip_already_approved and ld.get("ai_verdict") == "approved" and str(ld.get("ai_reason") or "").startswith("Gemini AI:"):
+            continue
         aligned, reason = detect_rant_or_misaligned_heuristic(ld)
         if not aligned and ai_enabled:
             ld["ai_verdict"] = "filtered"
