@@ -340,12 +340,19 @@
 
     /* Segmented modal tab */
     .seg-tab {
-      padding: 5px 12px;
+      padding: 5px 6px;
       border-radius: 6px;
-      font-size: 12.5px;
+      font-size: 11.5px;
       font-weight: 500;
+      white-space: nowrap;
       color: var(--ink-secondary);
       transition: background-color 120ms ease, color 120ms ease;
+    }
+    @media (min-width: 640px) {
+      .seg-tab {
+        padding: 5px 12px;
+        font-size: 12.5px;
+      }
     }
     .seg-tab:hover {
       color: var(--ink-primary);
@@ -550,8 +557,12 @@
       .rb-counter { display: none !important; }
       .rb-divider { display: none !important; }
     }
-    @container readerbar (max-width: 390px) {
+    @container readerbar (max-width: 460px) {
       .rb-source-text { display: none !important; }
+      .rb-dot { display: none !important; }
+    }
+    @container readerbar (max-width: 375px) {
+      .rb-stepper { display: none !important; }
     }
 
     /* Smooth Accordion for Reach Out Composer & Feed Filter Section */
@@ -614,26 +625,26 @@
     <!-- ================================================================
          PANE 1: SLIM LINEAR SIDEBAR (224px on desktop, zero cutoff at 720p)
          ================================================================ -->
-    <aside id="leftSidebar" class="fixed lg:static inset-y-0 left-0 z-50 w-[224px] shrink-0 border-r border-hair flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-200" style="background-color: var(--bg-sidebar);">
+    <aside id="leftSidebar" class="fixed lg:static inset-y-0 left-0 z-50 w-[238px] shrink-0 border-r border-hair flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-200" style="background-color: var(--bg-sidebar);">
       <!-- 44px Top Header (Brand + Ghost Location Trigger + Search & Compose Icons) -->
       <div class="h-[44px] px-2.5 border-b border-hair flex items-center justify-between gap-1 shrink-0">
         <div class="flex items-center gap-1.5 min-w-0">
           <div class="w-[18px] h-[18px] rounded-[5px] bg-[#5E6AD2] text-white flex items-center justify-center shrink-0">
             <i class="fa-solid fa-crosshairs text-[9px]"></i>
           </div>
-          <span class="text-[13px] font-medium tracking-tight truncate" style="color: var(--ink-primary);">Scout</span>
-          <span class="text-[11px]" style="color: var(--ink-muted);">/</span>
-          <select id="searchLocation" onchange="updateLocationBadge()" title="Target Location" class="ghost-select h-6 pl-1 pr-1 text-[12px] font-medium">
+          <span class="text-[13px] font-medium tracking-tight shrink-0" style="color: var(--ink-primary);">Scout</span>
+          <span class="text-[11px] shrink-0" style="color: var(--ink-muted);">/</span>
+          <select id="searchLocation" onchange="updateLocationBadge()" title="Target Location" class="ghost-select h-6 pl-1 pr-0.5 text-[12px] font-medium min-w-0">
             <option value="Cebu" selected>Cebu</option>
             <option value="Any">Any PH</option>
           </select>
         </div>
 
         <div class="flex items-center gap-0.5 shrink-0">
-          <button type="button" onclick="focusSearch()" class="btn-ghost w-7 h-7 flex items-center justify-center" title="Search leads (⌘K)">
+          <button type="button" onclick="focusSearch()" class="hidden lg:flex btn-ghost w-7 h-7 items-center justify-center" title="Search leads (⌘K)">
             <i class="fa-solid fa-magnifying-glass text-[11px]"></i>
           </button>
-          <button type="button" onclick="openAddModal()" class="btn-ghost w-7 h-7 flex items-center justify-center" title="Log Manual Lead">
+          <button type="button" onclick="openAddModal()" class="hidden lg:flex btn-ghost w-7 h-7 items-center justify-center" title="Log Manual Lead">
             <i class="fa-regular fa-pen-to-square text-[11px]"></i>
           </button>
           <button type="button" onclick="toggleMobileSidebar(false)" class="lg:hidden btn-ghost w-7 h-7 flex items-center justify-center" aria-label="Close Sidebar">
@@ -906,42 +917,42 @@
           <div class="flex items-center gap-1.5 min-w-0">
             <span id="visibleLeadCount" class="mono-tag text-[11px] truncate tabular-nums">0 leads</span>
             <span>&middot;</span>
-            <button type="button" onclick="toggleHotOnly()" id="btnHotOnly" class="hover:text-[#EEEFF1] transition flex items-center gap-1 shrink-0" title="Filter Hot Leads Only">
+            <button type="button" onclick="toggleHotOnly()" id="btnHotOnly" class="hover:text-[var(--ink-primary)] transition flex items-center gap-1 shrink-0" title="Filter Hot Leads Only">
               <span id="hotLeadCount" class="mono-tag text-[11px] tabular-nums">0</span>
               <span>hot</span>
             </button>
           </div>
           <div class="flex items-center gap-2 shrink-0">
-            <button type="button" onclick="toggleQuickTry()" id="btnToggleQuickTry" class="hover:text-[#EEEFF1] transition flex items-center gap-1">
+            <button type="button" onclick="toggleQuickTry()" id="btnToggleQuickTry" class="hover:text-[var(--ink-primary)] transition flex items-center gap-1">
               <span>Quick Try</span>
               <i id="quickTryChevron" class="fa-solid fa-chevron-down text-[9px] transition-transform"></i>
             </button>
             <span>&middot;</span>
-            <button type="button" onclick="resetSearch()" class="hover:text-[#EEEFF1] transition">Reset</button>
+            <button type="button" onclick="resetSearch()" class="hover:text-[var(--ink-primary)] transition">Reset</button>
           </div>
         </div>
 
         <!-- Collapsible Quick Try Chips -->
         <div id="quickTryContainer" class="hidden mt-2 pt-2 border-t border-hair flex flex-wrap gap-1.5">
-          <button type="button" onclick="quickSearch('nangita kog trabaho', 'seeker')" class="label-pill hover:border-white/20 transition cursor-pointer">
+          <button type="button" onclick="quickSearch('nangita kog trabaho', 'seeker')" class="label-pill hover:border-[var(--border-hover)] transition cursor-pointer">
             <span class="label-dot bg-[#4ADE80]"></span>nangita kog trabaho
           </button>
-          <button type="button" onclick="quickSearch('interested po', 'seeker')" class="label-pill hover:border-white/20 transition cursor-pointer">
+          <button type="button" onclick="quickSearch('interested po', 'seeker')" class="label-pill hover:border-[var(--border-hover)] transition cursor-pointer">
             <span class="label-dot bg-[#A78BFA]"></span>interested po
           </button>
-          <button type="button" onclick="quickSearch('how to apply', 'seeker')" class="label-pill hover:border-white/20 transition cursor-pointer">
+          <button type="button" onclick="quickSearch('how to apply', 'seeker')" class="label-pill hover:border-[var(--border-hover)] transition cursor-pointer">
             <span class="label-dot bg-[#A78BFA]"></span>how to apply
           </button>
-          <button type="button" onclick="quickSearch('we are hiring', 'employer')" class="label-pill hover:border-white/20 transition cursor-pointer">
+          <button type="button" onclick="quickSearch('we are hiring', 'employer')" class="label-pill hover:border-[var(--border-hover)] transition cursor-pointer">
             <span class="label-dot bg-[#F59E0B]"></span>we are hiring
           </button>
-          <button type="button" onclick="quickSearch('gpu for sale', 'buyer,seller')" class="label-pill hover:border-white/20 transition cursor-pointer">
+          <button type="button" onclick="quickSearch('gpu for sale', 'buyer,seller')" class="label-pill hover:border-[var(--border-hover)] transition cursor-pointer">
             <span class="label-dot bg-[#38BDF8]"></span>gpu for sale
           </button>
-          <button type="button" onclick="quickSearch('ram', 'buyer,seller')" class="label-pill hover:border-white/20 transition cursor-pointer">
+          <button type="button" onclick="quickSearch('ram', 'buyer,seller')" class="label-pill hover:border-[var(--border-hover)] transition cursor-pointer">
             <span class="label-dot bg-[#38BDF8]"></span>ram
           </button>
-          <button type="button" onclick="quickSearch('pc set', 'buyer,seller')" class="label-pill hover:border-white/20 transition cursor-pointer">
+          <button type="button" onclick="quickSearch('pc set', 'buyer,seller')" class="label-pill hover:border-[var(--border-hover)] transition cursor-pointer">
             <span class="label-dot bg-[#38BDF8]"></span>pc set
           </button>
         </div>
@@ -951,11 +962,11 @@
           <div class="flex items-center justify-between gap-2 text-[11.5px]">
             <div id="searchStatusText" class="font-medium flex items-center gap-1.5 min-w-0 truncate" style="color: var(--ink-secondary);"></div>
             <div class="flex items-center gap-1 shrink-0">
-              <button type="button" onclick="cancelLiveSearch()" id="btnCancelPanel" class="hidden px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/25 text-[11px] font-medium">Cancel</button>
+              <button type="button" onclick="cancelLiveSearch()" id="btnCancelPanel" class="hidden px-2 py-0.5 rounded bg-rose-500/10 text-rose-500 dark:text-rose-400 border border-rose-500/25 text-[11px] font-medium">Cancel</button>
               <button type="button" onclick="document.getElementById('scanProgressPanel').classList.add('hidden')" class="btn-ghost w-5 h-5 flex items-center justify-center text-xs" title="Dismiss">&times;</button>
             </div>
           </div>
-          <div id="adapterStatusGrid" class="flex flex-wrap gap-1"></div>
+          <div id="adapterStatusGrid" class="flex flex-wrap gap-1 max-h-[58px] sm:max-h-none overflow-y-auto"></div>
         </div>
       </div>
 
@@ -1004,14 +1015,16 @@
       <!-- Active Lead View -->
       <div id="readerContent" class="hidden flex-1 flex flex-col min-h-0">
         <!-- 44px Sticky Breadcrumb & Window Controls Top Bar (Container-Query Zoom Safe) -->
-        <div id="readerTopBar" class="h-[44px] px-3 sm:px-5 border-b border-hair flex items-center justify-between gap-2 shrink-0" style="background-color: var(--bg-canvas);">
+        <div id="readerTopBar" class="h-[44px] px-2.5 sm:px-5 border-b border-hair flex items-center justify-between gap-1.5 sm:gap-2 shrink-0" style="background-color: var(--bg-canvas);">
+          <!-- Mobile Back Button (Always Protected, Never Clipped or Overlapped) -->
+          <button type="button" onclick="closeMobileReader()" class="lg:hidden btn-ghost h-7 px-1.5 sm:px-2 text-xs inline-flex items-center gap-1 shrink-0 whitespace-nowrap">
+            <i class="fa-solid fa-arrow-left text-[10px]"></i>
+            <span>Back</span>
+          </button>
+
           <!-- Left: Breadcrumb (Dot + Source + Truncated Title, Strictly Clipped) -->
           <div id="readerBreadcrumbWrap" class="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden">
-            <button type="button" onclick="closeMobileReader()" class="lg:hidden btn-ghost h-7 px-2 text-xs flex items-center gap-1 shrink-0">
-              <i class="fa-solid fa-arrow-left text-[10px]"></i>
-              <span>Back</span>
-            </button>
-            <span id="readerBreadcrumbDot" class="label-dot bg-[#4ADE80] shrink-0"></span>
+            <span id="readerBreadcrumbDot" class="rb-dot label-dot bg-[#4ADE80] shrink-0"></span>
             <span id="readerBreadcrumbSource" class="rb-source-text text-[12px] font-medium min-w-0 max-w-[140px] truncate" style="color: var(--ink-secondary);">Source</span>
             <span class="rb-title text-[11px] shrink-0" style="color: var(--ink-muted);">/</span>
             <span id="readerBreadcrumbTitle" class="rb-title text-[12.5px] min-w-0 flex-1 truncate" style="color: var(--ink-primary);">Lead title</span>
@@ -1019,7 +1032,7 @@
 
           <!-- Right: 1 / 51 ↑ ↓ Stepper + Ghost Actions + Big Pop-Up / Close Controls -->
           <div class="flex items-center gap-0.5 sm:gap-1 shrink-0">
-            <div class="flex items-center gap-0.5 mr-0.5">
+            <div class="rb-stepper flex items-center gap-0.5 mr-0.5">
               <span id="readerPositionCounter" class="rb-counter mono-tag text-[11.5px] tabular-nums mr-1 whitespace-nowrap" style="color: var(--ink-muted);">0 / 0</span>
               <button type="button" id="btnPrevLead" onclick="stepLeadSelection(-1)" class="btn-ghost w-[26px] h-[26px] flex items-center justify-center" title="Previous lead (↑ or K)">
                 <i class="fa-solid fa-chevron-up text-[10px]"></i>
@@ -1032,7 +1045,7 @@
             <span class="rb-divider h-3.5 w-px mx-1 hidden sm:inline-block" style="background-color: var(--border-hairline);"></span>
 
             <label for="readerStatusSelect" class="sr-only">Pipeline Status</label>
-            <select id="readerStatusSelect" onchange="changeSelectedLeadStatus(this.value)" class="ghost-select h-7 px-1.5 text-[12px] font-medium">
+            <select id="readerStatusSelect" onchange="changeSelectedLeadStatus(this.value)" class="ghost-select h-7 px-1 sm:px-1.5 text-[12px] font-medium max-w-[92px] sm:max-w-none truncate">
               <option value="new">New</option>
               <option value="followup">Follow-Up</option>
               <option value="contacted">Contacted</option>
@@ -1041,7 +1054,7 @@
               <option value="ai_filtered">AI Filtered</option>
             </select>
 
-            <button type="button" id="readerApproveBtn" onclick="approveSelectedLead()" class="hidden h-7 px-2 rounded-[6px] bg-emerald-500/15 hover:bg-emerald-500/25 text-[#4ADE80] border border-emerald-500/25 text-[11.5px] font-medium flex items-center gap-1 transition shrink-0">
+            <button type="button" id="readerApproveBtn" onclick="approveSelectedLead()" class="hidden h-7 px-1.5 sm:px-2 rounded-[6px] bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-[#4ADE80] border border-emerald-500/25 text-[11.5px] font-medium flex items-center gap-1 transition shrink-0" title="Approve lead">
               <i class="fa-solid fa-check text-[10px]"></i>
               <span class="rb-label">Approve</span>
             </button>
@@ -1061,9 +1074,9 @@
               <span class="rb-label">Delete</span>
             </button>
 
-            <span class="rb-divider h-3.5 w-px mx-0.5 hidden sm:inline-block" style="background-color: var(--border-hairline);"></span>
+            <span class="rb-divider h-3.5 w-px mx-0.5 hidden lg:inline-block" style="background-color: var(--border-hairline);"></span>
 
-            <button type="button" id="btnMaximizeReader" onclick="handleReaderMaximize()" class="btn-ghost w-[26px] h-[26px] inline-flex items-center justify-center" title="Maximize as big focus pop-up">
+            <button type="button" id="btnMaximizeReader" onclick="handleReaderMaximize()" class="btn-ghost w-[26px] h-[26px] hidden lg:inline-flex items-center justify-center" title="Maximize as big focus pop-up">
               <i id="maximizeReaderIcon" class="fa-solid fa-up-right-and-down-left-from-center text-[10.5px]"></i>
             </button>
 
@@ -1074,22 +1087,22 @@
         </div>
 
         <!-- Generous Editorial Reading Canvas -->
-        <div id="readerBodyScroll" class="flex-1 overflow-y-auto px-6 sm:px-10 py-7 min-h-0">
+        <div id="readerBodyScroll" class="flex-1 overflow-y-auto px-3.5 sm:px-6 lg:px-10 py-5 sm:py-7 min-h-0">
           <div id="readerArticle" class="max-w-[700px] space-y-5">
             <!-- Populated dynamically by renderReader(lead) -->
           </div>
         </div>
 
         <!-- Refined Embedded Reach Out Composer Card (Smooth Minimize / Maximize Accordion) -->
-        <div id="composerContainer" class="px-6 sm:px-10 pb-4 pt-2.5 border-t border-hair shrink-0 transition-all duration-200" style="background-color: var(--bg-canvas);">
-          <div id="composerCard" class="max-w-[700px] rounded-[10px] border border-hair overflow-hidden transition focus-within:border-white/[0.16]" style="background-color: var(--bg-elevated);">
+        <div id="composerContainer" class="px-3.5 sm:px-6 lg:px-10 pb-3 sm:pb-4 pt-2 sm:pt-2.5 border-t border-hair shrink-0 transition-all duration-200" style="background-color: var(--bg-canvas);">
+          <div id="composerCard" class="max-w-[700px] rounded-[10px] border border-hair overflow-hidden transition focus-within:border-[var(--border-hover)]" style="background-color: var(--bg-elevated);">
             <!-- Always-visible Composer Header Bar (Click to Minimize/Maximize Reply Box) -->
-            <div onclick="toggleComposerCollapse()" class="h-[34px] px-3.5 flex items-center justify-between gap-2 cursor-pointer select-none hover:bg-white/[0.025] transition">
-              <div class="flex items-center gap-2 min-w-0 text-[12px]">
-                <i class="fa-regular fa-paper-plane text-[10.5px]" style="color: var(--ink-section);"></i>
-                <span class="font-medium" style="color: var(--ink-primary);">Reply / Reach Out</span>
-                <span class="text-[11px]" style="color: var(--ink-muted);">&middot;</span>
-                <span id="composerIntentHint" class="text-[11.5px] truncate" style="color: var(--ink-muted);">Tailored reply</span>
+            <div onclick="toggleComposerCollapse()" class="h-[34px] px-3 sm:px-3.5 flex items-center justify-between gap-2 cursor-pointer select-none hover:bg-[var(--bg-hover)] transition">
+              <div class="flex items-center gap-1.5 sm:gap-2 min-w-0 text-[12px]">
+                <i class="fa-regular fa-paper-plane text-[10.5px] shrink-0" style="color: var(--ink-section);"></i>
+                <span class="font-medium whitespace-nowrap shrink-0" style="color: var(--ink-primary);">Reply / Reach Out</span>
+                <span class="text-[11px] shrink-0" style="color: var(--ink-muted);">&middot;</span>
+                <span id="composerIntentHint" class="text-[11.5px] truncate min-w-0" style="color: var(--ink-muted);">Tailored reply</span>
               </div>
               <div class="flex items-center gap-1 shrink-0" onclick="event.stopPropagation()">
                 <a id="btnMiniComposerOpen" href="#" target="_blank" rel="noopener noreferrer" class="hidden btn-ghost h-6 px-2 text-[11px] flex items-center gap-1" title="Open original post">
@@ -1113,23 +1126,23 @@
                   id="composerPitchText"
                   rows="3"
                   placeholder="Reply / Reach Out..."
-                  class="w-full bg-transparent border-0 focus:outline-none px-4 pt-3 pb-2 text-[13px] leading-[1.6] resize-none placeholder-[#5F6570]"
+                  class="w-full h-[64px] sm:h-[82px] bg-transparent border-0 focus:outline-none px-3 sm:px-4 pt-2.5 pb-1.5 text-[12.5px] sm:text-[13px] leading-[1.55] resize-none placeholder-[#5F6570]"
                   style="color: var(--ink-primary);"
                 ></textarea>
 
-                <div class="px-3.5 py-2 border-t border-hair flex flex-wrap items-center justify-between gap-2">
-                  <button type="button" onclick="resetComposerTemplate()" class="text-[11.5px] hover:text-[#EEEFF1] transition shrink-0" style="color: var(--ink-muted);">Reset template</button>
-                  <div class="flex flex-wrap items-center gap-1.5 ml-auto">
-                    <a id="composerOpenLink" href="#" target="_blank" rel="noopener noreferrer" class="btn-secondary h-[28px] px-2.5 text-[11.5px] inline-flex items-center gap-1.5" title="Go to original post">
+                <div class="px-3 sm:px-3.5 py-2 border-t border-hair flex flex-wrap items-center justify-between gap-1.5">
+                  <button type="button" onclick="resetComposerTemplate()" class="text-[11.5px] hover:text-[var(--ink-primary)] transition shrink-0 whitespace-nowrap" style="color: var(--ink-muted);">Reset template</button>
+                  <div class="flex flex-wrap items-center justify-end gap-1.5 ml-auto">
+                    <a id="composerOpenLink" href="#" target="_blank" rel="noopener noreferrer" class="btn-secondary h-[28px] px-2 sm:px-2.5 text-[11.5px] inline-flex items-center gap-1.5 whitespace-nowrap" title="Go to original post">
                       <span id="composerOpenLabel">Open</span>
-                      <span id="composerOpenHost" class="mono-tag text-[10px] opacity-70">link</span>
-                      <i class="fa-solid fa-arrow-up-right-from-square text-[9.5px] opacity-75"></i>
+                      <span id="composerOpenHost" class="mono-tag text-[10px] opacity-70 max-w-[92px] sm:max-w-none truncate">link</span>
+                      <i class="fa-solid fa-arrow-up-right-from-square text-[9.5px] opacity-75 shrink-0"></i>
                     </a>
-                    <button type="button" id="btnComposerCopy" onclick="copyComposerMessage()" class="btn-ghost h-[28px] px-2.5 text-[12px] flex items-center gap-1.5">
+                    <button type="button" id="btnComposerCopy" onclick="copyComposerMessage()" class="btn-ghost h-[28px] px-2 sm:px-2.5 text-[11.5px] sm:text-[12px] flex items-center gap-1.5 whitespace-nowrap">
                       <i class="fa-regular fa-copy text-[11px]"></i>
                       <span>Copy</span>
                     </button>
-                    <button type="button" id="btnComposerCopyContact" onclick="copyAndMarkContacted()" class="btn-primary h-[28px] px-3 text-[12px] flex items-center gap-1.5">
+                    <button type="button" id="btnComposerCopyContact" onclick="copyAndMarkContacted()" class="btn-primary h-[28px] px-2.5 sm:px-3 text-[11.5px] sm:text-[12px] flex items-center gap-1.5 whitespace-nowrap">
                       <i class="fa-solid fa-check text-[10.5px]"></i>
                       <span>Copy &amp; Mark Contacted</span>
                     </button>
@@ -1158,7 +1171,7 @@
        ================================================================ -->
   <div id="settingsModal" class="modal-backdrop fixed inset-0 z-50 hidden flex items-center justify-center p-4">
     <div class="rounded-[12px] border border-hair shadow-2xl max-w-2xl w-full max-h-[88vh] flex flex-col overflow-hidden" style="background-color: var(--bg-canvas);">
-      <div class="px-5 pt-4 pb-3.5 border-b border-hair shrink-0 space-y-3">
+      <div class="px-3.5 sm:px-5 pt-4 pb-3.5 border-b border-hair shrink-0 space-y-3">
         <div class="flex justify-between items-start gap-3">
           <div>
             <span id="settingsModalEyebrow" class="text-[11.5px] font-medium" style="color: var(--ink-section);">Scanner Configuration</span>
@@ -1167,15 +1180,15 @@
           <button type="button" onclick="closeModal('settingsModal')" class="btn-ghost w-7 h-7 flex items-center justify-center text-sm">&times;</button>
         </div>
 
-        <div class="inline-flex p-1 rounded-[8px] border border-hair w-full sm:w-auto" style="background-color: var(--bg-sidebar);">
-          <button type="button" id="settingsTabScanner" onclick="switchSettingsTab('scanner')" class="seg-tab active-tab flex-1 sm:flex-initial flex items-center justify-center gap-1.5">
-            <i class="fa-solid fa-sliders text-[11px]"></i>
+        <div class="inline-flex p-1 rounded-[8px] border border-hair w-full sm:w-auto gap-0.5 overflow-hidden" style="background-color: var(--bg-sidebar);">
+          <button type="button" id="settingsTabScanner" onclick="switchSettingsTab('scanner')" class="seg-tab active-tab flex-1 sm:flex-initial flex items-center justify-center gap-1 sm:gap-1.5 whitespace-nowrap">
+            <i class="fa-solid fa-sliders text-[10.5px] sm:text-[11px] shrink-0"></i>
             <span>Scanner Options</span>
           </button>
-          <button type="button" id="settingsTabApi" onclick="switchSettingsTab('api')" class="seg-tab flex-1 sm:flex-initial flex items-center justify-center gap-1.5">
-            <i class="fa-solid fa-key text-[11px] text-[#F59E0B]"></i>
+          <button type="button" id="settingsTabApi" onclick="switchSettingsTab('api')" class="seg-tab flex-1 sm:flex-initial flex items-center justify-center gap-1 sm:gap-1.5 whitespace-nowrap">
+            <i class="fa-solid fa-key text-[10.5px] sm:text-[11px] text-[#F59E0B] shrink-0"></i>
             <span>API Keys</span>
-            <span id="apiKeysConfiguredBadge" class="code-chip !text-[10px] !py-0 tabular-nums">0 set</span>
+            <span id="apiKeysConfiguredBadge" class="code-chip !text-[9.5px] sm:!text-[10px] !py-0 !px-1 sm:!px-1.5 tabular-nums whitespace-nowrap shrink-0">0 set</span>
           </button>
         </div>
       </div>
@@ -1392,17 +1405,17 @@
        LOG MANUAL LEAD MODAL (Linear Graphite Style)
        ================================================================ -->
   <div id="addModal" class="modal-backdrop fixed inset-0 z-50 hidden flex items-center justify-center p-4">
-    <div class="rounded-[12px] border border-hair shadow-2xl max-w-md w-full overflow-hidden" style="background-color: var(--bg-canvas);">
-      <div class="px-5 py-3.5 border-b border-hair flex justify-between items-center">
+    <div class="rounded-[12px] border border-hair shadow-2xl max-w-md w-full max-h-[90vh] flex flex-col overflow-hidden" style="background-color: var(--bg-canvas);">
+      <div class="px-4 sm:px-5 py-3.5 border-b border-hair flex justify-between items-center shrink-0">
         <div>
           <span class="text-[11px] font-medium" style="color: var(--ink-section);">Manual Entry</span>
           <h3 class="text-[15px] font-medium" style="color: var(--ink-primary);">Log Manual Lead</h3>
         </div>
-        <button type="button" onclick="closeModal('addModal')" class="btn-ghost w-7 h-7 flex items-center justify-center text-sm">&times;</button>
+        <button type="button" onclick="closeModal('addModal')" class="btn-ghost w-7 h-7 flex items-center justify-center text-sm shrink-0">&times;</button>
       </div>
 
-      <div class="p-5 space-y-3.5 text-[12.5px]">
-        <div id="addFormError" class="hidden px-3 py-2 rounded-[7px] bg-rose-500/10 border border-rose-500/25 text-rose-400 text-xs"></div>
+      <div class="p-4 sm:p-5 space-y-3.5 text-[12.5px] overflow-y-auto flex-1 min-h-0">
+        <div id="addFormError" class="hidden px-3 py-2 rounded-[7px] bg-rose-500/10 border border-rose-500/25 text-rose-500 dark:text-rose-400 text-xs"></div>
         <div>
           <label for="addTitle" class="block text-[11.5px] font-medium mb-1" style="color: var(--ink-secondary);">Post Title or Context *</label>
           <input id="addTitle" type="text" placeholder="e.g. Nangita ug trabaho as dishwasher sa Cebu" class="ui-input w-full h-9 px-3 text-[13px]">
@@ -1411,7 +1424,7 @@
           <label for="addContent" class="block text-[11.5px] font-medium mb-1" style="color: var(--ink-secondary);">Exact Comment or Post Text</label>
           <textarea id="addContent" rows="3" placeholder="e.g. Interested po! Willing to start ASAP." class="ui-input w-full p-2.5 text-[13px]"></textarea>
         </div>
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label for="addSource" class="block text-[11.5px] font-medium mb-1" style="color: var(--ink-secondary);">Platform</label>
             <select id="addSource" class="ui-input w-full h-9 px-2.5 text-[12.5px]">
@@ -1442,7 +1455,7 @@
         </div>
       </div>
 
-      <div class="px-5 py-3 border-t border-hair flex justify-end gap-2" style="background-color: var(--bg-sidebar);">
+      <div class="px-4 sm:px-5 py-3 border-t border-hair flex justify-end gap-2 shrink-0" style="background-color: var(--bg-sidebar);">
         <button type="button" onclick="closeModal('addModal')" class="btn-secondary h-8 px-3 text-xs">Cancel</button>
         <button type="button" onclick="submitManualLead()" class="btn-primary h-8 px-4 text-xs">Save Lead</button>
       </div>
@@ -1450,7 +1463,7 @@
   </div>
 
   <!-- LIVE TOAST NOTIFICATION -->
-  <div id="liveAlertToast" class="fixed bottom-4 right-4 z-50 hidden max-w-sm w-full rounded-[10px] border border-hair shadow-xl p-3.5" style="background-color: var(--bg-elevated);">
+  <div id="liveAlertToast" class="fixed bottom-4 left-4 right-4 sm:left-auto sm:w-full max-w-sm z-50 hidden rounded-[10px] border border-hair shadow-xl p-3.5" style="background-color: var(--bg-elevated);">
     <div class="flex items-start justify-between gap-3">
       <div class="flex items-start gap-2.5 min-w-0">
         <div class="w-7 h-7 rounded-[6px] border border-hair flex items-center justify-center shrink-0 mt-0.5" style="background-color: var(--bg-chip); color: var(--ink-primary);">
@@ -1461,7 +1474,7 @@
           <p id="toastAlertSub" class="text-[12px] mt-0.5 line-clamp-2" style="color: var(--ink-secondary);"></p>
         </div>
       </div>
-      <button type="button" onclick="hideLiveToast()" class="btn-ghost w-6 h-6 flex items-center justify-center text-sm">&times;</button>
+      <button type="button" onclick="hideLiveToast()" class="btn-ghost w-6 h-6 flex items-center justify-center text-sm shrink-0">&times;</button>
     </div>
   </div>
 
@@ -1548,6 +1561,9 @@
     }
 
     function closeMobileReader() {
+      if (readerViewMode === 'maximized') {
+        setReaderViewMode('docked');
+      }
       const feed = document.getElementById('feedPane');
       const reader = document.getElementById('readerPane');
       if (feed) feed.classList.remove('hidden');
@@ -1618,10 +1634,17 @@
         if (!feed) return;
         if (window.innerWidth < 1024) {
           feed.style.width = '';
+          if (readerViewMode === 'maximized') setReaderViewMode('docked');
           return;
         }
+        // Always restore split-pane visibility when resizing from mobile/tablet up to desktop
+        feed.classList.remove('hidden');
+        if (reader) {
+          reader.classList.remove('hidden');
+          reader.classList.add('lg:flex');
+        }
         if (readerViewMode === 'closed') return;
-        const sidebarW = sidebar ? sidebar.getBoundingClientRect().width : 224;
+        const sidebarW = sidebar ? sidebar.getBoundingClientRect().width : 238;
         const maxAllowed = Math.max(240, window.innerWidth - sidebarW - 380);
         let targetW = 360;
         try {
@@ -1758,6 +1781,7 @@
           : 'fa-solid fa-down-left-and-up-right-to-center text-[11px]';
       }
       updateFiltersActiveDot();
+      if (typeof syncCancelButtonsVisibility === 'function') syncCancelButtonsVisibility();
     }
 
     function toggleFiltersCollapse() {
@@ -1885,6 +1909,7 @@
         toggleBtn.innerText = allChecked ? 'Clear' : 'Select all';
       }
       updateFiltersActiveDot();
+      if (typeof syncCancelButtonsVisibility === 'function') syncCancelButtonsVisibility();
     }
 
     function toggleAllPlatforms() {
@@ -1992,16 +2017,27 @@
       }
     }
 
-    function setScanningUiState(isScanning) {
+    let isCurrentlyScanning = false;
+
+    function syncCancelButtonsVisibility() {
       const btnSearch = document.getElementById('btnLiveSearch');
       const icon = document.getElementById('searchBtnIcon');
       const btnCancelSearch = document.getElementById('btnCancelSearch');
       const btnCancelPanel = document.getElementById('btnCancelPanel');
 
-      if (btnSearch) btnSearch.disabled = isScanning;
-      if (icon) icon.className = isScanning ? 'fa-solid fa-spinner fa-spin text-[10.5px]' : 'fa-solid fa-bolt text-[10.5px]';
-      if (btnCancelSearch) btnCancelSearch.classList.toggle('hidden', !isScanning);
-      if (btnCancelPanel) btnCancelPanel.classList.toggle('hidden', !isScanning);
+      if (btnSearch) {
+        btnSearch.disabled = isCurrentlyScanning;
+        btnSearch.classList.toggle('hidden', isCurrentlyScanning);
+      }
+      if (icon) icon.className = isCurrentlyScanning ? 'fa-solid fa-spinner fa-spin text-[10.5px]' : 'fa-solid fa-bolt text-[10.5px]';
+      if (btnCancelSearch) btnCancelSearch.classList.toggle('hidden', !isCurrentlyScanning);
+      // Only show panel Cancel when the main filter row (with btnCancelSearch) is collapsed — never duplicate!
+      if (btnCancelPanel) btnCancelPanel.classList.toggle('hidden', !(isCurrentlyScanning && filtersCollapsed));
+    }
+
+    function setScanningUiState(isScanning) {
+      isCurrentlyScanning = Boolean(isScanning);
+      syncCancelButtonsVisibility();
     }
 
     function showPlatformSelectHint(message) {
@@ -2533,8 +2569,8 @@
           <div class="flex items-center justify-between gap-2 mb-1">
             <div class="flex items-center gap-1.5 min-w-0 text-[12.5px]">
               <i class="${platMeta.icon} text-[12px] shrink-0" style="color: ${platMeta.iconColor};" title="${escapeHtml(l.source || platMeta.shortLabel)}"></i>
-              <span class="truncate font-medium" style="color: #C8CDD3;">${escapeHtml(l.author || 'Unknown')}</span>
-              ${hasGeminiAi ? '<i class="fa-solid fa-wand-magic-sparkles text-[10px] text-[#C4B5FD] shrink-0" title="Verified by Gemini AI"></i>' : ''}
+              <span class="truncate font-medium" style="color: var(--ink-body);">${escapeHtml(l.author || 'Unknown')}</span>
+              ${hasGeminiAi ? '<i class="fa-solid fa-wand-magic-sparkles text-[10px] text-violet-600 dark:text-[#C4B5FD] shrink-0" title="Verified by Gemini AI"></i>' : ''}
             </div>
             <span class="mono-tag text-[11.5px] shrink-0 tabular-nums" style="color: var(--ink-muted);">${escapeHtml(ago)}</span>
           </div>
@@ -2546,11 +2582,11 @@
 
           <!-- Line 3: 1-line Muted Preview + Emphasized Platform/Intent Pills -->
           <div class="flex items-center justify-between gap-2">
-            <span class="text-[12px] truncate min-w-0" style="color: #7A808B;">
+            <span class="text-[12px] truncate min-w-0" style="color: var(--ink-secondary);">
               ${escapeHtml(excerpt || l.source || '')}
             </span>
             <div class="flex items-center gap-1.5 shrink-0">
-              ${isComment ? '<span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-violet-500/15 text-violet-300 border border-violet-500/30">Comment</span>' : ''}
+              ${isComment ? '<span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-violet-500/15 text-violet-700 dark:text-violet-300 border border-violet-500/30">Comment</span>' : ''}
               ${getIntentLabelPill(l.intent)}
               <span class="w-1.5 h-1.5 rounded-full ${stInfo.dot}" title="${escapeHtml(stInfo.label)}"></span>
             </div>
@@ -2665,7 +2701,8 @@
       }
 
       const ago = timeAgo(lead.posted_at || lead.found_at);
-      const authorInitial = escapeHtml(String(lead.author || '?').replace(/^(@|u\/)/i, '').charAt(0).toUpperCase() || '?');
+      const cleanAuthorNorm = String(lead.author || '?').normalize('NFKD').replace(/^(@|u\/)/i, '').trim();
+      const authorInitial = escapeHtml((Array.from(cleanAuthorNorm)[0] || '?').toUpperCase());
       const rawBody = String(lead.content || '').trim();
 
       // Emphasized Gemini AI / Filter Callout Card (Full Unwrapped Text)
