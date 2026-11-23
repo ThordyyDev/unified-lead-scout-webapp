@@ -27,13 +27,14 @@ _RELOAD_LOCK = threading.Lock()
 _MODULE_MTIMES = {
     "database": os.path.getmtime(database.__file__),
     "scanners": os.path.getmtime(scanners.__file__),
+    "app": os.path.getmtime(__file__),
 }
 
 
 def ensure_fresh_modules():
     """
-    Hot-reloads `database.py` and `scanners.py` if they were modified on disk while the
-    server is running, so code updates take effect without needing to restart `python3 app.py`.
+    Hot-reloads `database.py`, `scanners.py`, and `LeadScoutHandler` methods if modified on disk
+    while the server is running, so code updates take effect without restarting `python3 app.py`.
     """
     global SCAN_MANAGER
     with _RELOAD_LOCK:
@@ -41,6 +42,7 @@ def ensure_fresh_modules():
             return
         db_mtime = os.path.getmtime(database.__file__)
         sc_mtime = os.path.getmtime(scanners.__file__)
+        app_mtime = os.path.getmtime(__file__)
         if db_mtime != _MODULE_MTIMES["database"] or sc_mtime != _MODULE_MTIMES["scanners"]:
             importlib.reload(database)
             database.init_db()
@@ -49,6 +51,20 @@ def ensure_fresh_modules():
             _MODULE_MTIMES["database"] = db_mtime
             _MODULE_MTIMES["scanners"] = sc_mtime
             print(f"[hot-reload] Reloaded database.py & scanners.py ({getattr(scanners, 'SCANNER_VERSION', 'latest')})")
+        if app_mtime != _MODULE_MTIMES.get("app"):
+            _MODULE_MTIMES["app"] = app_mtime
+            try:
+                ns = {"__file__": __file__, "__name__": "_app_hot_reload"}
+                with open(__file__, "r", encoding="utf-8") as f:
+                    code = compile(f.read(), __file__, "exec")
+                exec(code, ns)
+                new_cls = ns.get("LeadScoutHandler")
+                if new_cls:
+                    LeadScoutHandler.do_GET = new_cls.do_GET
+                    LeadScoutHandler.do_POST = new_cls.do_POST
+                    print("[hot-reload] Reloaded app.py request handlers")
+            except Exception as e:
+                print(f"[hot-reload] app.py handler reload skipped: {e}")
 
 
 def _safe_int(val, default=0):
@@ -150,6 +166,7 @@ class LeadScoutHandler(http.server.BaseHTTPRequestHandler):
             intents_raw = query.get("intents", [""])[0]
             intents = [i.strip() for i in intents_raw.split(",") if i.strip()] if intents_raw else None
             kind_filter = query.get("kind", ["all"])[0]
+            fb_group = query.get("fb_group", [""])[0].strip()
 
             leads = database.search_leads(
                 query=q_kw,
@@ -159,12 +176,17 @@ class LeadScoutHandler(http.server.BaseHTTPRequestHandler):
                 status_filter=status_filter,
                 max_age_days=max_age_days,
                 kind=kind_filter,
+                fb_group=fb_group,
             )
+            social_cfg = (cfg.get("social") or {}) if isinstance(cfg.get("social"), dict) else {}
+            fb_cfg_urls = social_cfg.get("facebook_groups") or []
+            fb_hidden = social_cfg.get("hidden_fb_groups") or []
             self.send_json({
                 "leads": leads,
                 "stats": database.get_stats(platforms=platforms),
                 "scan": SCAN_MANAGER.status(),
                 "adapters": scanners.get_registered_adapters(cfg),
+                "fb_groups": database.get_facebook_groups_summary(fb_cfg_urls, fb_hidden),
             })
             return
 
@@ -178,6 +200,7 @@ class LeadScoutHandler(http.server.BaseHTTPRequestHandler):
             intents_raw = query.get("intents", [""])[0]
             intents = [i.strip() for i in intents_raw.split(",") if i.strip()] if intents_raw else None
             kind_filter = query.get("kind", ["all"])[0]
+            fb_group = query.get("fb_group", [""])[0].strip()
 
             leads = database.search_leads(
                 query=q_kw,
@@ -187,6 +210,7 @@ class LeadScoutHandler(http.server.BaseHTTPRequestHandler):
                 status_filter=status_filter,
                 max_age_days=max_age_days,
                 kind=kind_filter,
+                fb_group=fb_group,
                 limit=2000,
             )
             buf = io.StringIO()
@@ -295,15 +319,18 @@ class LeadScoutHandler(http.server.BaseHTTPRequestHandler):
 
             scan_state = SCAN_MANAGER.status()
             is_audit_status = status_filter in ("ai_filtered", "archived")
+            fb_group = str(payload.get("fb_group") or "").strip()
             leads = database.search_leads(
                 query=query_kw,
                 platforms=platforms,
                 intents=intents,
-                location="Any" if is_audit_status else location,
+                location="Any" if (is_audit_status or fb_group) else location,
                 status_filter=status_filter,
-                max_age_days=365 if is_audit_status else max_age_days,
+                max_age_days=365 if (is_audit_status or fb_group) else max_age_days,
                 kind=kind_filter,
+                fb_group=fb_group,
             )
+            fb_cfg_urls = ((cfg.get("social") or {}).get("facebook_groups") or []) if isinstance(cfg.get("social"), dict) else []
             self.send_json({
                 "success": True,
                 "started": started,
@@ -317,6 +344,7 @@ class LeadScoutHandler(http.server.BaseHTTPRequestHandler):
                 "match_count": len(leads),
                 "leads": leads,
                 "stats": database.get_stats(platforms=platforms),
+                "fb_groups": database.get_facebook_groups_summary(fb_cfg_urls),
             })
             return
 
@@ -456,10 +484,14 @@ class LeadScoutHandler(http.server.BaseHTTPRequestHandler):
 
         if path == "/api/config":
             save_config(payload)
+            social_cfg = (payload.get("social") or {}) if isinstance(payload.get("social"), dict) else {}
+            fb_cfg_urls = social_cfg.get("facebook_groups") or []
+            fb_hidden = social_cfg.get("hidden_fb_groups") or []
             self.send_json({
                 "success": True,
                 "config": payload,
                 "adapters": scanners.get_registered_adapters(payload),
+                "fb_groups": database.get_facebook_groups_summary(fb_cfg_urls, fb_hidden),
             })
             return
 

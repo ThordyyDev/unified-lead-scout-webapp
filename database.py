@@ -636,8 +636,148 @@ def platform_key(row):
     return "public_web"
 
 
+def extract_fb_group_key_and_name(source, url, parent_url=""):
+    """
+    Extracts `(group_key, human_group_name)` from a Facebook group lead row.
+    Returns `("", "")` if the lead is not from a Facebook group.
+    """
+    src = str(source or "").strip()
+    u = str(url or "").strip()
+    pu = str(parent_url or "").strip()
+    if "facebook" not in src.lower() and "facebook.com" not in u.lower() and "facebook.com" not in pu.lower():
+        return "", ""
+    m_key = re.search(r"/groups/([^/?#]+)", u, re.I) or re.search(r"/groups/([^/?#]+)", pu, re.I)
+    m_name = re.search(r"Facebook\s+(?:Comment\s+)?Group\s*\((.+)\)", src, re.I)
+    url_key = m_key.group(1).strip().lower() if m_key else ""
+    src_name = m_name.group(1).strip() if m_name else ""
+    if not url_key and not src_name:
+        return "", ""
+    key = url_key or re.sub(r"\s+", "-", src_name.lower())
+    if src_name:
+        name = src_name
+    elif url_key.isdigit():
+        name = f"FB Group ({url_key})"
+    else:
+        name = url_key
+    return key, name
+
+
+def row_matches_fb_group(row, fb_group_filter):
+    target = str(fb_group_filter or "").strip().lower()
+    if not target:
+        return True
+    r_key, r_name = extract_fb_group_key_and_name(
+        row.get("source"), row.get("url"), row.get("parent_url")
+    )
+    if not r_key and not r_name:
+        return False
+    return (
+        r_key == target
+        or r_name.lower() == target
+        or f"/groups/{target}" in str(row.get("url") or "").lower()
+        or f"/groups/{target}" in str(row.get("parent_url") or "").lower()
+    )
+
+
+def get_facebook_groups_summary(configured_urls=None, hidden_keys=None):
+    """
+    Returns a unified list of Facebook Groups synced from `config.json` (`social.facebook_groups`)
+    and all scraped Facebook Group leads in `leads.db`, with human names and active lead counts.
+    Respects `social.hidden_fb_groups` so groups removed by the user stay removed.
+    """
+    if configured_urls is None or hidden_keys is None:
+        cfg_path = os.path.join(os.path.dirname(__file__), "config.json")
+        try:
+            import json as _json
+            with open(cfg_path, "r", encoding="utf-8") as f:
+                raw_cfg = _json.load(f)
+            social_cfg = (raw_cfg.get("social") or {}) if isinstance(raw_cfg, dict) else {}
+            if configured_urls is None:
+                configured_urls = social_cfg.get("facebook_groups") or []
+            if hidden_keys is None:
+                hidden_keys = social_cfg.get("hidden_fb_groups") or []
+        except Exception:
+            if configured_urls is None:
+                configured_urls = []
+            if hidden_keys is None:
+                hidden_keys = []
+
+    hidden_set = {str(k).strip().lower() for k in (hidden_keys or []) if str(k).strip()}
+
+    groups = {}
+    for raw_u in (configured_urls or []):
+        u_str = str(raw_u or "").strip()
+        if not u_str:
+            continue
+        m = re.search(r"/groups/([^/?#]+)", u_str, re.I)
+        slug = m.group(1).strip() if m else u_str.rstrip("/").split("/")[-1]
+        key = slug.lower()
+        if not key:
+            continue
+        clean_url = f"https://www.facebook.com/groups/{slug}/" if m else u_str
+        default_name = f"FB Group ({slug})" if slug.isdigit() else slug
+        groups[key] = {
+            "key": key,
+            "name": default_name,
+            "url": clean_url,
+            "count": 0,
+            "configured": True,
+            "intents": {},
+        }
+
+    conn = get_db()
+    try:
+        rows = conn.execute(
+            """
+            SELECT source, url, parent_url, intent
+            FROM leads
+            WHERE status NOT IN ('ai_filtered', 'archived')
+              AND (lower(source) LIKE '%facebook%' OR lower(url) LIKE '%facebook.com/groups/%')
+            """
+        ).fetchall()
+    except Exception:
+        rows = []
+    finally:
+        conn.close()
+
+    for r in rows:
+        key, name = extract_fb_group_key_and_name(r["source"], r["url"], r["parent_url"])
+        if not key:
+            continue
+        g = groups.get(key)
+        if g is None:
+            if key in hidden_set:
+                continue
+            g = {
+                "key": key,
+                "name": name,
+                "url": f"https://www.facebook.com/groups/{key}/",
+                "count": 0,
+                "configured": False,
+                "intents": {},
+            }
+            groups[key] = g
+        elif name and not name.startswith("FB Group (") and (g["name"].startswith("FB Group (") or g["name"].lower() == key):
+            g["name"] = name
+        g["count"] += 1
+        intent_val = str(r["intent"] or "").strip().lower()
+        if intent_val:
+            g["intents"][intent_val] = g["intents"].get(intent_val, 0) + 1
+
+    out = []
+    for g in groups.values():
+        intents_map = g.pop("intents", {})
+        primary_intent = max(intents_map.items(), key=lambda kv: kv[1])[0] if intents_map else "seeker"
+        g["primary_intent"] = primary_intent
+        g["all_intents"] = sorted(intents_map.keys())
+        out.append(g)
+
+    out.sort(key=lambda g: (-int(g["count"]), 0 if g["configured"] else 1, g["name"].lower()))
+    return out
+
+
 def search_leads(query="", platforms=None, intents=None, location="Any", status_filter="all",
-                 max_age_days=7, since=None, limit=300, kind="all"):
+                 max_age_days=7, since=None, limit=300, kind="all", fb_group=""):
     sql = "SELECT * FROM leads WHERE 1=1"
     params = []
     if not status_filter or status_filter == "all":
@@ -670,11 +810,14 @@ def search_leads(query="", platforms=None, intents=None, location="Any", status_
     loc = (location or "Any").strip().lower()
     intents = set(intents) if intents else None
     kind_filter = (kind or "all").strip().lower()
+    fb_group_filter = (fb_group or "").strip().lower()
 
     out = []
     for row in rows:
         plat = row.get("platform") or infer_platform(row.get("source"))
         if not is_valid_lead_url(plat, row.get("url"), row.get("external_id", "")):
+            continue
+        if fb_group_filter and not row_matches_fb_group(row, fb_group_filter):
             continue
         if platforms is not None and platform_key(row) not in platforms:
             continue
@@ -974,6 +1117,7 @@ def get_stats(platforms=None):
                 "sellers": one(f"SELECT COUNT(*) FROM leads WHERE {active_where} AND intent = 'seller'"),
                 "market": one(f"SELECT COUNT(*) FROM leads WHERE {active_where} AND intent IN ('buyer', 'seller')"),
                 "comments": one(f"SELECT COUNT(*) FROM leads WHERE {active_where} AND kind = 'comment'"),
+                "fb_groups": get_facebook_groups_summary(),
             }
 
         allowed = set(platforms)
@@ -1029,6 +1173,7 @@ def get_stats(platforms=None):
                     counts["market"] += 1
                 if kind == "comment":
                     counts["comments"] += 1
+        counts["fb_groups"] = get_facebook_groups_summary()
         return counts
     finally:
         conn.close()

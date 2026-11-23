@@ -1131,14 +1131,29 @@
           </nav>
         </div>
 
+        <!-- Collapsible Synced Facebook Groups (Auto-synced from Settings & Scraped DB Leads) -->
+        <div id="fbGroupsSection" class="mt-4 pt-3 border-t border-hair">
+          <div class="px-2 mb-1.5 flex items-center justify-between gap-1">
+            <button type="button" id="btnToggleFbGroups" onclick="toggleFbGroupsSection()" class="flex items-center gap-1 text-[11.5px] font-medium hover:text-[var(--ink-primary)] transition min-w-0" style="color: var(--ink-section);" aria-expanded="true">
+              <svg id="fbGroupsChevron" class="lucide-ic w-3 h-3 shrink-0 transition-transform" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+              <span class="truncate">Facebook Groups</span>
+              <span id="fbGroupsCountBadge" class="mono-tag text-[10px] tabular-nums ml-0.5" style="color: var(--ink-muted);">0</span>
+            </button>
+            <button type="button" id="btnQuickAddFbGroup" onclick="quickAddFacebookGroup()" class="text-[10.5px] font-medium px-1.5 py-0.5 rounded-[5px] hover:bg-[var(--bg-hover)] hover:text-[var(--ink-primary)] transition shrink-0" style="color: var(--ink-muted);" title="Add a Public Facebook Group URL to Settings">
+              + Add
+            </button>
+          </div>
+          <div id="fbGroupsList" class="space-y-0.5" aria-label="Synced Facebook Groups"></div>
+        </div>
+
         <!-- Collapsible Saved Watchlists (1-Click Niche Presets + Custom Saved Filters) -->
-        <div id="watchlistsSection" class="mt-4 pt-3 border-t border-hair">
+        <div id="watchlistsSection" class="mt-3 pt-3 border-t border-hair">
           <div class="px-2 mb-1.5 flex items-center justify-between gap-1">
             <button type="button" id="btnToggleWatchlists" onclick="toggleWatchlistsSection()" class="flex items-center gap-1 text-[11.5px] font-medium hover:text-[var(--ink-primary)] transition" style="color: var(--ink-section);" aria-expanded="true">
               <svg id="watchlistsChevron" class="lucide-ic w-3 h-3 transition-transform" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
-              <span>Watchlists</span>
+              <span>Filter Presets</span>
             </button>
-            <button type="button" id="btnSaveWatchlist" onclick="saveCurrentWatchlist()" class="text-[10.5px] font-medium px-1.5 py-0.5 rounded-[5px] hover:bg-[var(--bg-hover)] hover:text-[var(--ink-primary)] transition" style="color: var(--ink-muted);" title="Save current keywords, category, location, type &amp; platforms as a Watchlist">
+            <button type="button" id="btnSaveWatchlist" onclick="saveCurrentWatchlist()" class="text-[10.5px] font-medium px-1.5 py-0.5 rounded-[5px] hover:bg-[var(--bg-hover)] hover:text-[var(--ink-primary)] transition" style="color: var(--ink-muted);" title="Save current keywords, category, location, type &amp; platforms as a Filter Preset">
               + Save
             </button>
           </div>
@@ -2497,15 +2512,22 @@
       const dot = document.getElementById('filtersActiveDot');
       if (!dot) return;
       const activeCount = Array.from(document.querySelectorAll('.plat-cb')).filter(cb => cb.checked).length;
-      dot.classList.toggle('hidden', !(filtersCollapsed && activeCount > 0));
+      dot.classList.toggle('hidden', !(filtersCollapsed && (activeCount > 0 || Boolean(activeFbGroupKey))));
     }
 
     function renderActiveFilterChips() {
       const host = document.getElementById('activeFilterChips');
       if (!host) return;
-      if (!filtersCollapsed) {
+      if (!filtersCollapsed && !activeFbGroupKey) {
         host.classList.add('hidden');
         host.innerHTML = '';
+        return;
+      }
+      if (!filtersCollapsed && activeFbGroupKey) {
+        const gObj = renderedFbGroups.find(g => g.key === activeFbGroupKey);
+        const gName = gObj ? gObj.name : activeFbGroupKey;
+        host.innerHTML = `<button type="button" onclick="clearActiveFilterChip('fb_group')" class="active-filter-chip" title="Clear Facebook group filter"><span>${escapeHtml(`FB: ${gName}`)}</span><span class="opacity-65">&times;</span></button>`;
+        host.classList.remove('hidden');
         return;
       }
 
@@ -2564,6 +2586,16 @@
         });
       }
 
+      if (activeFbGroupKey) {
+        const gObj = renderedFbGroups.find(g => g.key === activeFbGroupKey);
+        const gName = gObj ? gObj.name : activeFbGroupKey;
+        chips.push({
+          label: `FB: ${gName}`,
+          removable: true,
+          action: "clearActiveFilterChip('fb_group')"
+        });
+      }
+
       if (!chips.length) {
         host.classList.add('hidden');
         host.innerHTML = '';
@@ -2617,6 +2649,9 @@
       } else if (kind === 'hot') {
         hotOnlyFilter = false;
         syncHotBtn();
+      } else if (kind === 'fb_group') {
+        activeFbGroupKey = null;
+        renderFbGroupsSidebar();
       }
       renderActiveFilterChips();
       loadLeads();
@@ -2875,12 +2910,23 @@
       loadLeads();
     }
 
-    function setFilter(filter) {
+    function setFilter(filter, opts = {}) {
       currentFilter = filter;
       if ((filter === 'ai_filtered' || filter === 'archived') && hotOnlyFilter) {
         hotOnlyFilter = false;
         syncHotBtn();
       }
+      // Clicking 'All Leads' or any Pipeline view in the sidebar resets the active Facebook Group / Preset filter
+      if (!opts.keepGroup && activeFbGroupKey) {
+        activeFbGroupKey = null;
+        renderFbGroupsSidebar();
+      }
+      if (!opts.keepPreset && activeWatchlistId) {
+        activeWatchlistId = null;
+        renderWatchlists();
+      }
+      renderActiveFilterChips();
+      updateFiltersActiveDot();
       document.querySelectorAll('nav .nav-item').forEach(b => b.classList.remove('active-nav'));
       const activeBtn = document.getElementById(`tab-${filter}`);
       if (activeBtn) activeBtn.classList.add('active-nav');
@@ -2949,17 +2995,27 @@
         const params = new URLSearchParams({
           status: currentFilter,
           q: query,
-          location: isAuditView ? 'Any' : location,
+          location: (isAuditView || activeFbGroupKey) ? 'Any' : location,
           platforms: platforms,
           intents: intents,
           kind: currentKindFilter,
-          max_age_days: isAuditView || currentFilter === 'followup' ? 365 : getMaxAgeDays()
+          fb_group: activeFbGroupKey || '',
+          max_age_days: (isAuditView || currentFilter === 'followup' || activeFbGroupKey) ? 365 : getMaxAgeDays()
         });
 
         const res = await fetch(`/api/leads?${params.toString()}`);
         const data = await res.json();
         hasCompletedInitialLoad = true;
         checkBackendVersion(data.adapters);
+        const fbGroupsPayload = (Array.isArray(data.fb_groups) && data.fb_groups.length > 0)
+          ? data.fb_groups
+          : (data.stats && Array.isArray(data.stats.fb_groups) && data.stats.fb_groups.length > 0 ? data.stats.fb_groups : null);
+        if (fbGroupsPayload) {
+          renderedFbGroups = fbGroupsPayload;
+          renderFbGroupsSidebar();
+        } else if (!activeFbGroupKey && Array.isArray(data.leads)) {
+          enrichFbGroupsFromClientLeads(data.leads);
+        }
         renderStats(data.stats);
         renderLeads(data.leads);
         if (data.scan && (data.scan.running || data.scan.cancelled || Object.keys(data.scan.adapters || {}).length > 0)) {
@@ -3264,6 +3320,10 @@
       syncPlatformPills();
       hotOnlyFilter = false;
       syncHotBtn();
+      activeFbGroupKey = null;
+      activeWatchlistId = null;
+      renderFbGroupsSidebar();
+      renderWatchlists();
       currentKindFilter = 'all';
       syncKindFilterPills();
       const sortEl = document.getElementById('sortOrder');
@@ -3281,6 +3341,10 @@
        ================================================================ */
     function renderStats(stats) {
       if (!stats) return;
+      if (Array.isArray(stats.fb_groups) && stats.fb_groups.length > 0) {
+        renderedFbGroups = stats.fb_groups;
+        renderFbGroupsSidebar();
+      }
       lastTotalStored = stats.total || 0;
       const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
       setTxt('count-all', stats.total || 0);
@@ -3547,21 +3611,24 @@
 
     function getPlatformBadgeHtml(l, useFullSource = true) {
       const m = getPlatformMeta(l);
-      const label = useFullSource ? (l.source || m.shortLabel) : m.shortLabel;
-      return `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium border ${m.pillClass} max-w-[240px] truncate"><i class="${m.icon} text-[10.5px] shrink-0" style="color:${m.iconColor}"></i><span class="truncate">${escapeHtml(label)}</span></span>`;
+      let label = useFullSource ? (l.source || m.shortLabel) : m.shortLabel;
+      if (useFullSource && typeof formatSidebarGroupName === 'function') {
+        label = String(label).replace(/\(([^)]+)\)/, (_, inner) => `(${formatSidebarGroupName(inner)})`);
+      }
+      return `<span class="inline-flex items-center gap-1.5 h-[22px] px-2 rounded-[6px] text-[11px] font-medium border ${m.pillClass} max-w-[260px] truncate" title="${escapeHtml(l.source || m.shortLabel)}"><i class="${m.icon} text-[10.5px] shrink-0" style="color:${m.iconColor}"></i><span class="truncate">${escapeHtml(label)}</span></span>`;
     }
 
     function getIntentLabelPill(intent) {
       if (intent === 'employer') {
-        return '<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/15 text-amber-800 dark:text-[#FCD34D] border border-amber-500/35 whitespace-nowrap"><span class="label-dot" style="background:#F59E0B"></span>Employer</span>';
+        return '<span class="inline-flex items-center gap-1.5 h-[22px] px-2 rounded-[6px] text-[11px] font-medium bg-amber-500/15 text-amber-800 dark:text-[#FCD34D] border border-amber-500/35 whitespace-nowrap"><span class="label-dot" style="background:#F59E0B"></span>Employer</span>';
       }
       if (intent === 'seller') {
-        return '<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-sky-500/15 text-sky-800 dark:text-[#7DD3FC] border border-sky-500/35 whitespace-nowrap"><span class="label-dot" style="background:#38BDF8"></span>Seller</span>';
+        return '<span class="inline-flex items-center gap-1.5 h-[22px] px-2 rounded-[6px] text-[11px] font-medium bg-sky-500/15 text-sky-800 dark:text-[#7DD3FC] border border-sky-500/35 whitespace-nowrap"><span class="label-dot" style="background:#38BDF8"></span>Seller</span>';
       }
       if (intent === 'buyer') {
-        return '<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-cyan-500/15 text-cyan-800 dark:text-[#67E8F9] border border-cyan-500/35 whitespace-nowrap"><span class="label-dot" style="background:#38BDF8"></span>Buyer</span>';
+        return '<span class="inline-flex items-center gap-1.5 h-[22px] px-2 rounded-[6px] text-[11px] font-medium bg-cyan-500/15 text-cyan-800 dark:text-[#67E8F9] border border-cyan-500/35 whitespace-nowrap"><span class="label-dot" style="background:#38BDF8"></span>Buyer</span>';
       }
-      return '<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/15 text-emerald-800 dark:text-[#6EE7B7] border border-emerald-500/35 whitespace-nowrap"><span class="label-dot" style="background:#4ADE80"></span>Jobseeker</span>';
+      return '<span class="inline-flex items-center gap-1.5 h-[22px] px-2 rounded-[6px] text-[11px] font-medium bg-emerald-500/15 text-emerald-800 dark:text-[#6EE7B7] border border-emerald-500/35 whitespace-nowrap"><span class="label-dot" style="background:#4ADE80"></span>Jobseeker</span>';
     }
 
     let activePitchTone = 'friendly';
@@ -3660,6 +3727,10 @@
 
       if (hotOnlyFilter && !isAuditTab) {
         cleanLeads = cleanLeads.filter(l => l._prio.isHot);
+      }
+
+      if (activeFbGroupKey) {
+        cleanLeads = cleanLeads.filter(l => clientLeadMatchesFbGroup(l, activeFbGroupKey));
       }
 
       const sortMode = (document.getElementById('sortOrder') || {}).value || 'hot_first';
@@ -4045,7 +4116,7 @@
         (lead.source || '').toLowerCase().includes('facebook')
       );
       const mineCommentersBtnHtml = isFacebookPost
-        ? `<button type="button" id="btnMineComments" onclick="mineSelectedPostComments()" class="active-filter-chip !h-[23px] !px-2 cursor-pointer hover:border-[#60A5FA]/60 !text-blue-700 dark:!text-[#93C5FD]" title="Mine commenters on just this Facebook post using Apify (cached to prevent double charges)"><span id="mineCommentsIcon" class="inline-flex items-center justify-center"><svg class="lucide-ic w-3 h-3" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><span id="mineCommentsLabel">Mine Commenters</span></button>`
+        ? `<button type="button" id="btnMineComments" onclick="mineSelectedPostComments()" class="inline-flex items-center gap-1.5 h-[24px] px-2.5 rounded-[6px] text-[11px] font-medium border border-[#1877F2]/35 bg-[#1877F2]/10 hover:bg-[#1877F2]/20 text-blue-700 dark:text-[#93C5FD] transition cursor-pointer shrink-0 ml-auto" title="Mine commenters on just this Facebook post using Apify (cached to prevent double charges)"><span id="mineCommentsIcon" class="inline-flex items-center justify-center"><svg class="lucide-ic w-3 h-3" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><span id="mineCommentsLabel">Mine Commenters</span></button>`
         : '';
 
       const fm = getFollowupMeta(lead);
@@ -4057,7 +4128,7 @@
               ${LUCIDE_ICONS.clock}
               <span class="font-medium" style="color: var(--ink-primary);">Follow-Up</span>
               ${fm
-                ? `<span class="inline-flex items-center px-1.5 py-0 rounded-full text-[10.5px] font-medium border ${fm.pillClass}">${escapeHtml(fm.detail)}</span>`
+                ? `<span class="inline-flex items-center px-1.5 py-0 rounded-[5px] text-[10.5px] font-medium border ${fm.pillClass}">${escapeHtml(fm.detail)}</span>`
                 : `<span style="color: var(--ink-muted);">No reminder date set</span>`
               }
             </div>
@@ -4071,36 +4142,54 @@
         `
         : '';
 
-      const contactChipsHtml = [
-        mineCommentersBtnHtml,
+      const contactItemsHtml = [
         profileUrl
-          ? `<a href="${escapeHtml(profileUrl)}" target="_blank" rel="noopener noreferrer" class="active-filter-chip !h-[23px] !px-2 hover:border-[var(--border-hover)]" title="Open author profile / search">${LUCIDE_ICONS.userLink}<span>Profile</span>${LUCIDE_ICONS.extLink}</a>`
+          ? `<a href="${escapeHtml(profileUrl)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 h-[24px] px-2.5 rounded-[6px] border border-hair hover:border-[var(--border-hover)] text-[11px] font-medium transition" style="background-color: var(--bg-elevated); color: var(--ink-secondary);" title="Open author profile / search">${LUCIDE_ICONS.userLink}<span>Profile</span>${LUCIDE_ICONS.extLink}</a>`
           : '',
         ...currentLeadExtractedContacts.map((c, idx) =>
-          `<button type="button" onclick="copyExtractedContact(${idx})" class="active-filter-chip !h-[23px] !px-2 cursor-pointer" title="Click to copy ${c.type}">${c.type === 'email' ? LUCIDE_ICONS.mail : LUCIDE_ICONS.phone}<span class="mono-tag text-[11px]">${escapeHtml(c.value)}</span></button>`
+          `<button type="button" onclick="copyExtractedContact(${idx})" class="inline-flex items-center gap-1.5 h-[24px] px-2.5 rounded-[6px] border border-hair hover:border-[var(--border-hover)] text-[11px] transition cursor-pointer" style="background-color: var(--bg-elevated); color: var(--ink-secondary);" title="Click to copy ${c.type}">${c.type === 'email' ? LUCIDE_ICONS.mail : LUCIDE_ICONS.phone}<span class="mono-tag text-[11px]">${escapeHtml(c.value)}</span></button>`
         )
       ].filter(Boolean).join('');
 
+      const hasActionOrContactRow = Boolean(contactItemsHtml || mineCommentersBtnHtml);
+
       article.innerHTML = `
-        <!-- Editorial Headline + Structured Properties Strip (Verbatim Original Text Preserved) -->
+        <!-- Editorial Headline + Harmonized 2-Tier Properties Card (Verbatim Original Text Preserved) -->
         <div class="space-y-3">
           <h1 class="text-[20px] font-medium tracking-[-0.02em] leading-[1.35] break-words" style="color: var(--ink-primary);">
             ${highlightMatchedKeyword(lead.title || 'Untitled Lead', lead.matched_keyword)}
           </h1>
 
-          <!-- Structured Properties Strip -->
-          <div class="flex flex-wrap items-center gap-x-2.5 gap-y-2 py-2.5 px-3 rounded-[9px] border border-hair text-[11.5px]" style="background-color: var(--bg-elevated); color: var(--ink-secondary);">
-            ${getPlatformBadgeHtml(lead, true)}
-            ${getIntentLabelPill(lead.intent)}
-            ${isComment ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-violet-500/15 text-violet-800 dark:text-[#DDD6FE] border border-violet-500/35">Comment</span>' : ''}
-            ${lead._prio && lead._prio.isHot ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/15 text-amber-800 dark:text-[#FCD34D] border border-amber-500/35">${LUCIDE_ICONS.flame}<span>${escapeHtml(lead._prio.label)}</span></span>` : ''}
-            <span class="inline-flex items-center gap-1.5" style="color: var(--ink-secondary);">
-              ${LUCIDE_ICONS.mapPin}
-              <span>${escapeHtml(lead.location || 'Cebu')}</span>
-            </span>
-            ${ago ? `<span class="inline-flex items-center gap-1.5 mono-tag text-[11px] tabular-nums" style="color: var(--ink-muted);">${LUCIDE_ICONS.clock}<span>${escapeHtml(ago)}</span></span>` : ''}
-            ${lead.matched_keyword ? `<span class="code-chip">${LUCIDE_ICONS.hash}${escapeHtml(lead.matched_keyword)}</span>` : ''}
-            ${contactChipsHtml}
+          <!-- Harmonized Properties & Actions Card -->
+          <div class="rounded-[9px] border border-hair overflow-hidden text-[11.5px]" style="background-color: var(--bg-elevated); color: var(--ink-secondary);">
+            <!-- Row 1: Classification Badges (Left) + Quiet Context Metadata (Right) -->
+            <div class="px-3 py-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+              <div class="flex flex-wrap items-center gap-1.5 min-w-0">
+                ${getPlatformBadgeHtml(lead, true)}
+                ${getIntentLabelPill(lead.intent)}
+                ${isComment ? '<span class="inline-flex items-center gap-1 h-[22px] px-2 rounded-[6px] text-[11px] font-medium bg-violet-500/15 text-violet-800 dark:text-[#DDD6FE] border border-violet-500/35">Comment</span>' : ''}
+                ${lead._prio && lead._prio.isHot ? `<span class="inline-flex items-center gap-1 h-[22px] px-2 rounded-[6px] text-[11px] font-medium bg-amber-500/15 text-amber-800 dark:text-[#FCD34D] border border-amber-500/35">${LUCIDE_ICONS.flame}<span>${escapeHtml(lead._prio.label)}</span></span>` : ''}
+              </div>
+
+              <div class="flex flex-wrap items-center gap-2 text-[11px]" style="color: var(--ink-muted);">
+                <span class="inline-flex items-center gap-1" style="color: var(--ink-secondary);">
+                  ${LUCIDE_ICONS.mapPin}
+                  <span>${escapeHtml(lead.location || 'Cebu')}</span>
+                </span>
+                ${ago ? `<span>&middot;</span><span class="inline-flex items-center gap-1 mono-tag tabular-nums">${LUCIDE_ICONS.clock}<span>${escapeHtml(ago)}</span></span>` : ''}
+                ${lead.matched_keyword ? `<span>&middot;</span><span class="code-chip !h-[20px] !px-1.5 inline-flex items-center gap-0.5">${LUCIDE_ICONS.hash}<span>${escapeHtml(lead.matched_keyword)}</span></span>` : ''}
+              </div>
+            </div>
+
+            ${hasActionOrContactRow ? `
+              <!-- Row 2: Dedicated Contacts & Post Actions Bar -->
+              <div class="px-3 py-1.5 border-t border-hair flex flex-wrap items-center justify-between gap-1.5" style="background-color: var(--bg-sidebar);">
+                <div class="flex flex-wrap items-center gap-1.5 min-w-0">
+                  ${contactItemsHtml}
+                </div>
+                ${mineCommentersBtnHtml}
+              </div>
+            ` : ''}
           </div>
           ${followupSnoozeBarHtml}
         </div>
@@ -4478,6 +4567,308 @@
     let watchlistsCollapsed = false;
     let renderedWatchlists = [];
 
+    let activeFbGroupKey = null;
+    let fbGroupsCollapsed = false;
+    let renderedFbGroups = [];
+
+    function extractClientFbGroupInfo(lead) {
+      if (!lead) return null;
+      const src = String(lead.source || '').trim();
+      const url = String(lead.url || '').trim();
+      const purl = String(lead.parent_url || '').trim();
+      if (!src.toLowerCase().includes('facebook') && !url.toLowerCase().includes('facebook.com')) return null;
+      const mKey = url.match(/\/groups\/([^/?#]+)/i) || purl.match(/\/groups\/([^/?#]+)/i);
+      const mName = src.match(/Facebook\s+(?:Comment\s+)?Group\s*\((.+)\)/i);
+      const urlKey = mKey ? mKey[1].trim().toLowerCase() : '';
+      const srcName = mName ? mName[1].trim() : '';
+      if (!urlKey && !srcName) return null;
+      const key = urlKey || srcName.toLowerCase().replace(/\s+/g, '-');
+      const name = srcName || (/^\d+$/.test(urlKey) ? `FB Group (${urlKey})` : urlKey);
+      return { key, name, url: urlKey ? `https://www.facebook.com/groups/${urlKey}/` : url };
+    }
+
+    function clientLeadMatchesFbGroup(lead, groupKey) {
+      const target = String(groupKey || '').trim().toLowerCase();
+      if (!target) return true;
+      const info = extractClientFbGroupInfo(lead);
+      if (!info) return false;
+      return (
+        info.key === target ||
+        info.name.toLowerCase() === target ||
+        String(lead.url || '').toLowerCase().includes(`/groups/${target}`) ||
+        String(lead.parent_url || '').toLowerCase().includes(`/groups/${target}`)
+      );
+    }
+
+    function getHiddenFbGroupKeys() {
+      const list = (currentConfig && currentConfig.social && Array.isArray(currentConfig.social.hidden_fb_groups))
+        ? currentConfig.social.hidden_fb_groups
+        : [];
+      return new Set(list.map(k => String(k || '').trim().toLowerCase()).filter(Boolean));
+    }
+
+    function enrichFbGroupsFromClientLeads(leadsList) {
+      const map = new Map();
+      const hiddenSet = getHiddenFbGroupKeys();
+      const cfgUrls = (currentConfig && currentConfig.social && Array.isArray(currentConfig.social.facebook_groups))
+        ? currentConfig.social.facebook_groups
+        : [];
+      cfgUrls.forEach(u => {
+        const s = String(u || '').trim();
+        if (!s) return;
+        const m = s.match(/\/groups\/([^/?#]+)/i);
+        const slug = m ? m[1] : s.replace(/\/+$/, '').split('/').pop();
+        const key = (slug || '').toLowerCase();
+        if (!key) return;
+        map.set(key, {
+          key,
+          name: /^\d+$/.test(slug) ? `FB Group (${slug})` : slug,
+          url: m ? `https://www.facebook.com/groups/${slug}/` : s,
+          count: 0,
+          configured: true,
+          primary_intent: 'seeker',
+          all_intents: []
+        });
+      });
+      (leadsList || []).forEach(ld => {
+        const info = extractClientFbGroupInfo(ld);
+        if (!info) return;
+        let g = map.get(info.key);
+        if (!g) {
+          if (hiddenSet.has(info.key)) return;
+          g = {
+            key: info.key,
+            name: info.name,
+            url: info.url,
+            count: 0,
+            configured: false,
+            primary_intent: ld.intent || 'seeker',
+            all_intents: []
+          };
+          map.set(info.key, g);
+        } else if (info.name && !info.name.startsWith('FB Group (') && (g.name.startsWith('FB Group (') || g.name.toLowerCase() === g.key)) {
+          g.name = info.name;
+        }
+        g.count = (g.count || 0) + 1;
+        if (ld.intent && !g.all_intents.includes(ld.intent)) g.all_intents.push(ld.intent);
+      });
+      renderedFbGroups = Array.from(map.values()).sort((a, b) => (b.count - a.count) || (a.configured === b.configured ? a.name.localeCompare(b.name) : (a.configured ? -1 : 1)));
+      renderFbGroupsSidebar();
+    }
+
+    function toggleFbGroupsSection() {
+      fbGroupsCollapsed = !fbGroupsCollapsed;
+      const list = document.getElementById('fbGroupsList');
+      const chev = document.getElementById('fbGroupsChevron');
+      const btn = document.getElementById('btnToggleFbGroups');
+      if (list) list.classList.toggle('hidden', fbGroupsCollapsed);
+      if (chev) chev.style.transform = fbGroupsCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
+      if (btn) btn.setAttribute('aria-expanded', fbGroupsCollapsed ? 'false' : 'true');
+    }
+
+    function formatSidebarGroupName(raw) {
+      let s = String(raw || '').trim();
+      if (!s) return 'Facebook Group';
+      // Strip noisy trailing pipe sub-banners or decorative emojis so sidebar names look clean & uniform
+      s = s.replace(/\s*\|\s*.*$/, '').replace(/[\p{Extended_Pictographic}\uFE0F\u200D]+/gu, '').replace(/\s+-\s*(\d{4})/, ' $1').replace(/\s{2,}/g, ' ').trim();
+      if (!s) s = String(raw || '').trim();
+      const keepUpper = new Set(['PH', 'IT', 'BPO', 'VA', 'HR', 'PC', 'FB']);
+      return s.toLowerCase().replace(/\b([a-z0-9]+)\b/gi, (w) => {
+        const up = w.toUpperCase();
+        if (keepUpper.has(up)) return up;
+        return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+      });
+    }
+
+    function renderFbGroupsSidebar() {
+      const container = document.getElementById('fbGroupsList');
+      const badge = document.getElementById('fbGroupsCountBadge');
+      if (!container) return;
+
+      // Fallback seed from currentConfig if backend hasn't populated renderedFbGroups yet
+      if (!renderedFbGroups.length && currentConfig && currentConfig.social && Array.isArray(currentConfig.social.facebook_groups)) {
+        renderedFbGroups = currentConfig.social.facebook_groups.map(u => {
+          const s = String(u || '').trim();
+          const m = s.match(/\/groups\/([^/?#]+)/i);
+          const slug = m ? m[1] : s.replace(/\/+$/, '').split('/').pop();
+          const key = (slug || '').toLowerCase();
+          return {
+            key,
+            name: /^\d+$/.test(slug) ? `FB Group (${slug})` : slug,
+            url: m ? `https://www.facebook.com/groups/${slug}/` : s,
+            count: 0,
+            configured: true,
+            primary_intent: 'seeker'
+          };
+        }).filter(g => g.key);
+      }
+
+      const hiddenSet = getHiddenFbGroupKeys();
+      renderedFbGroups = renderedFbGroups.filter(g => g && g.key && (g.configured || !hiddenSet.has(g.key)));
+
+      if (badge) badge.innerText = String(renderedFbGroups.length || 0);
+
+      if (!renderedFbGroups.length) {
+        container.innerHTML = `<div class="px-2 py-1 text-[11px]" style="color: var(--ink-muted);">No Facebook groups added yet. Click <strong>+ Add</strong> above.</div>`;
+        return;
+      }
+
+      container.innerHTML = renderedFbGroups.map((g, idx) => {
+        const isActive = activeFbGroupKey && activeFbGroupKey === g.key;
+        const dotColor = isActive ? '#60A5FA' : (g.configured ? '#3B82F6' : '#64748B');
+        const displayName = formatSidebarGroupName(g.name);
+        return `
+          <div class="group relative flex items-center">
+            <button type="button" onclick="toggleFbGroupFilter(${idx})" class="nav-item w-full min-w-0 !py-1.5 ${isActive ? 'active-nav' : ''}" title="${escapeHtml(`${g.name} (${g.count || 0} leads)`)}">
+              <span class="flex items-center gap-2 min-w-0 flex-1 pr-1">
+                <span class="w-3.5 flex justify-center shrink-0">
+                  <i class="fa-brands fa-facebook text-[11px]" style="color:${dotColor}"></i>
+                </span>
+                <span class="truncate text-[12px]">${escapeHtml(displayName)}</span>
+              </span>
+              <span class="mono-tag text-[11px] tabular-nums shrink-0 group-hover:opacity-0 transition-opacity" style="color: var(--ink-section);">${g.count || 0}</span>
+            </button>
+            <button type="button" onclick="event.stopPropagation(); removeFbGroupFromSidebar(${idx})" class="absolute right-1.5 w-5 h-5 rounded-[5px] opacity-0 group-hover:opacity-100 focus:opacity-100 flex items-center justify-center hover:bg-rose-500/15 hover:text-rose-400 transition" style="color: var(--ink-muted);" title="Remove group" aria-label="Remove Facebook group">
+              <svg class="lucide-ic w-3 h-3" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleFbGroupFilter(idx) {
+      const g = renderedFbGroups[idx];
+      if (!g) return;
+      if (activeFbGroupKey === g.key) {
+        activeFbGroupKey = null;
+        renderFbGroupsSidebar();
+        renderActiveFilterChips();
+        updateFiltersActiveDot();
+        loadLeads();
+        showLiveToast('All Groups Shown', 'Cleared Facebook group filter.');
+        return;
+      }
+      activeFbGroupKey = g.key;
+      activeWatchlistId = null;
+
+      // If platform checkboxes are active and Facebook isn't checked, include Facebook so the group's leads aren't hidden
+      const selectedPlats = getSelectedPlatforms();
+      if (selectedPlats.length > 0 && !selectedPlats.includes('facebook')) {
+        const fbCb = document.getElementById('plat_facebook');
+        if (fbCb) fbCb.checked = true;
+        syncPlatformPills();
+      }
+
+      // Preserve the user's current Category & Type settings across groups;
+      // only auto-switch Category if the group has 0 leads in the current category (e.g. Buy & Sell group vs Jobs group)
+      const intEl = document.getElementById('searchIntent');
+      if (intEl) {
+        const curIntents = (intEl.value || 'seeker,employer').split(',');
+        const groupIntents = (Array.isArray(g.all_intents) && g.all_intents.length > 0)
+          ? g.all_intents
+          : (g.primary_intent ? [g.primary_intent] : ['seeker', 'employer']);
+        const hasOverlap = groupIntents.some(i => curIntents.includes(i));
+        if (!hasOverlap) {
+          intEl.value = (g.primary_intent === 'buyer' || g.primary_intent === 'seller')
+            ? 'buyer,seller'
+            : 'seeker,employer';
+        }
+      }
+
+      renderFbGroupsSidebar();
+      renderWatchlists();
+      renderActiveFilterChips();
+      updateFiltersActiveDot();
+      toggleMobileSidebar(false);
+      loadLeads();
+      showLiveToast('Facebook Group Filter', `${g.name} (${g.count || 0} stored leads)`);
+    }
+
+    async function removeFbGroupFromSidebar(idx) {
+      const g = renderedFbGroups[idx];
+      if (!g || !g.key) return;
+      const targetKey = g.key.toLowerCase();
+      currentConfig.social = currentConfig.social || {};
+      const existingUrls = Array.isArray(currentConfig.social.facebook_groups)
+        ? currentConfig.social.facebook_groups
+        : [];
+      currentConfig.social.facebook_groups = existingUrls.filter(u => {
+        const s = String(u || '').trim();
+        const m = s.match(/\/groups\/([^/?#]+)/i);
+        const k = (m ? m[1] : s.replace(/\/+$/, '').split('/').pop() || '').toLowerCase();
+        return k !== targetKey;
+      });
+      const hidden = Array.isArray(currentConfig.social.hidden_fb_groups)
+        ? [...currentConfig.social.hidden_fb_groups]
+        : [];
+      if (!hidden.map(x => String(x).toLowerCase()).includes(targetKey)) {
+        hidden.push(targetKey);
+      }
+      currentConfig.social.hidden_fb_groups = hidden;
+
+      const wasActive = activeFbGroupKey === targetKey;
+      if (wasActive) activeFbGroupKey = null;
+      renderedFbGroups = renderedFbGroups.filter(item => item.key !== targetKey);
+      renderFbGroupsSidebar();
+      renderActiveFilterChips();
+      updateFiltersActiveDot();
+
+      try {
+        const res = await fetch('/api/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(currentConfig)
+        });
+        const data = await res.json();
+        if (Array.isArray(data.fb_groups)) {
+          renderedFbGroups = data.fb_groups;
+          renderFbGroupsSidebar();
+        }
+      } catch (e) {}
+      if (wasActive) loadLeads();
+      showLiveToast('Facebook Group Removed', `Removed "${g.name}" from your sidebar & Settings.`);
+    }
+
+    async function quickAddFacebookGroup() {
+      const rawUrl = window.prompt('Paste Public Facebook Group URL:', 'https://www.facebook.com/groups/');
+      if (!rawUrl || !rawUrl.trim()) return;
+      const cleanUrl = rawUrl.trim();
+      if (!/^https?:\/\/(?:www\.|m\.|web\.)?(?:facebook\.com|fb\.com)\/groups\/[^/?#\s]+/i.test(cleanUrl)) {
+        showLiveToast('Invalid Group URL', 'Please enter a valid Facebook Group link (e.g. https://www.facebook.com/groups/cebujobhiring).');
+        return;
+      }
+      currentConfig.social = currentConfig.social || {};
+      const existing = Array.isArray(currentConfig.social.facebook_groups) ? [...currentConfig.social.facebook_groups] : [];
+      const mNew = cleanUrl.match(/\/groups\/([^/?#]+)/i);
+      const newKey = mNew ? mNew[1].toLowerCase() : cleanUrl.toLowerCase();
+      const alreadyExists = existing.some(u => {
+        const m = String(u || '').match(/\/groups\/([^/?#]+)/i);
+        return (m ? m[1].toLowerCase() : String(u || '').toLowerCase()) === newKey;
+      });
+      if (!alreadyExists) {
+        existing.push(cleanUrl);
+        currentConfig.social.facebook_groups = existing;
+      }
+      if (Array.isArray(currentConfig.social.hidden_fb_groups)) {
+        currentConfig.social.hidden_fb_groups = currentConfig.social.hidden_fb_groups.filter(
+          k => String(k || '').toLowerCase() !== newKey
+        );
+      }
+      try {
+        const res = await fetch('/api/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(currentConfig)
+        });
+        const data = await res.json();
+        if (Array.isArray(data.fb_groups)) {
+          renderedFbGroups = data.fb_groups;
+        }
+      } catch (e) {}
+      renderFbGroupsSidebar();
+      showLiveToast(alreadyExists ? 'Group Restored in Sidebar' : 'Facebook Group Added', cleanUrl);
+    }
+
     function getCustomWatchlists() {
       if (currentConfig && Array.isArray(currentConfig.watchlists)) {
         return currentConfig.watchlists.filter(w => w && w.name);
@@ -4516,14 +4907,14 @@
           : (w.intent || '').includes('buyer') || (w.intent || '').includes('seller') ? '#38BDF8'
           : '#8B5CF6';
         return `
-          <div class="group flex items-center gap-0.5">
-            <button type="button" onclick="applyWatchlist(${idx})" class="nav-item flex-1 min-w-0 !py-1.5 ${isActive ? 'active-nav' : ''}" title="${escapeHtml(w.query || w.name)}">
-              <span class="flex items-center gap-2 min-w-0">
+          <div class="group relative flex items-center">
+            <button type="button" onclick="applyWatchlist(${idx})" class="nav-item w-full min-w-0 !py-1.5 ${isActive ? 'active-nav' : ''}" title="${escapeHtml(w.query || w.name)}">
+              <span class="flex items-center gap-2 min-w-0 flex-1 pr-4">
                 <span class="w-3.5 flex justify-center shrink-0"><span class="w-1.5 h-1.5 rounded-full" style="background:${dotColor}"></span></span>
                 <span class="truncate text-[12px]">${escapeHtml(w.name)}</span>
               </span>
             </button>
-            ${!w.builtin ? `<button type="button" onclick="deleteWatchlist(${idx})" class="btn-ghost w-5 h-5 opacity-0 group-hover:opacity-100 focus:opacity-100 flex items-center justify-center shrink-0 hover:text-rose-400" title="Remove watchlist" aria-label="Remove watchlist"><svg class="lucide-ic w-3 h-3" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>` : ''}
+            ${!w.builtin ? `<button type="button" onclick="event.stopPropagation(); deleteWatchlist(${idx})" class="absolute right-1.5 w-5 h-5 rounded-[5px] opacity-0 group-hover:opacity-100 focus:opacity-100 flex items-center justify-center hover:bg-rose-500/15 hover:text-rose-400 transition" style="color: var(--ink-muted);" title="Remove preset" aria-label="Remove preset"><svg class="lucide-ic w-3 h-3" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>` : ''}
           </div>
         `;
       }).join('');
@@ -4533,6 +4924,8 @@
       const w = renderedWatchlists[idx];
       if (!w) return;
       activeWatchlistId = w.id;
+      activeFbGroupKey = null;
+      renderFbGroupsSidebar();
       const qEl = document.getElementById('searchQuery');
       const intentEl = document.getElementById('searchIntent');
       const locEl = document.getElementById('searchLocation');
@@ -4555,8 +4948,8 @@
       syncPlatformPills();
       renderWatchlists();
       toggleMobileSidebar(false);
-      setFilter('all');
-      showLiveToast('Watchlist Loaded', w.name);
+      setFilter('all', { keepPreset: true });
+      showLiveToast('Filter Preset Loaded', w.name);
     }
 
     async function saveCurrentWatchlist() {
@@ -4977,7 +5370,20 @@
       currentConfig.social.fb_max_posts_per_group = parseInt(document.getElementById('cfgFbMaxPosts').value || '35', 10);
       currentConfig.social.fb_comments_per_post = parseInt(document.getElementById('cfgFbCommentsPerPost').value || '15', 10);
       currentConfig.social.instagram_hashtags = document.getElementById('cfgIgHashtags').value.split(',').map(s => s.trim().replace(/^#/, '')).filter(Boolean);
-      currentConfig.social.facebook_groups = document.getElementById('cfgFbGroups').value.split('\n').map(s => s.trim()).filter(Boolean);
+      const prevFbUrls = Array.isArray(currentConfig.social.facebook_groups) ? currentConfig.social.facebook_groups : [];
+      const nextFbUrls = document.getElementById('cfgFbGroups').value.split('\n').map(s => s.trim()).filter(Boolean);
+      const urlToKey = (u) => {
+        const s = String(u || '').trim();
+        const m = s.match(/\/groups\/([^/?#]+)/i);
+        return (m ? m[1] : s.replace(/\/+$/, '').split('/').pop() || '').toLowerCase();
+      };
+      const prevKeys = prevFbUrls.map(urlToKey).filter(Boolean);
+      const nextKeysSet = new Set(nextFbUrls.map(urlToKey).filter(Boolean));
+      const hiddenSet = getHiddenFbGroupKeys();
+      prevKeys.forEach(k => { if (!nextKeysSet.has(k)) hiddenSet.add(k); });
+      nextKeysSet.forEach(k => hiddenSet.delete(k));
+      currentConfig.social.facebook_groups = nextFbUrls;
+      currentConfig.social.hidden_fb_groups = Array.from(hiddenSet);
       const qList = document.getElementById('cfgTiktokQueries').value.split('\n').map(s => s.trim()).filter(Boolean);
       currentConfig.social.search_queries = qList;
       currentConfig.social.tiktok_search_queries = qList;
@@ -4996,11 +5402,18 @@
         try { await Notification.requestPermission(); } catch (e) {}
       }
 
-      await fetch('/api/config', {
+      const resCfg = await fetch('/api/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(currentConfig)
       });
+      try {
+        const cfgData = await resCfg.json();
+        if (Array.isArray(cfgData.fb_groups)) {
+          renderedFbGroups = cfgData.fb_groups;
+          renderFbGroupsSidebar();
+        }
+      } catch (e) {}
       lastCreditsFetchTs = 0;
       cachedCreditsData = null;
       syncAutoScanTimer(mins);
@@ -5284,6 +5697,7 @@
         const sCfg = currentConfig.search_settings || {};
         syncAutoScanTimer(sCfg.autoscan_minutes || currentConfig.autoscan_minutes || 0);
       } catch (e) {}
+      renderFbGroupsSidebar();
       renderWatchlists();
       loadLeads();
     }
@@ -5292,6 +5706,7 @@
     applyFeedDensity(feedDensity);
     syncPlatformPills();
     renderActiveFilterChips();
+    renderFbGroupsSidebar();
     renderWatchlists();
     initConfigAndAutoScan();
   </script>
