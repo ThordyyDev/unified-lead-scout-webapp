@@ -188,14 +188,17 @@
       color: var(--ink-primary);
     }
 
-    /* Platform toggle chip (compact wrapping pills in feed filter bar) */
+    /* Platform toggle chip (symmetrical 2-column grid pills in feed filter bar) */
     .platform-row {
-      display: inline-flex;
+      display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: 6px;
-      height: 25px;
-      padding: 0 8px;
-      border-radius: 6px;
+      width: 100%;
+      min-width: 0;
+      height: 27px;
+      padding: 0 9px;
+      border-radius: 7px;
       border: 1px solid var(--border-hairline);
       background-color: var(--pill-bg);
       font-size: 11.5px;
@@ -884,11 +887,18 @@
       .rb-stepper { display: none !important; }
     }
 
-    /* Compact Status Select (Zero awkward gap between label & custom chevron) */
-    #readerStatusSelect {
+    /* Compact Custom-Chevron Selects (Zero awkward gap between label & arrow) */
+    #readerStatusSelect,
+    #searchRecency,
+    #sortOrder,
+    #searchIntent {
       appearance: none;
       -webkit-appearance: none;
       -moz-appearance: none;
+    }
+    #readerStatusSelect,
+    #searchRecency,
+    #sortOrder {
       field-sizing: content;
     }
 
@@ -1175,6 +1185,28 @@
 
           <button
             type="button"
+            id="btnCollapsedScan"
+            onclick="triggerLiveSearch()"
+            class="hidden btn-primary h-[32px] px-2.5 rounded-[7px] text-[12px] font-medium shrink-0 items-center justify-center gap-1 whitespace-nowrap"
+            title="Scan selected platforms"
+          >
+            <svg class="lucide-ic w-3.5 h-3.5" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            <span>Scan</span>
+          </button>
+
+          <button
+            type="button"
+            id="btnCollapsedCancel"
+            onclick="cancelLiveSearch()"
+            class="hidden h-[32px] px-2.5 rounded-[7px] bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 dark:text-rose-400 border border-rose-500/25 text-[12px] font-medium shrink-0 items-center gap-1 transition whitespace-nowrap"
+            title="Cancel active scan"
+          >
+            <svg class="lucide-ic w-3.5 h-3.5" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            <span>Cancel</span>
+          </button>
+
+          <button
+            type="button"
             id="btnToggleFilters"
             onclick="toggleFiltersCollapse()"
             class="ui-input h-[32px] w-[32px] shrink-0 flex items-center justify-center relative cursor-pointer"
@@ -1191,113 +1223,135 @@
         <!-- Active Filter Summary Chips (Visible when filters are collapsed) -->
         <div id="activeFilterChips" class="hidden mt-1.5 flex flex-wrap items-center gap-1"></div>
 
-        <!-- Smoothly Collapsible Filter Controls (Category, Platforms, Recency, Sort & Scan) -->
+        <!-- Smoothly Collapsible Filter Controls (Aligned Label Grid + Symmetrical 2-Col Platforms + Compact Footer) -->
         <div id="filtersCollapseWrap" class="filters-collapse-wrap">
           <div class="filters-collapse-inner">
-            <div class="pt-2 space-y-2">
-              <!-- Category Selector (Right after Filter Keyword) -->
-              <div class="flex items-center gap-2">
-                <label for="searchIntent" class="text-[11.5px] font-medium shrink-0" style="color: var(--ink-section);">Category</label>
-                <select id="searchIntent" onchange="onFilterParamChanged()" class="ui-input flex-1 min-w-0 h-[28px] px-2 text-[12px] font-medium cursor-pointer">
-                  <option value="seeker,employer" selected>Jobs: Seekers &amp; Employers</option>
-                  <option value="seeker">Jobseekers Only</option>
-                  <option value="employer">Employers Hiring</option>
-                  <option value="buyer,seller">Buy &amp; Sell</option>
-                  <option value="seller">Sellers (For Sale)</option>
-                  <option value="buyer">Buyers (Looking For)</option>
-                  <option value="seeker,employer,buyer,seller">All Categories</option>
-                </select>
-              </div>
+            <div class="pt-2.5 space-y-2.5">
+              <!-- Aligned 2-Column Filter Rows: Category & Type -->
+              <div class="space-y-1.5">
+                <div class="flex items-center gap-2">
+                  <label for="searchIntent" class="w-[56px] text-[11.5px] font-medium shrink-0" style="color: var(--ink-section);">Category</label>
+                  <div class="relative flex-1 min-w-0 flex items-center">
+                    <select id="searchIntent" onchange="onFilterParamChanged()" class="ui-input w-full min-w-0 h-[28px] pl-2.5 pr-7 text-[12px] font-medium cursor-pointer truncate">
+                      <option value="seeker,employer" selected>Jobs: Seekers &amp; Employers</option>
+                      <option value="seeker">Jobseekers Only</option>
+                      <option value="employer">Employers Hiring</option>
+                      <option value="buyer,seller">Buy &amp; Sell</option>
+                      <option value="seller">Sellers (For Sale)</option>
+                      <option value="buyer">Buyers (Looking For)</option>
+                      <option value="seeker,employer,buyer,seller">All Categories</option>
+                    </select>
+                    <svg class="lucide-ic w-3 h-3 pointer-events-none absolute right-2" style="color: var(--ink-muted);" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+                  </div>
+                </div>
 
-              <!-- Compact Type Pill Toggle: All | Posts | Comments -->
-              <div class="flex items-center justify-between gap-2">
-                <span class="text-[11.5px] font-medium shrink-0" style="color: var(--ink-section);">Type</span>
-                <div id="kindFilterRow" role="group" aria-label="Post or Comment Type" class="inline-flex items-center p-0.5 rounded-[7px] border border-hair gap-0.5" style="background-color: var(--bg-sidebar);">
-                  <button type="button" data-kind="all" onclick="setKindFilter('all')" class="tone-pill is-active !h-[21px] !px-2 !rounded-[5px]">All</button>
-                  <button type="button" data-kind="post" onclick="setKindFilter('post')" class="tone-pill !h-[21px] !px-2 !rounded-[5px]">Posts</button>
-                  <button type="button" data-kind="comment" onclick="setKindFilter('comment')" class="tone-pill !h-[21px] !px-2 !rounded-[5px]">Comments</button>
+                <div class="flex items-center gap-2">
+                  <span class="w-[56px] text-[11.5px] font-medium shrink-0" style="color: var(--ink-section);">Type</span>
+                  <div id="kindFilterRow" role="group" aria-label="Post or Comment Type" class="flex-1 min-w-0 grid grid-cols-3 p-0.5 rounded-[7px] border border-hair gap-0.5" style="background-color: var(--bg-sidebar);">
+                    <button type="button" data-kind="all" onclick="setKindFilter('all')" class="tone-pill is-active justify-center !h-[22px] !px-1.5 !rounded-[5px]">All</button>
+                    <button type="button" data-kind="post" onclick="setKindFilter('post')" class="tone-pill justify-center !h-[22px] !px-1.5 !rounded-[5px]">Posts</button>
+                    <button type="button" data-kind="comment" onclick="setKindFilter('comment')" class="tone-pill justify-center !h-[22px] !px-1.5 !rounded-[5px]">Comments</button>
+                  </div>
                 </div>
               </div>
 
-              <!-- Platforms Multi-Select Chips (Above Recency & Sort) -->
+              <!-- Symmetrical 2×3 Platforms Grid -->
               <div class="space-y-1.5">
                 <div class="flex items-center justify-between gap-2">
                   <span class="text-[11.5px] font-medium" style="color: var(--ink-section);">Platforms</span>
-                  <button type="button" onclick="toggleAllPlatforms()" id="btnToggleAllPlats" class="text-[11px] transition hover:underline" style="color: var(--ink-muted);">Select all</button>
+                  <button type="button" onclick="toggleAllPlatforms()" id="btnToggleAllPlats" class="text-[11px] font-medium transition hover:underline" style="color: var(--ink-muted);">Select all</button>
                 </div>
-                <div id="platformPillsRow" class="flex flex-wrap gap-1 rounded-[6px] transition">
+                <div id="platformPillsRow" class="grid grid-cols-2 gap-1.5 rounded-[7px] transition">
                   <label class="platform-row">
                     <input type="checkbox" id="plat_reddit_posts" value="reddit_posts" onchange="onPlatformToggle()" class="plat-cb sr-only">
-                    <i class="fa-brands fa-reddit text-[11.5px]" style="color:#FB923C"></i>
-                    <span>Reddit Posts</span>
+                    <span class="flex items-center gap-1.5 min-w-0">
+                      <i class="fa-brands fa-reddit text-[11.5px] shrink-0" style="color:#FB923C"></i>
+                      <span class="truncate">Reddit Posts</span>
+                    </span>
                     <span class="plat-dot"></span>
                   </label>
 
                   <label class="platform-row">
                     <input type="checkbox" id="plat_reddit_comments" value="reddit_comments" onchange="onPlatformToggle()" class="plat-cb sr-only">
-                    <svg class="lucide-ic w-3 h-3" style="color:#A78BFA" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                    <span>Reddit Comments</span>
+                    <span class="flex items-center gap-1.5 min-w-0">
+                      <svg class="lucide-ic w-3 h-3 shrink-0" style="color:#A78BFA" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                      <span class="truncate">Reddit Comments</span>
+                    </span>
                     <span class="plat-dot"></span>
                   </label>
 
                   <label class="platform-row">
                     <input type="checkbox" id="plat_facebook" value="facebook" onchange="onPlatformToggle()" class="plat-cb sr-only">
-                    <i class="fa-brands fa-facebook text-[11.5px]" style="color:#60A5FA"></i>
-                    <span>Facebook</span>
+                    <span class="flex items-center gap-1.5 min-w-0">
+                      <i class="fa-brands fa-facebook text-[11.5px] shrink-0" style="color:#60A5FA"></i>
+                      <span class="truncate">Facebook</span>
+                    </span>
                     <span class="plat-dot"></span>
                   </label>
 
                   <label class="platform-row">
                     <input type="checkbox" id="plat_tiktok" value="tiktok" onchange="onPlatformToggle()" class="plat-cb sr-only">
-                    <i class="fa-brands fa-tiktok text-[11.5px]" style="color:#F472B6"></i>
-                    <span>TikTok</span>
+                    <span class="flex items-center gap-1.5 min-w-0">
+                      <i class="fa-brands fa-tiktok text-[11.5px] shrink-0" style="color:#F472B6"></i>
+                      <span class="truncate">TikTok</span>
+                    </span>
                     <span class="plat-dot"></span>
                   </label>
 
                   <label class="platform-row">
                     <input type="checkbox" id="plat_instagram" value="instagram" onchange="onPlatformToggle()" class="plat-cb sr-only">
-                    <i class="fa-brands fa-instagram text-[11.5px]" style="color:#E879F9"></i>
-                    <span>Instagram</span>
+                    <span class="flex items-center gap-1.5 min-w-0">
+                      <i class="fa-brands fa-instagram text-[11.5px] shrink-0" style="color:#E879F9"></i>
+                      <span class="truncate">Instagram</span>
+                    </span>
                     <span class="plat-dot"></span>
                   </label>
 
                   <label class="platform-row">
                     <input type="checkbox" id="plat_public_web" value="public_web" onchange="onPlatformToggle()" class="plat-cb sr-only">
-                    <svg class="lucide-ic w-3 h-3" style="color:#38BDF8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
-                    <span>Public Web</span>
+                    <span class="flex items-center gap-1.5 min-w-0">
+                      <svg class="lucide-ic w-3 h-3 shrink-0" style="color:#38BDF8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                      <span class="truncate">Public Web</span>
+                    </span>
                     <span class="plat-dot"></span>
                   </label>
                 </div>
               </div>
 
-              <!-- Compact Single Row: Recency + Sort + Monochrome Scan / Cancel -->
-              <div class="flex items-center justify-between gap-1.5">
-                <div class="flex items-center gap-0.5 min-w-0">
-                  <select id="searchRecency" onchange="onFilterParamChanged()" title="Posted Recency" class="ghost-select h-[30px] px-1.5 text-[12px] font-medium shrink-0">
-                    <option value="1">24h</option>
-                    <option value="3">3d</option>
-                    <option value="7" selected>7d</option>
-                    <option value="30">30d</option>
-                    <option value="365">1y</option>
-                  </select>
+              <!-- Clean Action Bar: Compact Recency + Sort Selects + Monochrome Scan / Cancel -->
+              <div class="pt-2 border-t border-hair flex items-center justify-between gap-2">
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <div class="relative inline-flex items-center shrink-0">
+                    <select id="searchRecency" onchange="onFilterParamChanged()" title="Posted Recency" class="ghost-select h-[28px] pl-2 pr-6 text-[12px] font-medium border border-hair">
+                      <option value="1">24h</option>
+                      <option value="3">3d</option>
+                      <option value="7" selected>7d</option>
+                      <option value="30">30d</option>
+                      <option value="365">1y</option>
+                    </select>
+                    <svg class="lucide-ic w-3 h-3 pointer-events-none absolute right-1.5" style="color: var(--ink-muted);" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+                  </div>
 
-                  <select id="sortOrder" onchange="loadLeads()" title="Sort Order" class="ghost-select h-[30px] px-1.5 text-[12px] font-medium min-w-0 truncate">
-                    <option value="hot_first" selected>Hot &amp; Fresh</option>
-                    <option value="newest">Newest First</option>
-                    <option value="comments_first">Comments First</option>
-                    <option value="keyword_match">Exact Match</option>
-                  </select>
+                  <div class="relative inline-flex items-center min-w-0">
+                    <select id="sortOrder" onchange="loadLeads()" title="Sort Order" class="ghost-select h-[28px] pl-2 pr-6 text-[12px] font-medium border border-hair max-w-[140px] truncate">
+                      <option value="hot_first" selected>Hot &amp; Fresh</option>
+                      <option value="newest">Newest First</option>
+                      <option value="comments_first">Comments First</option>
+                      <option value="keyword_match">Exact Match</option>
+                    </select>
+                    <svg class="lucide-ic w-3 h-3 pointer-events-none absolute right-1.5" style="color: var(--ink-muted);" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+                  </div>
                 </div>
 
                 <div class="flex items-center gap-1.5 shrink-0">
-                  <button type="button" onclick="triggerLiveSearch()" id="btnLiveSearch" class="btn-primary h-[30px] px-3 rounded-[7px] text-[12px] font-medium flex items-center justify-center gap-1.5 whitespace-nowrap">
+                  <button type="button" onclick="triggerLiveSearch()" id="btnLiveSearch" class="btn-primary h-[28px] px-3 rounded-[7px] text-[12px] font-medium flex items-center justify-center gap-1.5 whitespace-nowrap">
                     <span id="searchBtnIcon" class="inline-flex items-center justify-center">
                       <svg class="lucide-ic w-3.5 h-3.5" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
                     </span>
                     <span>Scan</span>
                   </button>
 
-                  <button type="button" onclick="cancelLiveSearch()" id="btnCancelSearch" class="hidden h-[30px] px-2.5 rounded-[7px] bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 dark:text-rose-400 border border-rose-500/25 text-[12px] font-medium flex items-center gap-1 transition">
+                  <button type="button" onclick="cancelLiveSearch()" id="btnCancelSearch" class="hidden h-[28px] px-2.5 rounded-[7px] bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 dark:text-rose-400 border border-rose-500/25 text-[12px] font-medium flex items-center gap-1 transition">
                     <svg class="lucide-ic w-3.5 h-3.5" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                     <span>Cancel</span>
                   </button>
@@ -2843,6 +2897,8 @@
       const btnSearch = document.getElementById('btnLiveSearch');
       const icon = document.getElementById('searchBtnIcon');
       const btnCancelSearch = document.getElementById('btnCancelSearch');
+      const btnCollapsedScan = document.getElementById('btnCollapsedScan');
+      const btnCollapsedCancel = document.getElementById('btnCollapsedCancel');
       const btnCancelPanel = document.getElementById('btnCancelPanel');
       const hairline = document.getElementById('scanHairlineBar');
 
@@ -2853,8 +2909,20 @@
       if (icon) icon.innerHTML = isCurrentlyScanning ? LUCIDE_ICONS.spinner : LUCIDE_ICONS.zap;
       if (hairline) hairline.classList.toggle('hidden', !isCurrentlyScanning);
       if (btnCancelSearch) btnCancelSearch.classList.toggle('hidden', !isCurrentlyScanning);
-      // Only show panel Cancel when the main filter row (with btnCancelSearch) is collapsed — never duplicate!
-      if (btnCancelPanel) btnCancelPanel.classList.toggle('hidden', !(isCurrentlyScanning && filtersCollapsed));
+
+      // Keep Scan / Cancel cleanly visible in the search bar when filters are collapsed (never duplicate)
+      if (btnCollapsedScan) {
+        const showColScan = filtersCollapsed && !isCurrentlyScanning;
+        btnCollapsedScan.disabled = isCurrentlyScanning;
+        btnCollapsedScan.classList.toggle('hidden', !showColScan);
+        btnCollapsedScan.classList.toggle('inline-flex', showColScan);
+      }
+      if (btnCollapsedCancel) {
+        const showColCancel = filtersCollapsed && isCurrentlyScanning;
+        btnCollapsedCancel.classList.toggle('hidden', !showColCancel);
+        btnCollapsedCancel.classList.toggle('inline-flex', showColCancel);
+      }
+      if (btnCancelPanel) btnCancelPanel.classList.add('hidden');
     }
 
     function setScanningUiState(isScanning) {
