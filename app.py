@@ -148,6 +148,7 @@ class LeadScoutHandler(http.server.BaseHTTPRequestHandler):
             platforms = [p.strip() for p in platforms_raw.split(",") if p.strip()] if platforms_raw else None
             intents_raw = query.get("intents", [""])[0]
             intents = [i.strip() for i in intents_raw.split(",") if i.strip()] if intents_raw else None
+            kind_filter = query.get("kind", ["all"])[0]
 
             leads = database.search_leads(
                 query=q_kw,
@@ -156,6 +157,7 @@ class LeadScoutHandler(http.server.BaseHTTPRequestHandler):
                 location=location,
                 status_filter=status_filter,
                 max_age_days=max_age_days,
+                kind=kind_filter,
             )
             self.send_json({
                 "leads": leads,
@@ -174,6 +176,7 @@ class LeadScoutHandler(http.server.BaseHTTPRequestHandler):
             platforms = [p.strip() for p in platforms_raw.split(",") if p.strip()] if platforms_raw else None
             intents_raw = query.get("intents", [""])[0]
             intents = [i.strip() for i in intents_raw.split(",") if i.strip()] if intents_raw else None
+            kind_filter = query.get("kind", ["all"])[0]
 
             leads = database.search_leads(
                 query=q_kw,
@@ -182,6 +185,7 @@ class LeadScoutHandler(http.server.BaseHTTPRequestHandler):
                 location=location,
                 status_filter=status_filter,
                 max_age_days=max_age_days,
+                kind=kind_filter,
                 limit=2000,
             )
             buf = io.StringIO()
@@ -263,6 +267,7 @@ class LeadScoutHandler(http.server.BaseHTTPRequestHandler):
             intents = [str(i).strip() for i in raw_intents if str(i).strip()] if isinstance(raw_intents, list) and raw_intents else ["seeker", "employer"]
             location = str(payload.get("location") or s_cfg.get("location", "Cebu"))
             status_filter = str(payload.get("status") or "all")
+            kind_filter = str(payload.get("kind") or "all").strip().lower()
             max_age_days = _safe_int(payload.get("max_age_days", s_cfg.get("max_age_days", 7)), 7)
 
             params = {
@@ -290,6 +295,7 @@ class LeadScoutHandler(http.server.BaseHTTPRequestHandler):
                 location="Any" if is_audit_status else location,
                 status_filter=status_filter,
                 max_age_days=365 if is_audit_status else max_age_days,
+                kind=kind_filter,
             )
             self.send_json({
                 "success": True,
@@ -406,6 +412,28 @@ class LeadScoutHandler(http.server.BaseHTTPRequestHandler):
             self.send_json({"success": True, "webhook_configured": bool(wh_url), "webhook_sent": sent})
             return
 
+        if path == "/api/leads/reclassify":
+            cfg = load_config()
+            settings = scanners.get_settings(cfg)
+            raw_plats = payload.get("platforms")
+            if isinstance(raw_plats, str):
+                platforms = [p.strip() for p in raw_plats.split(",") if p.strip()] or None
+            elif isinstance(raw_plats, list):
+                platforms = [str(p).strip() for p in raw_plats if str(p).strip()] or None
+            else:
+                platforms = None
+            summary = database.reclassify_stored_leads(
+                classifier_fn=lambda row: scanners.classify_stored_row(row, settings),
+                platforms=platforms,
+            )
+            self.send_json({
+                "success": True,
+                "platforms": platforms or [],
+                **summary,
+                "stats": database.get_stats(platforms=platforms),
+            })
+            return
+
         if path == "/api/leads/ai-audit":
             cfg = load_config()
             settings = scanners.get_settings(cfg)
@@ -417,27 +445,38 @@ class LeadScoutHandler(http.server.BaseHTTPRequestHandler):
             else:
                 platforms = None
             force = bool(payload.get("force", False))
+            reclass_summary = database.reclassify_stored_leads(
+                classifier_fn=lambda row: scanners.classify_stored_row(row, settings),
+                platforms=platforms,
+            )
             active_leads = database.search_leads(
                 status_filter="all",
                 platforms=platforms,
                 max_age_days=365,
                 limit=300,
             )
+            prev_intents = {ld["id"]: ld.get("intent") for ld in active_leads}
             scanners.screen_leads_with_ai(active_leads, settings, skip_already_approved=not force)
             filtered_count = 0
+            ai_reclassified = 0
             for ld in active_leads:
                 verdict = ld.get("ai_verdict", "approved")
                 reason = ld.get("ai_reason", "")
+                new_intent = ld.get("intent")
+                if new_intent and new_intent != prev_intents.get(ld["id"]):
+                    ai_reclassified += 1
                 if verdict == "filtered":
                     filtered_count += 1
-                    database.update_lead_ai_verdict(ld["id"], verdict, reason, new_status="ai_filtered")
+                    database.update_lead_ai_verdict(ld["id"], verdict, reason, new_status="ai_filtered", new_intent=new_intent)
                 else:
-                    database.update_lead_ai_verdict(ld["id"], verdict, reason)
+                    database.update_lead_ai_verdict(ld["id"], verdict, reason, new_intent=new_intent)
             self.send_json({
                 "success": True,
                 "platforms": platforms or [],
                 "checked_count": len(active_leads),
                 "filtered_count": filtered_count,
+                "reclassified_count": reclass_summary.get("updated", 0) + ai_reclassified,
+                "seeker_to_employer": reclass_summary.get("seeker_to_employer", 0),
                 "stats": database.get_stats(platforms=platforms),
             })
             return

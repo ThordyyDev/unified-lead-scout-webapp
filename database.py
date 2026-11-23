@@ -92,29 +92,70 @@ def is_buy_sell_keyword(kw):
     return False
 
 
+def parse_search_query(query):
+    """
+    Splits a user search string into (positive_query, negative_terms).
+    Supports -word and -"multi word" exclusion syntax (e.g. 'dishwasher -agency -bpo').
+    """
+    raw = (query or "").strip()
+    if not raw:
+        return "", []
+    neg_terms = []
+
+    def _collect_neg(match):
+        term = (match.group(1) or match.group(2) or "").strip().lower()
+        if term:
+            neg_terms.append(term)
+        return " "
+
+    # Match -word or -"phrase" preceded by start-of-string or whitespace
+    cleaned = re.sub(
+        r'(?:^|\s)-(?:"([^"]+)"|([^\s]+))',
+        _collect_neg,
+        raw,
+    )
+    pos = re.sub(r"\s+", " ", cleaned).strip()
+    return pos, neg_terms
+
+
+def _term_in_text(hay, term):
+    t = re.sub(r"\s+", " ", (term or "").strip().lower()).rstrip("?")
+    if not t:
+        return False
+    return re.search(r"(?<!\w)" + re.escape(t) + r"(?!\w)", hay) is not None
+
+
 def smart_query_matches(haystack, query):
     """
     Matches user search queries accurately without false positives on phone storage ('128gb')
-    or piece count ('1 pc').
+    or piece count ('1 pc'). Supports negative -exclude terms (e.g. 'barista -manila -agency').
     """
-    q = re.sub(r"\s+", " ", (query or "").strip().lower()).rstrip("?")
-    if not q:
-        return True
+    pos_raw, neg_terms = parse_search_query(query)
     hay = (haystack or "").lower()
 
+    # 1. Negative exclusions always veto a match
+    for neg in neg_terms:
+        syns = QUERY_SYNONYMS.get(neg, (neg,))
+        if any(_term_in_text(hay, s) for s in syns):
+            return False
+
+    q = re.sub(r"\s+", " ", pos_raw.lower()).rstrip("?")
+    if not q:
+        return True
+
     # Exact phrase check with word boundaries
-    if re.search(r"(?<!\w)" + re.escape(q) + r"(?!\w)", hay):
+    if _term_in_text(hay, q):
         return True
 
     if q in ("pc set", "system unit"):
         return any(
-            re.search(r"(?<!\w)" + re.escape(term) + r"(?!\w)", hay)
+            _term_in_text(hay, term)
             for term in ("pc set", "system unit", "gaming pc", "desktop pc", "full set pc", "ryzen")
         )
 
     if q in ("for sale", "fs", "selling"):
         return any(
-            re.search(r"(?<!\w)" + re.escape(t) + r"(?!\w)", hay)
+            _term_in_text(hay, t)
             for t in ("for sale", "selling", "fs", "sale or swap", "fix price", "rush sale", "rfs")
         )
 
@@ -128,14 +169,45 @@ def smart_query_matches(haystack, query):
 
     for w in core_words:
         syns = QUERY_SYNONYMS.get(w, (w,))
-        matched_this_word = False
-        for s in syns:
-            if re.search(r"(?<!\w)" + re.escape(s) + r"(?!\w)", hay):
-                matched_this_word = True
-                break
-        if not matched_this_word:
+        if not any(_term_in_text(hay, s) for s in syns):
             return False
     return True
+
+
+def score_query_relevance(row, pos_query):
+    """
+    Ranks exact matches in title or comment body above weak/secondary matches.
+    """
+    q = re.sub(r"\s+", " ", (pos_query or "").strip().lower()).rstrip("?")
+    if not q:
+        return 0
+    title = (row.get("title") or "").lower()
+    content = (row.get("content") or "").lower()
+    kind = (row.get("kind") or ("comment" if "comment" in (row.get("source") or "").lower() else "post")).lower()
+    primary_text = content if kind == "comment" else title
+    secondary_text = title if kind == "comment" else content
+    meta_text = " ".join(str(row.get(k) or "") for k in ("matched_keyword", "author", "source", "notes", "ai_reason")).lower()
+
+    raw_words = [w for w in re.split(r"\W+", q) if w]
+    core_words = [w for w in raw_words if w not in QUERY_FILLER_WORDS] or raw_words
+
+    score = 0
+    # Exact phrase in primary field (title for posts, comment body for comments)
+    if _term_in_text(primary_text, q):
+        score += 100
+    elif core_words and all(any(_term_in_text(primary_text, s) for s in QUERY_SYNONYMS.get(w, (w,))) for w in core_words):
+        score += 65
+
+    # Exact phrase / all words in secondary field (post body for posts, parent title for comments)
+    if _term_in_text(secondary_text, q):
+        score += 45
+    elif core_words and all(any(_term_in_text(secondary_text, s) for s in QUERY_SYNONYMS.get(w, (w,))) for w in core_words):
+        score += 25
+
+    # Secondary metadata (matched_keyword, author, source, notes, ai_reason)
+    if _term_in_text(meta_text, q):
+        score += 10
+    return score
 
 
 def is_valid_lead_url(platform, url, external_id=""):
@@ -395,9 +467,9 @@ def init_db():
                     conn.execute("UPDATE leads SET intent = ? WHERE id = ?", (new_intent, r["id"]))
                 continue
 
-            # Ensure jobseeker phrases like 'interested po', 'how to apply', 'pwede pa mo apply', 'naay hiring'
-            # are always categorized as 'seeker', never 'employer'
-            if kw_low in ("interested po", "how to apply", "pwede pa mo apply", "naay hiring", "naay hiring?", "naa bay hiring", "apply ko", "nangita kog trabaho", "ngita kog trabaho", "ngita ko trabaho"):
+            # Only force comment-style seeker phrases to 'seeker' when kind == 'comment'
+            # (employer posts frequently contain 'How to apply:' or 'Comment interested po')
+            if kind == "comment" and kw_low in ("interested po", "how to apply", "pwede pa mo apply", "naay hiring", "naay hiring?", "naa bay hiring", "apply ko", "nangita kog trabaho", "ngita kog trabaho", "ngita ko trabaho"):
                 if r["intent"] != "seeker":
                     conn.execute("UPDATE leads SET intent = 'seeker' WHERE id = ?", (r["id"],))
 
@@ -436,8 +508,32 @@ LOCATION_MATCH_TERMS = {
         "cebu", "mandaue", "lapu-lapu", "lapulapu", "lapu lapu", "talisay", "consolacion",
         "liloan", "minglanilla", "carcar", "danao", "toledo", "it park", "banilad", "mabolo",
         "lahug", "guadalupe", "fuente", "mactan", "cordova", "sm seaside", "ayala", "talamban",
+        "naga", "compostela", "consoloacion", "colon", "osmena", "bantayan", "moalboal",
     ),
 }
+
+NON_CEBU_LOCATION_TERMS = (
+    "manila", "manilam", "metro manila", "ncr", "makati", "quezon city", "qc", "marikina",
+    "taguig", "bgc", "pasig", "ortigas", "alabang", "muntinlupa", "paranaque", "pasay",
+    "mandaluyong", "caloocan", "valenzuela", "malabon", "navotas", "cavite", "laguna",
+    "bacoor", "imus", "dasmarinas", "batangas", "rizal", "antipolo", "bulacan", "pampanga",
+    "tarlac", "baguio", "lucena", "davao", "iloilo", "bacolod", "cagayan de oro", "cdo",
+    "zamboanga", "gensan", "dlsu", "up diliman", "luxembourg", "south africa", "ballymena", "lautoka",
+)
+
+
+def lead_content_fingerprint(author, title, content, kind="post"):
+    """
+    Computes a normalized fingerprint for deduplicating identical cross-posted ads
+    by the same author across multiple groups or runs.
+    """
+    a_norm = re.sub(r"[^a-z0-9]+", "", (author or "").lower())
+    raw_text = f"{title or ''} {(content or '')[:240]}".lower()
+    t_norm = re.sub(r"https?://\S+", "", raw_text)
+    t_norm = re.sub(r"[^a-z0-9]+", " ", t_norm).strip()
+    if len(t_norm) < 18:
+        return ""
+    return f"{(kind or 'post').lower()}|{a_norm}|{t_norm[:140]}"
 
 
 def save_lead(source, external_id, title, content, author, url, location="",
@@ -455,6 +551,18 @@ def save_lead(source, external_id, title, content, author, url, location="",
     conn = get_db()
     try:
         with conn:
+            # Content-hash deduplication for non-manual posts (prevents 2-6x cross-post spam)
+            if not str(external_id or "").startswith("manual_") and (kind or "post") == "post":
+                fp = lead_content_fingerprint(author, title, content, kind="post")
+                if fp:
+                    existing_rows = conn.execute(
+                        "SELECT external_id, author, title, content, kind FROM leads WHERE external_id != ? AND kind = 'post' AND author = ?",
+                        (external_id, author),
+                    ).fetchall()
+                    for ex in existing_rows:
+                        if lead_content_fingerprint(ex["author"], ex["title"], ex["content"], ex["kind"]) == fp:
+                            return False
+
             cur = conn.execute(
                 """
                 INSERT OR IGNORE INTO leads
@@ -467,17 +575,25 @@ def save_lead(source, external_id, title, content, author, url, location="",
                  matched_keyword or "", parent_url or "", status or "new",
                  ai_verdict or "", ai_reason or ""),
             )
-            if cur.rowcount == 0 and (ai_verdict or status == "ai_filtered"):
+            if cur.rowcount == 0 and (ai_verdict or status == "ai_filtered" or intent in ("seeker", "employer", "buyer", "seller")):
+                valid_intent = intent if intent in ("seeker", "employer", "buyer", "seller") else ""
                 conn.execute(
                     """
                     UPDATE leads
-                    SET ai_verdict = CASE WHEN status = 'new' THEN ? ELSE ai_verdict END,
-                        ai_reason = CASE WHEN status = 'new' THEN ? ELSE ai_reason END,
+                    SET ai_verdict = CASE WHEN status = 'new' AND ? != '' THEN ? ELSE ai_verdict END,
+                        ai_reason = CASE WHEN status = 'new' AND ? != '' THEN ? ELSE ai_reason END,
+                        intent = CASE WHEN external_id NOT LIKE 'manual_%' AND ? != '' THEN ? ELSE intent END,
                         status = CASE WHEN status = 'new' AND (? = 'ai_filtered' OR ? = 'filtered') THEN 'ai_filtered' ELSE status END,
                         updated_at = CURRENT_TIMESTAMP
                     WHERE external_id = ?
                     """,
-                    (ai_verdict or "filtered", ai_reason or "", status or "", ai_verdict or "", external_id),
+                    (
+                        ai_verdict or "", ai_verdict or "",
+                        ai_reason or "", ai_reason or "",
+                        valid_intent, valid_intent,
+                        status or "", ai_verdict or "",
+                        external_id,
+                    ),
                 )
             return cur.rowcount > 0
     finally:
@@ -496,7 +612,7 @@ def platform_key(row):
 
 
 def search_leads(query="", platforms=None, intents=None, location="Any", status_filter="all",
-                 max_age_days=7, since=None, limit=300):
+                 max_age_days=7, since=None, limit=300, kind="all"):
     sql = "SELECT * FROM leads WHERE 1=1"
     params = []
     if not status_filter or status_filter == "all":
@@ -521,8 +637,10 @@ def search_leads(query="", platforms=None, intents=None, location="Any", status_
         conn.close()
 
     q = (query or "").strip()
+    pos_query, _ = parse_search_query(q)
     loc = (location or "Any").strip().lower()
     intents = set(intents) if intents else None
+    kind_filter = (kind or "all").strip().lower()
 
     out = []
     for row in rows:
@@ -531,20 +649,35 @@ def search_leads(query="", platforms=None, intents=None, location="Any", status_
             continue
         if platforms is not None and platform_key(row) not in platforms:
             continue
+        row_kind = (row.get("kind") or ("comment" if "comment" in (row.get("source") or "").lower() else "post")).lower()
+        if kind_filter in ("post", "comment") and row_kind != kind_filter:
+            continue
         if intents is not None and status_filter != "ai_filtered" and (row.get("intent") or "") not in intents:
             continue
         haystack = " ".join(str(row.get(k) or "") for k in
                             ("title", "content", "author", "source", "location", "matched_keyword", "notes", "ai_reason")).lower()
+        body_hay = " ".join(str(row.get(k) or "") for k in ("title", "content")).lower()
         if loc and loc != "any":
             loc_terms = LOCATION_MATCH_TERMS.get(loc, (loc,))
-            if not any(t in haystack for t in loc_terms) and "remote" not in haystack:
+            has_target_loc = any(_term_in_text(body_hay, t) for t in loc_terms) or any(t in (row.get("location") or "").lower() for t in loc_terms)
+            if loc == "cebu":
+                has_explicit_cebu_in_body = any(_term_in_text(body_hay, t) for t in loc_terms)
+                has_non_cebu = any(_term_in_text(body_hay, c) for c in NON_CEBU_LOCATION_TERMS)
+                if has_non_cebu and not has_explicit_cebu_in_body:
+                    continue
+            if not has_target_loc and "remote" not in haystack:
                 continue
         if q and not smart_query_matches(haystack, q):
             continue
+        if pos_query:
+            row["_relevance"] = score_query_relevance(row, pos_query)
         out.append(row)
-        if len(out) >= limit:
-            break
-    return out
+
+    if pos_query:
+        out.sort(key=lambda r: (r.get("_relevance", 0), r.get("posted_at") or r.get("found_at") or "", r.get("id") or 0), reverse=True)
+        for r in out:
+            r.pop("_relevance", None)
+    return out[:limit]
 
 
 def update_lead_status(lead_id, new_status):
@@ -565,14 +698,25 @@ def update_lead_status(lead_id, new_status):
         conn.close()
 
 
-def update_lead_ai_verdict(lead_id, verdict, reason, new_status=None):
+def update_lead_ai_verdict(lead_id, verdict, reason, new_status=None, new_intent=None):
+    valid_intent = new_intent if new_intent in ("seeker", "employer", "buyer", "seller") else None
     conn = get_db()
     try:
         with conn:
-            if new_status:
+            if new_status and valid_intent:
+                conn.execute(
+                    "UPDATE leads SET ai_verdict = ?, ai_reason = ?, status = ?, intent = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                    (verdict or "", reason or "", new_status, valid_intent, lead_id),
+                )
+            elif new_status:
                 conn.execute(
                     "UPDATE leads SET ai_verdict = ?, ai_reason = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
                     (verdict or "", reason or "", new_status, lead_id),
+                )
+            elif valid_intent:
+                conn.execute(
+                    "UPDATE leads SET ai_verdict = ?, ai_reason = ?, intent = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                    (verdict or "", reason or "", valid_intent, lead_id),
                 )
             else:
                 conn.execute(
@@ -581,6 +725,126 @@ def update_lead_ai_verdict(lead_id, verdict, reason, new_status=None):
                 )
     finally:
         conn.close()
+
+
+def deduplicate_stored_leads(conn=None):
+    """
+    Removes duplicate cross-posted leads (same author + normalized title/body fingerprint),
+    keeping the most recent or highest-priority row (preferring contacted/followup over new).
+    """
+    own_conn = conn is None
+    if own_conn:
+        conn = get_db()
+    removed_ids = []
+    try:
+        rows = [
+            dict(r)
+            for r in conn.execute(
+                """
+                SELECT id, external_id, author, title, content, kind, status, posted_at, found_at
+                FROM leads
+                WHERE external_id NOT LIKE 'manual_%'
+                ORDER BY
+                    CASE WHEN status IN ('contacted', 'followup', 'closed') THEN 0 ELSE 1 END ASC,
+                    COALESCE(posted_at, found_at) DESC,
+                    id DESC
+                """
+            ).fetchall()
+        ]
+        seen_fps = set()
+        for r in rows:
+            fp = lead_content_fingerprint(r.get("author"), r.get("title"), r.get("content"), r.get("kind"))
+            if not fp:
+                continue
+            if fp in seen_fps:
+                removed_ids.append(r["id"])
+            else:
+                seen_fps.add(fp)
+        if removed_ids:
+            with conn:
+                placeholders = ",".join("?" for _ in removed_ids)
+                conn.execute(f"DELETE FROM leads WHERE id IN ({placeholders})", removed_ids)
+    finally:
+        if own_conn:
+            conn.close()
+    return len(removed_ids)
+
+
+def reclassify_stored_leads(classifier_fn=None, platforms=None):
+    """
+    Re-evaluates existing non-manual leads in SQLite using the upgraded deterministic rules
+    (Comment-Only Guard, Employer Veto, Corporate Author Classifier), rescues falsely AI-filtered
+    employer job ads, and deduplicates cross-posted ads in place.
+    """
+    if classifier_fn is None:
+        import scanners
+        settings = scanners.get_settings({})
+        classifier_fn = lambda row: scanners.classify_stored_row(row, settings)
+
+    allowed_plats = set(platforms) if platforms else None
+    conn = get_db()
+    checked = 0
+    updated = 0
+    seeker_to_employer = 0
+    rescued_from_ai_filtered = 0
+    transitions = {}
+    try:
+        dedup_removed = deduplicate_stored_leads(conn)
+        rows = [
+            dict(r)
+            for r in conn.execute(
+                "SELECT id, source, external_id, title, content, author, platform, kind, intent, matched_keyword, status, ai_verdict, ai_reason FROM leads WHERE external_id NOT LIKE 'manual_%'"
+            ).fetchall()
+        ]
+        with conn:
+            for row in rows:
+                if allowed_plats is not None and platform_key(row) not in allowed_plats:
+                    continue
+                checked += 1
+                old_intent = (row.get("intent") or "").strip().lower()
+                new_intent, new_kw = classifier_fn(row)
+                if new_intent not in ("seeker", "employer", "buyer", "seller"):
+                    continue
+                old_kw = (row.get("matched_keyword") or "").strip()
+                final_kw = new_kw or old_kw or new_intent
+
+                # Rescue leads like #1241 ("Zark's Burgers is Hiring!!") that were only ai_filtered
+                # because their old detected_intent was 'seeker' while the post was an employer job ad
+                ai_rsn_low = (row.get("ai_reason") or "").lower()
+                should_rescue = (
+                    row.get("status") == "ai_filtered"
+                    and new_intent == "employer"
+                    and ("promotional job opening" in ai_rsn_low or "detected intent" in ai_rsn_low)
+                )
+
+                if new_intent != old_intent or final_kw != old_kw or should_rescue:
+                    if should_rescue:
+                        conn.execute(
+                            "UPDATE leads SET intent = ?, matched_keyword = ?, status = 'new', ai_verdict = 'approved', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                            (new_intent, final_kw, row["id"]),
+                        )
+                        rescued_from_ai_filtered += 1
+                    else:
+                        conn.execute(
+                            "UPDATE leads SET intent = ?, matched_keyword = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                            (new_intent, final_kw, row["id"]),
+                        )
+                    if new_intent != old_intent:
+                        updated += 1
+                        key = f"{old_intent or 'unknown'}->{new_intent}"
+                        transitions[key] = transitions.get(key, 0) + 1
+                        if old_intent == "seeker" and new_intent == "employer":
+                            seeker_to_employer += 1
+    finally:
+        conn.close()
+    return {
+        "checked": checked,
+        "updated": updated,
+        "seeker_to_employer": seeker_to_employer,
+        "rescued_from_ai_filtered": rescued_from_ai_filtered,
+        "deduplicated": dedup_removed,
+        "transitions": transitions,
+    }
 
 
 def auto_archive_old_leads(days=14):

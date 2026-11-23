@@ -15,6 +15,7 @@ import os
 import re
 import threading
 import time
+import unicodedata
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -26,6 +27,7 @@ from database import (
     ALLOWED_WEB_DOMAINS,
     is_buy_sell_keyword,
     is_valid_lead_url,
+    parse_search_query,
     save_lead,
     smart_query_matches,
     utc_now_sql,
@@ -80,11 +82,12 @@ DEFAULT_SEEKER_KEYWORDS = [
     "willing to start asap", "willing to start immediately", "willing to start",
     "can start immediately", "can start asap", "available immediately",
     "naay hiring", "naa bay hiring", "naa moy nahibaw-an nga hiring",
-    "kinsa naay hiring", "kinsay naay hiring", "any hiring", "still hiring", "hiring pa",
+    "kinsa naay hiring", "kinsay naay hiring", "any hiring", "who is hiring",
+    "anyone hiring", "anybody hiring", "still hiring", "hiring pa",
     "pa-aplya ko", "pa aplya ko", "paaplya ko",
     "pa apply", "apply ko", "apply ta", "pa refer", "how po", "no experience",
-    "mo duty", "pm sir", "pm boss", "pm maam", "nag message ko", "nag pm ko",
-    "check message",
+    "mo duty", "pm sir", "pm boss", "pm maam", "pm sent", "details po",
+    "available pa po", "nag message ko", "nag pm ko", "check message",
 ]
 
 # 100% Employer Hiring keywords (never includes 'for sale' or buy/sell words)
@@ -108,6 +111,7 @@ DEFAULT_EMPLOYER_KEYWORDS = [
 DEFAULT_SELLER_KEYWORDS = [
     "for sale", "fs:", "selling", "rush sale", "sale or swap", "fix price",
     "gpu for sale", "graphics card", "video card", "pc set", "system unit",
+    "moving out sale", "garage sale", "clearance sale", "decluttering sale",
 ]
 
 DEFAULT_BUYER_KEYWORDS = [
@@ -122,14 +126,17 @@ DEFAULT_LOCATION_TERMS = {
         "cebu", "mandaue", "lapu-lapu", "lapulapu", "lapu lapu", "talisay", "consolacion",
         "liloan", "minglanilla", "carcar", "danao", "toledo", "it park", "banilad", "mabolo",
         "lahug", "guadalupe", "fuente", "mactan", "cordova", "sm seaside", "ayala", "talamban",
+        "naga", "compostela", "colon", "osmena", "bantayan", "moalboal",
     ],
 }
 
 NON_CEBU_CITIES = (
-    "manila", "metro manila", "ncr", "makati", "quezon city", "qc", "marikina",
-    "taguig", "bgc", "pasig", "ortigas", "alabang", "muntinlupa", "cavite",
-    "laguna", "bacoor", "imus", "lucena", "pampanga", "bulacan", "davao",
-    "iloilo", "bacolod",
+    "manila", "manilam", "metro manila", "ncr", "makati", "quezon city", "qc", "marikina",
+    "taguig", "bgc", "pasig", "ortigas", "alabang", "muntinlupa", "paranaque", "pasay",
+    "mandaluyong", "caloocan", "valenzuela", "malabon", "navotas", "cavite", "laguna",
+    "bacoor", "imus", "dasmarinas", "batangas", "rizal", "antipolo", "bulacan", "pampanga",
+    "tarlac", "baguio", "lucena", "davao", "iloilo", "bacolod", "cagayan de oro", "cdo",
+    "zamboanga", "gensan", "dlsu", "up diliman", "luxembourg", "south africa", "ballymena", "lautoka",
 )
 
 REMOTE_WORK_TERMS = (
@@ -235,8 +242,12 @@ def get_settings(config):
 
 
 def _norm(text):
-    text = (text or "").replace("\u2019", "'").replace("\u2018", "'")
-    return re.sub(r"\s+", " ", text.lower()).strip()
+    text = unicodedata.normalize("NFKC", text or "")
+    text = text.replace("\u2019", "'").replace("\u2018", "'")
+    low = text.lower()
+    # Collapse dot/dash/space-obfuscated "H.I.R.I.N.G." or "H-I-R-I-N-G" used by recruiters
+    low = re.sub(r"\bh[\s.\-_]+i[\s.\-_]+r[\s.\-_]+i[\s.\-_]+n[\s.\-_]+g\.?(?=\W|$)", "hiring", low)
+    return re.sub(r"\s+", " ", low).strip()
 
 
 def phrase_in(text_norm, phrase):
@@ -246,12 +257,126 @@ def phrase_in(text_norm, phrase):
     return re.search(r"(?<!\w)" + re.escape(p) + r"(?!\w)", text_norm) is not None
 
 
+# Short comment-style phrases that ONLY classify as 'seeker' on comments (kind == 'comment').
+# On full posts (kind == 'post'), employers frequently write "How to apply: send resume", "Comment 'interested po'", or "No experience required".
+COMMENT_ONLY_SEEKER_PHRASES = {
+    "interested po", "interested", "interested ako", "interested here",
+    "interested ko", "interested maam", "interested sir", "i'm interested", "im interested",
+    "how to apply", "paano mag apply", "pwede mo apply", "pwede pa mo apply",
+    "pwede ko mo apply", "pwede pa apply", "pwede mag apply", "unsaon pag apply",
+    "available pa po", "available pa", "pm sent", "dm sent", "details po",
+    "how po", "pm sir", "pm boss", "pm maam", "nag message ko", "nag pm ko", "check message",
+    "no experience", "still hiring", "hiring pa",
+}
+
+# Phrases that also appear inside employer qualification sections (e.g. "Qualifications: can start ASAP, no experience")
+REQUIREMENT_LIKE_SEEKER_PHRASES = {
+    "willing to start asap", "willing to start immediately", "willing to start",
+    "can start immediately", "can start asap", "available immediately",
+    "no experience", "still hiring", "hiring pa",
+}
+
+# Strong corporate / employer job-ad fingerprints that lock a post (kind == 'post') as 'employer'
+EMPLOYER_VETO_PHRASES = (
+    "career opportunity", "career opportunities", "next career",
+    "join our team", "be part of our",
+    "send your resume", "send resume", "email your cv", "email your resume",
+    "send your cv", "submit your resume",
+    "walk-in applicants", "walk in applicants",
+    "apply now", "apply na", "now accepting applicants", "accepting applicants",
+    "open positions", "open position", "job openings", "job opening",
+    "job vacancy", "job vacancies",
+    "qualifications:", "responsibilities:", "benefits:",
+    "competitive salary", "how to apply:",
+    "comment interested", "comment 'interested", 'comment "interested',
+    "leading distributor", "leading company",
+    "we are hiring", "we're hiring", "were hiring",
+    "now hiring", "urgent hiring", "urgently hiring", "currently hiring",
+    "hiring:", "we're looking for", "were looking for",
+    "nangita ka og trabaho", "nangita ka ug trabaho", "naghahanap ka ba ng trabaho",
+    "inviting to apply", "still ramping", "batch training",
+    "csr position", "csr positions", "nonvoice and voice", "voice and nonvoice",
+    "call center career", "one day process", "1 day process", "20k offer",
+    "pm me to apply", "dm me to apply", "message us to apply",
+)
+
+EMPLOYER_VETO_PATTERNS = (
+    re.compile(r"\b(?:careers|hr|hrd|recruitment|recruit|talent|jobs|hiring|apply)[a-z0-9._-]*@[a-z0-9.-]+\.[a-z]{2,}\b"),
+    re.compile(r"\bjoin\s+(?:the\s+)?[a-z0-9][a-z0-9&'.-]{1,30}\s+(?:team|family|group|corp|inc|company|cebu|ph|philippines)\b"),
+    re.compile(r"\bjoin\s+us\b"),
+    re.compile(r"\b[a-z0-9][a-z0-9&'.-]{1,28}\s+(?:cebu|ph|philippines|company|corp|inc)?\s*is\s+(?:now\s+|urgently\s+|currently\s+)?(?:hiring|looking\s+for)\b"),
+    re.compile(r"\blooking\s+for\s+(?:part[- ]?time\s+|full[- ]?time\s+)?(?:workers|applicants|candidates|staff|crew|customer\s+service|representatives|csr|tsr|agents|drivers|cashiers|baristas|helpers|cooks|nurses|engineers|technicians|sales\s+in[- ]?charge|person\s+in\s+charge)\b"),
+)
+
+CORPORATE_AUTHOR_PHRASES = (
+    "group of companies", "talent acquisition",
+)
+
+CORPORATE_AUTHOR_WORDS = (
+    "careers", "career", "hiring", "recruitment", "recruiting", "recruiter",
+    "hr", "hrd", "staffing", "agency", "inc", "corp", "corporation",
+    "official", "jobs", "solutions", "hotels", "condotels",
+    "enterprise", "enterprises", "manpower",
+)
+
+FIRST_PERSON_START_RE = re.compile(
+    r"^(?:\[?\s*for hire\s*\]?|hire me|i am looking for|i'm looking for|im looking for|"
+    r"looking for (?:a )?(?:(?:part[- ]?time|full[- ]?time)\s+)?(?:job|work|side hustle|gig)s?|"
+    r"nangita\s+(?:ko|kog|unta\s+ko)|ngita\s+(?:ko|kog|unta\s+ko)|"
+    r"naghahanap(?:\s+po)?\s+ako|hanap(?:\s+po)?\s+ako|currently unemployed|unemployed for|"
+    r"fresh grad|need (?:a )?(?:job|work|extra income|part[- ]?time\s+(?:job|work))|"
+    r"offering (?:remote )?(?:services|coaching)|desperate to do anything|available for (?:any )?work)\b"
+)
+
+
+def has_employer_veto(text_norm):
+    """Returns the matched employer/corporate job-ad fingerprint on a post, or ''."""
+    if not text_norm:
+        return ""
+    for phrase in EMPLOYER_VETO_PHRASES:
+        if phrase.endswith(":"):
+            if phrase in text_norm:
+                return phrase.rstrip(":")
+        elif phrase_in(text_norm, phrase):
+            return phrase
+    for pat in EMPLOYER_VETO_PATTERNS:
+        m = pat.search(text_norm)
+        if m:
+            matched_str = m.group(0).strip()
+            # Guard against questions like "who is hiring" or "anyone is hiring"
+            if re.search(r"\b(?:who|anyone|anybody|someone|what|which|if\s+you)\s+is\s+(?:hiring|looking\s+for)\b", text_norm):
+                continue
+            return matched_str[:60]
+    return ""
+
+
+def is_corporate_author(author):
+    """Detects corporate/recruiting page names on posts (e.g. 'PCNI Careers', 'HR Zai', 'Cebu Condotels')."""
+    a = _norm(author)
+    if not a:
+        return False
+    a_clean = re.sub(r"^(@|u/)", "", a).strip()
+    if any(p in a_clean for p in CORPORATE_AUTHOR_PHRASES):
+        return True
+    if re.match(r"^ta\s+[a-z]", a_clean):
+        return True
+    for w in CORPORATE_AUTHOR_WORDS:
+        if re.search(r"(?<!\w)" + re.escape(w) + r"(?!\w)", a_clean):
+            return True
+    return False
+
+
+def starts_with_first_person_seeker(text_norm):
+    t = re.sub(r"^[^a-z0-9\[]+", "", (text_norm or "").strip())
+    return bool(FIRST_PERSON_START_RE.search(t))
+
+
 AMBIGUOUS_JOB_PHRASES = {
     "pm sent", "dm sent", "sent you a dm", "sent you a pm",
-    "available pa", "naa pa ni", "qualifications", "requirements",
+    "available pa", "available pa po", "naa pa ni", "qualifications", "requirements",
     "interested po", "interested ako", "interested here", "i'm interested", "im interested",
     "interested", "how po", "pm sir", "pm boss", "pm maam", "nag message ko",
-    "nag pm ko", "check message",
+    "nag pm ko", "check message", "details po",
 }
 
 UNAMBIGUOUS_JOB_WORDS = (
@@ -263,6 +388,7 @@ UNAMBIGUOUS_JOB_WORDS = (
     "waiter", "waitress", "video editor", "graphic designer", "virtual assistant",
     "bookkeeper", "carpenter", "electrician", "plumber", "welder", "mason",
     "tindera", "yaya", "housekeeper", "caregiver", "encoder", "accountant",
+    "career", "careers", "position", "positions",
 )
 
 JOB_ROLE_TERMS = (
@@ -276,57 +402,88 @@ JOB_ROLE_TERMS = (
 MERCH_SALE_INDICATORS = (
     "for sale", "fs:", "sale or swap", "fix price", "rfs:", "reason for selling",
     "decluttering", "reposting until sold", "brand new and sealed",
-    "slightly used", "good condition",
+    "slightly used", "good condition", "moving out sale", "garage sale", "clearance sale",
 )
 
 
-def _classify_query_intent(text_norm, kind, q_str):
+def _is_merch_sale_post(text_norm):
+    if any(m in text_norm for m in MERCH_SALE_INDICATORS):
+        return True
+    if "still available" in text_norm and any(w in text_norm for w in ("size:", "size ", "price", "php", "₱", "pm if interested")):
+        return True
+    return False
+
+
+def _classify_query_intent(text_norm, kind, q_str, author=""):
     """Determines whether a custom query match belongs to ('seeker'|'employer') or ('buyer'|'seller')."""
     q_low = q_str.strip().lower().rstrip("?")
-    if is_buy_sell_keyword(q_low) or any(m in text_norm for m in MERCH_SALE_INDICATORS):
+    if is_buy_sell_keyword(q_low) or _is_merch_sale_post(text_norm):
         if kind == "comment" or any(phrase_in(text_norm, w) for w in ("lf", "wtb", "looking for", "buying", "kuhaon dayon")):
             return "buyer"
         return "seller"
     # Otherwise it's a job query
     if kind == "comment":
+        if (is_corporate_author(author) or has_employer_veto(text_norm)) and not any(phrase_in(text_norm, p) for p in DEFAULT_SEEKER_KEYWORDS):
+            return "employer"
         return "seeker"
-    if any(phrase_in(text_norm, p) for p in DEFAULT_SEEKER_KEYWORDS):
+    if has_employer_veto(text_norm):
+        return "employer"
+    if is_corporate_author(author) and not starts_with_first_person_seeker(text_norm):
+        return "employer"
+    if any(phrase_in(text_norm, p) for p in DEFAULT_SEEKER_KEYWORDS if p not in COMMENT_ONLY_SEEKER_PHRASES):
         return "seeker"
     if any(phrase_in(text_norm, p) for p in ("we are hiring", "now hiring", "urgent hiring", "is hiring", "are hiring", "looking for staff", "looking for crew", "job opening", "vacancy")):
         return "employer"
-    if any(w in q_low for w in ("interested", "apply", "trabaho", "looking for work", "for hire", "naay hiring")):
+    if any(w in q_low for w in ("trabaho", "looking for work", "for hire", "naay hiring")):
         return "seeker"
     return "employer"
 
 
-def classify_intent(text_norm, kind, settings, query="", full_context="", source_name=""):
+def classify_intent(text_norm, kind, settings, query="", full_context="", source_name="", author=""):
     """
     Returns ('seeker'|'employer'|'buyer'|'seller'|None, matched_phrase).
     Strictly separates Jobs ('seeker', 'employer') from Buy & Sell ('buyer', 'seller').
+    Enforces Comment-Only seeker phrase guard, Strong Employer Veto, and Corporate Author Classifier on posts.
     """
-    ctx_check = full_context or text_norm
+    text_norm = _norm(text_norm)
+    ctx_check = _norm(full_context) if full_context else text_norm
     src_low = (source_name or "").lower()
     is_merch_group = any(g in src_low for g in ("sales & repairs", "buy and sell", "buy & sell", "marketplace", "pc market"))
-    has_merch_indicator = is_merch_group or any(m in ctx_check for m in MERCH_SALE_INDICATORS)
+    has_merch_indicator = is_merch_group or _is_merch_sale_post(ctx_check)
     has_job_word = any(phrase_in(ctx_check, w) for w in UNAMBIGUOUS_JOB_WORDS)
 
     applicant_looking_m = re.search(
         r"\blooking\s+for\s+(?:a\s+)?(?:[a-z0-9/-]+(?:\s+(?:or|and)\s+[a-z0-9/-]+)?\s+){1,3}(?:job|work|gig|position)s?\b",
         text_norm,
     )
+    # Exclude employer copy like "looking for your next career opportunity" or "looking for a ... position? apply now"
+    if applicant_looking_m and re.search(r"\blooking\s+for\s+your\b", applicant_looking_m.group(0)):
+        applicant_looking_m = None
+
     has_first_person_seeker = bool(
         applicant_looking_m
         or re.search(r"\b(?:for hire|hire me|hiring me|fresh grad ko|graduate of|experienced\s+[a-z]+\s+here|if you are hiring|who is hiring|anyone hiring|naa moy nahibaw-an|kinsa naay hiring|ngita unta ko|nangita kog|ngita kog|naghahanap(?:\s+po)?\s+ako)\b", text_norm)
         or (re.search(r"\b(?:po ako|ko po)\b", text_norm) and any(w in text_norm for w in ("looking for", "naghahanap", "apply", "trabaho", "job", "work")))
     )
 
+    is_post = (kind or "post").lower() != "comment"
+    veto_match = has_employer_veto(text_norm)
+    corp_author = is_corporate_author(author)
+    fp_start = starts_with_first_person_seeker(text_norm) if is_post else False
+
     # 1. Check pure Jobseeker & Employer Hiring keywords first (unless it's a pure merchandise sale without job words)
     if not (has_merch_indicator and not has_job_word):
+        # Strong Corporate / Employer Veto Rule (locks posts to 'employer' before any seeker assignment)
+        if is_post and veto_match and not fp_start:
+            return "employer", veto_match
+
         s_hits = [
             p for p in settings["seeker_keywords"]
-            if phrase_in(text_norm, p) and (p not in AMBIGUOUS_JOB_PHRASES or has_job_word)
+            if phrase_in(text_norm, p)
+            and (p not in AMBIGUOUS_JOB_PHRASES or has_job_word)
+            and (not is_post or p.lower() not in COMMENT_ONLY_SEEKER_PHRASES)
         ]
-        if applicant_looking_m:
+        if applicant_looking_m and not veto_match:
             matched_app_phrase = applicant_looking_m.group(0).strip()
             if matched_app_phrase not in s_hits:
                 s_hits.insert(0, matched_app_phrase)
@@ -336,7 +493,12 @@ def classify_intent(text_norm, kind, settings, query="", full_context="", source
             if phrase_in(text_norm, p) and (p not in AMBIGUOUS_JOB_PHRASES or has_job_word)
         ]
 
-        if has_first_person_seeker:
+        # Author / Page Name Corporate Classifier (for kind == 'post')
+        if is_post and corp_author and not fp_start:
+            if e_hits or veto_match or s_hits or has_job_word:
+                return "employer", (e_hits[0] if e_hits else (veto_match or (s_hits[0] if s_hits else "hiring")))
+
+        if has_first_person_seeker and not veto_match:
             e_hits = [
                 p for p in e_hits
                 if not p.startswith("looking for ")
@@ -355,21 +517,32 @@ def classify_intent(text_norm, kind, settings, query="", full_context="", source
                     e_hits.append(f"lf: {role}" if "lf" in text_norm else f"looking for {role}")
                     break
 
-        if s_hits or e_hits:
-            if kind == "comment":
+        # If a post matched BOTH employer keywords AND only requirement-like seeker phrases (e.g. 'can start asap'),
+        # it is an employer job ad, never a jobseeker
+        if is_post and e_hits and s_hits and all(p.lower() in REQUIREMENT_LIKE_SEEKER_PHRASES for p in s_hits):
+            return "employer", e_hits[0]
+
+        if s_hits or e_hits or (not is_post and veto_match):
+            if not is_post:
+                # If a comment is from a corporate recruiter or has ONLY employer veto/hiring phrases (e.g. 'Pm me to apply now'), classify as 'employer'
+                if not s_hits and (e_hits or veto_match):
+                    return "employer", (e_hits[0] if e_hits else veto_match)
+                if corp_author and (e_hits or veto_match) and not has_first_person_seeker:
+                    return "employer", (e_hits[0] if e_hits else veto_match)
                 return "seeker", (s_hits[0] if s_hits else e_hits[0])
             if s_hits and not e_hits:
                 return "seeker", s_hits[0]
             if e_hits and not s_hits:
                 return "employer", e_hits[0]
-            if has_first_person_seeker:
+            if has_first_person_seeker and not veto_match:
                 return "seeker", s_hits[0]
-            return ("seeker", s_hits[0]) if len(s_hits) >= len(e_hits) else ("employer", e_hits[0])
+            return ("seeker", s_hits[0]) if len(s_hits) > len(e_hits) else ("employer", e_hits[0])
 
     # 2. Check active search bar query (if provided)
-    if query and smart_query_matches(text_norm, query):
-        clean_q = ("ram" if query.strip().lower() == "rame" else query.strip()).rstrip("?")
-        return _classify_query_intent(text_norm, kind, clean_q), clean_q
+    pos_query, _ = parse_search_query(query)
+    if pos_query and smart_query_matches(text_norm, query):
+        clean_q = ("ram" if pos_query.strip().lower() == "rame" else pos_query.strip()).rstrip("?")
+        return _classify_query_intent(text_norm, kind, clean_q, author=author), clean_q
 
     # 3. Check custom queries configured in Settings
     for cq in settings.get("custom_queries") or []:
@@ -377,7 +550,7 @@ def classify_intent(text_norm, kind, settings, query="", full_context="", source
         if not cq_clean:
             continue
         if smart_query_matches(text_norm, cq_clean):
-            intent_val = _classify_query_intent(text_norm, kind, cq_clean)
+            intent_val = _classify_query_intent(text_norm, kind, cq_clean, author=author)
             if intent_val in ("seeker", "employer") and has_merch_indicator and not has_job_word:
                 if kind == "comment":
                     return "buyer", cq_clean
@@ -387,6 +560,8 @@ def classify_intent(text_norm, kind, settings, query="", full_context="", source
     # 4. Check Buy & Sell keywords ('buyer' and 'seller')
     b_hits = [p for p in settings["buyer_keywords"] if phrase_in(text_norm, p)]
     sel_hits = [p for p in settings["seller_keywords"] if phrase_in(text_norm, p)]
+    if not sel_hits and is_post and _is_merch_sale_post(text_norm):
+        sel_hits.append("for sale")
     if not b_hits and kind == "comment" and has_merch_indicator and not has_job_word:
         for merch_c_kw in ("interested po", "interested", "hm", "how much", "available pa", "last price", "pm sent"):
             if phrase_in(text_norm, merch_c_kw):
@@ -398,6 +573,37 @@ def classify_intent(text_norm, kind, settings, query="", full_context="", source
         return "seller", (sel_hits[0] if sel_hits else b_hits[0])
 
     return None, ""
+
+
+def classify_stored_row(row, settings):
+    """
+    Re-classifies an existing stored lead row using the upgraded deterministic rules.
+    Returns (new_intent, matched_phrase).
+    """
+    kind = (row.get("kind") or ("comment" if "comment" in (row.get("source") or "").lower() else "post")).lower()
+    title = row.get("title") or ""
+    body = row.get("content") or ""
+    own_text = _norm(body if kind == "comment" else f"{title} {body}")
+    full_ctx = _norm(f"{title} {body}")
+    author = row.get("author") or ""
+    source = row.get("source") or ""
+
+    intent, kw = classify_intent(
+        own_text, kind, settings,
+        query="", full_context=full_ctx, source_name=source, author=author,
+    )
+    if intent in ("seeker", "employer", "buyer", "seller"):
+        return intent, kw
+
+    if kind == "post":
+        if _is_merch_sale_post(own_text):
+            return "seller", "for sale"
+        veto = has_employer_veto(own_text)
+        if veto and not starts_with_first_person_seeker(own_text):
+            return "employer", veto
+        if is_corporate_author(author) and not starts_with_first_person_seeker(own_text):
+            return "employer", (row.get("matched_keyword") or "hiring")
+    return row.get("intent") or "", row.get("matched_keyword") or ""
 
 
 def _location_terms(location, settings):
@@ -600,11 +806,41 @@ class RedditClient:
             finally:
                 time.sleep(0.8)
 
+    def _parse_json_entries(self, data):
+        """Extracts normalized RSS-style entry dicts from Reddit .json payloads."""
+        entries = []
+        batches = data if isinstance(data, list) else [data]
+        for b in batches:
+            for child in _listing(b):
+                if not isinstance(child, dict):
+                    continue
+                d = child.get("data") or {}
+                cid = str(d.get("id") or "").strip()
+                permalink = str(d.get("permalink") or "").strip()
+                if not cid or not permalink:
+                    continue
+                link = f"https://www.reddit.com{permalink}" if permalink.startswith("/") else permalink
+                title = html_lib.unescape(str(d.get("title") or d.get("link_title") or "Reddit thread")).strip()
+                text = html_lib.unescape(str(d.get("selftext") or d.get("body") or title)).strip()
+                author = str(d.get("author") or "reddit_user").strip()
+                if not author.startswith("u/"):
+                    author = f"u/{author}"
+                entries.append({
+                    "id": cid,
+                    "title": title,
+                    "text": text or title,
+                    "url": link,
+                    "author": author,
+                    "posted_ts": to_epoch(d.get("created_utc")),
+                    "subreddit": str(d.get("subreddit") or "Cebu"),
+                })
+        return entries
+
     def get_rss_entries(self, path, params=None):
         params = dict(params or {})
-        clean_path = "/" + path.strip("/") + "/"
+        base_path = "/" + path.strip("/")
         q_str = f"?{urllib.parse.urlencode(sorted(params.items()))}" if params else ""
-        cache_key = f"{clean_path}{q_str}"
+        cache_key = f"{base_path}{q_str}"
 
         with _REDDIT_GLOBAL_LOCK:
             cached = _REDDIT_RSS_CACHE.get(cache_key)
@@ -613,33 +849,61 @@ class RedditClient:
 
             hosts = ["https://www.reddit.com", "https://old.reddit.com"]
             last_err = None
-            raw_xml = None
+            parsed = None
+
+            # 1. Try .rss across both Reddit hosts (validating XML inside loop)
             for host in hosts:
-                url = f"{host}{clean_path}.rss{q_str}"
-                try:
-                    raw_xml = http_request(
-                        url,
-                        headers={"Accept": "application/atom+xml, application/rss+xml, application/xml, */*"},
-                        timeout=20,
-                        raw=True,
-                    )
+                for suffix in (f"{base_path}.rss{q_str}", f"{base_path}/.rss{q_str}"):
+                    url = f"{host}{suffix}"
+                    try:
+                        raw_xml = http_request(
+                            url,
+                            headers={"Accept": "application/atom+xml, application/rss+xml, application/xml, */*"},
+                            timeout=15,
+                            raw=True,
+                        )
+                        parsed = parse_reddit_atom(raw_xml)
+                        break
+                    except ScanError as e:
+                        last_err = e
+                if parsed is not None:
                     break
-                except ScanError as e:
-                    last_err = e
-                    time.sleep(1.5)
-            time.sleep(1.1)
 
-            if raw_xml is None:
-                raise last_err or ScanError("Reddit RSS unavailable")
+            # 2. If .rss returned an HTML challenge/invalid XML, fall back to .json endpoint
+            if parsed is None:
+                json_params = dict(params, raw_json=1)
+                jq_str = f"?{urllib.parse.urlencode(sorted(json_params.items()))}"
+                for host in hosts:
+                    j_url = f"{host}{base_path}.json{jq_str}"
+                    try:
+                        j_data = http_request(j_url, headers={"Accept": "application/json"}, timeout=15)
+                        parsed = self._parse_json_entries(j_data)
+                        if parsed:
+                            break
+                    except ScanError as e:
+                        last_err = e
 
-            parsed = parse_reddit_atom(raw_xml)
+            time.sleep(0.5)
+            if not parsed:
+                raise last_err or ScanError("Reddit RSS/JSON unavailable")
+
             _REDDIT_RSS_CACHE[cache_key] = (time.time(), parsed)
             return list(parsed)
 
 
 def parse_reddit_atom(raw_xml):
+    if isinstance(raw_xml, bytes):
+        head = raw_xml[:300].lstrip().lower()
+        if head.startswith((b"<!doctype html", b"<html")):
+            raise ScanError("Reddit returned an HTML challenge page instead of RSS XML")
+        cleaned_xml = re.sub(rb"&(?!(?:amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)", b"&amp;", raw_xml)
+    else:
+        head = (raw_xml or "")[:300].lstrip().lower()
+        if head.startswith(("<!doctype html", "<html")):
+            raise ScanError("Reddit returned an HTML challenge page instead of RSS XML")
+        cleaned_xml = re.sub(r"&(?!(?:amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)", "&amp;", raw_xml or "")
     try:
-        root = ET.fromstring(raw_xml)
+        root = ET.fromstring(cleaned_xml)
     except ET.ParseError as e:
         raise ScanError(f"Invalid XML from Reddit RSS: {e}") from None
 
@@ -815,8 +1079,8 @@ class ScanContext:
             return True
         return effective_age <= self.max_age_days * 86400
 
-    def intent_of(self, text, kind="post"):
-        return classify_intent(_norm(text), kind, self.settings, query=self.query)[0]
+    def intent_of(self, text, kind="post", author=""):
+        return classify_intent(_norm(text), kind, self.settings, query=self.query, author=author)[0]
 
 
 def result(status, message="", items=None, fetched=0):
@@ -879,7 +1143,8 @@ def evaluate_item(it, ctx):
     # 3. 4-Way Intent Classification ('seeker' | 'employer' | 'buyer' | 'seller')
     intent, keyword = classify_intent(
         own_text, it["kind"], ctx.settings,
-        query=ctx.query, full_context=context, source_name=it.get("source", "")
+        query=ctx.query, full_context=context, source_name=it.get("source", ""),
+        author=it.get("author", ""),
     )
     if intent is None or not keyword or keyword.lower() in ("seeker", "employer", "group post", "group comment"):
         return None
@@ -1290,14 +1555,18 @@ def _search_public_index(dork_query, max_age_days=7, platform="", settings=None,
 
     hits = []
     errors = []
+    any_provider_ok = False
     for pname, fn in providers:
         try:
             res = fn()
+            any_provider_ok = True
             if res:
                 hits.extend(res)
                 break
         except ScanError as e:
             errors.append(f"{pname}: {e}")
+    if any_provider_ok:
+        errors = []
     dedup, seen = [], set()
     for h in hits:
         if h["url"] not in seen and (not platform or is_valid_lead_url(platform, h["url"])):
@@ -1345,7 +1614,12 @@ def _scan_public_social(platform, label, dork_prefixes, ctx, extra_note=""):
             seen_urls.add(h["url"])
             fetched += 1
             combined = f"{h['title']} {h['snippet']}".lower()
-            is_comment = any(k in combined for k in ("interested po", "how to apply", "pwede pa mo apply"))
+            combined_norm = _norm(combined)
+            is_comment = (
+                any(k in combined_norm for k in ("interested po", "how to apply", "pwede pa mo apply"))
+                and not has_employer_veto(combined_norm)
+                and not is_corporate_author(h.get("author") or "")
+            )
             kind = h.get("kind") or ("comment" if is_comment else "post")
             src_name = h.get("source") or f"{label} {'Comment' if kind == 'comment' else 'Post'}"
             items.append(
@@ -1471,6 +1745,14 @@ def adapter_reddit_posts(ctx):
         except ScanError as rss_err:
             errors.append(f"Reddit Posts: {rss_err}")
 
+    if not items and errors:
+        return _scan_public_social(
+            "reddit", "Reddit",
+            ["site:reddit.com/r/Cebu/comments", "site:reddit.com/r/phclassifieds/comments", "site:reddit.com/r/buhaydigital/comments"],
+            ctx,
+            extra_note="Public Index fallback",
+        )
+
     return _finish(items, fetched, errors)
 
 
@@ -1543,6 +1825,14 @@ def adapter_reddit_comments(ctx):
                 continue
     except ScanError:
         pass
+
+    if not items and errors:
+        return _scan_public_social(
+            "reddit", "Reddit",
+            [f"site:reddit.com/r/{s}/comments" for s in subs[:3]],
+            ctx,
+            extra_note="Public Index fallback",
+        )
 
     return _finish(items, fetched, errors)
 
@@ -2107,18 +2397,24 @@ def _extract_interaction_text(resp):
 def gemini_screen_leads_batch(leads_batch, api_key, model="gemini-3.5-flash-lite"):
     """
     Calls the Gemini Interactions API with structured JSON output to verify whether
-    each scraped post/comment is genuinely an actionable lead or a rant/misaligned post.
+    each scraped post/comment is genuinely an actionable lead AND return its true category:
+    {"id": "...", "keep": true, "intent": "employer|seeker|buyer|seller", "reason": "..."}.
     """
     if not api_key or not leads_batch:
         return {}
     chosen_model = model if model in ("gemini-3.5-flash-lite", "gemini-4-hydrogen", "gemini-4-argon", "gemini-3.1-flash-lite") else "gemini-3.5-flash-lite"
 
     compact_input = []
+    idx_to_key = {}
     for idx, ld in enumerate(leads_batch):
-        key = str(ld.get("external_id") or ld.get("id") or idx)
+        orig_key = str(ld.get("external_id") or ld.get("id") or idx)
+        short_id = str(idx)
+        idx_to_key[short_id] = orig_key
+        idx_to_key[orig_key] = orig_key
         compact_input.append({
-            "id": key,
+            "id": short_id,
             "kind": ld.get("kind", "post"),
+            "author": _short(ld.get("author") or "", 80),
             "source": ld.get("source", ""),
             "detected_intent": ld.get("intent", "seeker"),
             "matched_keyword": ld.get("matched_keyword", ""),
@@ -2128,14 +2424,16 @@ def gemini_screen_leads_batch(leads_batch, api_key, model="gemini-3.5-flash-lite
 
     prompt = (
         "Evaluate each social media post/comment below for a Cebu/Philippines lead finder.\n"
-        "Mark aligned=true ONLY if the author is genuinely:\n"
-        "- 'seeker': looking for work/gig or commenting to apply ('interested po', 'how to apply', 'nangita kog trabaho')\n"
-        "- 'employer': hiring staff/applicants ('we are hiring', 'urgent hiring', 'looking for crew')\n"
-        "- 'seller': selling PC parts/items ('for sale', 'fs', 'rfs')\n"
-        "- 'buyer': looking to buy items ('lf', 'wtb', 'looking for gpu/ram')\n\n"
-        "Mark aligned=false if the post is just ranting/venting about work/boss/life, asking general career advice without seeking/offering a job, "
-        "talking about needing repair work on an object ('my car needs work'), or unrelated discussion.\n"
-        "Provide a concise 1-sentence reason for each item.\n\n"
+        "For EACH item return {id, keep, intent, reason}.\n"
+        "1. Determine the TRUE `intent` strictly from who is speaking:\n"
+        "- 'employer': company, HR/Careers/Recruitment page, agency, or manager advertising job openings, career opportunities, or hiring staff "
+        "(IMPORTANT: posts saying 'How to apply: send resume', 'Comment interested po below', 'Looking for your next career opportunity?', or posted by a Careers/HR page are ALWAYS 'employer', NEVER 'seeker').\n"
+        "- 'seeker': an individual looking for work/gigs/side hustle, offering freelance services, OR commenting on a thread to apply ('interested po', 'how to apply', 'nangita kog trabaho').\n"
+        "- 'seller': selling PC parts/electronics/items ('for sale', 'fs', 'rfs').\n"
+        "- 'buyer': looking to buy items ('lf', 'wtb', 'looking for gpu/ram').\n\n"
+        "2. Set `keep=true` ONLY if it is genuinely an actionable lead. Set `keep=false` if it is just ranting/venting about work/boss/life, "
+        "asking general career advice without seeking/offering a job, talking about needing repair work on an object ('my car needs work'), or unrelated discussion.\n"
+        "3. Provide a concise 1-sentence `reason` for each item.\n\n"
         f"ITEMS_JSON:\n{json.dumps(compact_input, ensure_ascii=False)}"
     )
 
@@ -2155,11 +2453,11 @@ def gemini_screen_leads_batch(leads_batch, api_key, model="gemini-3.5-flash-lite
                             "type": "object",
                             "properties": {
                                 "id": {"type": "string"},
-                                "aligned": {"type": "boolean"},
-                                "intent": {"type": "string"},
+                                "keep": {"type": "boolean"},
+                                "intent": {"type": "string", "enum": ["employer", "seeker", "buyer", "seller"]},
                                 "reason": {"type": "string"},
                             },
-                            "required": ["id", "aligned", "reason"],
+                            "required": ["id", "keep", "intent", "reason"],
                         },
                     }
                 },
@@ -2185,10 +2483,14 @@ def gemini_screen_leads_batch(leads_batch, api_key, model="gemini-3.5-flash-lite
     parsed = json.loads(raw_txt)
     decisions = parsed.get("decisions") if isinstance(parsed, dict) else (parsed if isinstance(parsed, list) else [])
     out = {}
-    for d in decisions or []:
-        if isinstance(d, dict) and d.get("id") is not None:
-            out[str(d["id"])] = {
-                "aligned": bool(d.get("aligned", True)),
+    for pos, d in enumerate(decisions or []):
+        if isinstance(d, dict):
+            raw_id = str(d.get("id") if d.get("id") is not None else pos).strip()
+            mapped_key = idx_to_key.get(raw_id) or idx_to_key.get(str(pos)) or raw_id
+            keep_val = d["keep"] if "keep" in d else d.get("aligned", True)
+            out[mapped_key] = {
+                "keep": bool(keep_val),
+                "aligned": bool(keep_val),
                 "intent": str(d.get("intent") or "").lower().strip(),
                 "reason": _short(str(d.get("reason") or ""), 200),
             }
@@ -2198,9 +2500,10 @@ def gemini_screen_leads_batch(leads_batch, api_key, model="gemini-3.5-flash-lite
 def screen_leads_with_ai(leads_list, settings, skip_already_approved=False):
     """
     Screens a list of lead dicts in-place:
-    1. Runs contextual rant/misaligned heuristic check.
-    2. If ai_filter_enabled and gemini_api_key is configured, batches remaining leads to Gemini.
-    3. Any lead with aligned=False gets status='ai_filtered', ai_verdict='filtered', and ai_reason.
+    1. Runs deterministic intent check (Comment-Only Guard, Employer Veto, Corporate Author) on non-manual leads.
+    2. Runs contextual rant/misaligned heuristic check.
+    3. If ai_filter_enabled and gemini_api_key is configured, batches remaining leads to Gemini
+       and applies BOTH keep/filter verdict AND Gemini's corrected intent category.
     """
     if not leads_list:
         return leads_list
@@ -2211,6 +2514,13 @@ def screen_leads_with_ai(leads_list, settings, skip_already_approved=False):
 
     to_gemini = []
     for ld in leads_list:
+        if not str(ld.get("external_id") or "").startswith("manual_"):
+            det_intent, det_kw = classify_stored_row(ld, s)
+            if det_intent in ("seeker", "employer", "buyer", "seller") and det_intent != ld.get("intent"):
+                ld["intent"] = det_intent
+                if det_kw and not ld.get("matched_keyword"):
+                    ld["matched_keyword"] = det_kw
+
         if skip_already_approved and ld.get("ai_verdict") == "approved" and str(ld.get("ai_reason") or "").startswith("Gemini AI:"):
             continue
         aligned, reason = detect_rant_or_misaligned_heuristic(ld)
@@ -2233,15 +2543,17 @@ def screen_leads_with_ai(leads_list, settings, skip_already_approved=False):
                     v = verdicts.get(key)
                     if not v:
                         continue
-                    if not v["aligned"]:
+                    keep = v["keep"] if "keep" in v else v.get("aligned", True)
+                    corrected_intent = str(v.get("intent") or "").lower().strip()
+                    if corrected_intent in ("seeker", "employer", "buyer", "seller"):
+                        ld["intent"] = corrected_intent
+                    if not keep:
                         ld["ai_verdict"] = "filtered"
                         ld["ai_reason"] = f"Gemini AI: {v['reason']}"
                         ld["status"] = "ai_filtered"
                     else:
                         ld["ai_verdict"] = "approved"
                         ld["ai_reason"] = f"Gemini AI: {v['reason']}"
-                        if v.get("intent") in ("seeker", "employer", "buyer", "seller"):
-                            ld["intent"] = v["intent"]
             except Exception as e:
                 print(f"[gemini-ai] Batch screening fallback: {e}")
 
