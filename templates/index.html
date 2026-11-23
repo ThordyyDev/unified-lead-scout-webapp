@@ -37,7 +37,9 @@
     :root {
       color-scheme: light;
       --bg-sidebar: #F6F7F9;
+      --bg-sidebar-glass: rgba(246, 247, 249, 0.86);
       --bg-canvas: #FFFFFF;
+      --bg-header-glass: rgba(255, 255, 255, 0.84);
       --bg-elevated: #F8F9FB;
       --bg-input: #F3F4F7;
       --bg-chip: #EFF1F5;
@@ -57,12 +59,21 @@
       --accent-hover: #4F5BC4;
       --btn-sec-bg: #F1F3F6;
       --btn-sec-hover: #E7EAF0;
+      --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 6px 16px rgba(15, 23, 42, 0.04);
+      --shadow-modal: 0 1px 2px rgba(15, 23, 42, 0.05), 0 18px 44px rgba(15, 23, 42, 0.14);
+      --shadow-toast: 0 2px 6px rgba(15, 23, 42, 0.06), 0 10px 26px rgba(15, 23, 42, 0.12);
+      --kw-bg: rgba(94, 106, 210, 0.14);
+      --kw-ink: #3730A3;
+      --skel-a: rgba(15, 23, 42, 0.05);
+      --skel-b: rgba(15, 23, 42, 0.10);
     }
 
     html.dark {
       color-scheme: dark;
       --bg-sidebar: #111214;
+      --bg-sidebar-glass: rgba(17, 18, 20, 0.86);
       --bg-canvas: #17181B;
+      --bg-header-glass: rgba(23, 24, 27, 0.84);
       --bg-elevated: #1C1D22;
       --bg-input: #1C1D22;
       --bg-chip: #22242A;
@@ -82,17 +93,34 @@
       --accent-hover: #6C78E0;
       --btn-sec-bg: #23252C;
       --btn-sec-hover: #2A2D36;
+      --shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.045), 0 4px 14px rgba(0, 0, 0, 0.26);
+      --shadow-modal: inset 0 1px 0 rgba(255, 255, 255, 0.055), 0 24px 64px rgba(0, 0, 0, 0.62);
+      --shadow-toast: inset 0 1px 0 rgba(255, 255, 255, 0.055), 0 12px 32px rgba(0, 0, 0, 0.55);
+      --kw-bg: rgba(94, 106, 210, 0.24);
+      --kw-ink: #C7D2FE;
+      --skel-a: rgba(255, 255, 255, 0.045);
+      --skel-b: rgba(255, 255, 255, 0.09);
     }
 
     * {
       box-sizing: border-box;
       scrollbar-width: thin;
-      scrollbar-color: rgba(128, 134, 148, 0.25) transparent;
+      scrollbar-color: rgba(128, 134, 148, 0.22) transparent;
     }
-    *::-webkit-scrollbar { width: 5px; height: 5px; }
+    *::-webkit-scrollbar { width: 4px; height: 4px; }
     *::-webkit-scrollbar-track { background: transparent; }
-    *::-webkit-scrollbar-thumb { background: rgba(128, 134, 148, 0.25); border-radius: 999px; }
-    *::-webkit-scrollbar-thumb:hover { background: rgba(128, 134, 148, 0.42); }
+    *::-webkit-scrollbar-thumb { background: rgba(128, 134, 148, 0.22); border-radius: 999px; }
+    *::-webkit-scrollbar-thumb:hover { background: rgba(128, 134, 148, 0.40); }
+
+    button:focus-visible,
+    a:focus-visible,
+    select:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible,
+    [tabindex="0"]:focus-visible {
+      outline: 2px solid rgba(94, 106, 210, 0.72);
+      outline-offset: 1px;
+    }
 
     body {
       background-color: var(--bg-canvas);
@@ -181,7 +209,7 @@
       background-color: #4ADE80;
     }
 
-    /* Calm inset inbox row (Linear list style) */
+    /* Calm inset inbox row (Linear / Superhuman list style) */
     .inbox-row {
       position: relative;
       display: block;
@@ -193,17 +221,26 @@
       padding: 10px 12px;
       border-radius: 8px;
       background-color: transparent;
-      transition: background-color 100ms ease;
+      transition: background-color 140ms cubic-bezier(0.16, 1, 0.3, 1), opacity 150ms ease;
       cursor: pointer;
     }
     .inbox-row:hover {
       background-color: var(--bg-hover);
     }
+    .inbox-row.is-softened {
+      opacity: 0.72;
+    }
+    .inbox-row.is-softened:hover,
+    .inbox-row.is-softened.is-selected {
+      opacity: 1;
+    }
     .inbox-row.is-selected {
       background-color: rgba(255, 255, 255, 0.055);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
     }
     html:not(.dark) .inbox-row.is-selected {
       background-color: rgba(15, 23, 42, 0.055);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
     }
     .inbox-row.is-selected::before {
       content: '';
@@ -215,6 +252,139 @@
       border-radius: 2px;
       background-color: var(--accent);
     }
+
+    /* Desktop hover quick-action pill on inbox rows */
+    .row-quick-actions {
+      position: absolute;
+      right: 8px;
+      top: 7px;
+      z-index: 5;
+      align-items: center;
+      gap: 2px;
+      padding: 2px;
+      border-radius: 7px;
+      background-color: var(--bg-elevated);
+      border: 1px solid var(--border-hover);
+      box-shadow: var(--shadow-card);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-1px);
+      transition: opacity 140ms cubic-bezier(0.16, 1, 0.3, 1), transform 140ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .inbox-row:hover .row-quick-actions,
+    .inbox-row:focus-within .row-quick-actions {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    /* Sticky date group divider in lead feed */
+    .feed-date-divider {
+      position: sticky;
+      top: 0;
+      z-index: 4;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 5px 10px 4px;
+      margin-top: 2px;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      color: var(--ink-section);
+      background-color: var(--bg-header-glass);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    /* Frosted translucent headers & elevated cards */
+    .glass-header {
+      background-color: var(--bg-header-glass);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .glass-sidebar-header {
+      background-color: var(--bg-sidebar-glass);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .surface-card {
+      box-shadow: var(--shadow-card);
+    }
+    .modal-card {
+      box-shadow: var(--shadow-modal);
+      animation: modalSettle 160ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes modalSettle {
+      from { opacity: 0; transform: translateY(6px) scale(0.985); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes readerFadeSettle {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .reader-settle {
+      animation: readerFadeSettle 160ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Shimmer skeleton rows */
+    @keyframes shimmerSlide {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    .skel-bar {
+      border-radius: 5px;
+      background: linear-gradient(90deg, var(--skel-a) 25%, var(--skel-b) 50%, var(--skel-a) 75%);
+      background-size: 200% 100%;
+      animation: shimmerSlide 1.35s ease-in-out infinite;
+    }
+
+    /* Inline matched-keyword highlight */
+    .kw-mark {
+      background-color: var(--kw-bg);
+      color: var(--kw-ink);
+      border-radius: 4px;
+      padding: 0 3px;
+      font-weight: 500;
+    }
+
+    /* Compact pitch tone pill */
+    .tone-pill {
+      display: inline-flex;
+      align-items: center;
+      height: 22px;
+      padding: 0 6px;
+      border-radius: 999px;
+      font-size: 10.5px;
+      font-weight: 500;
+      white-space: nowrap;
+      color: var(--ink-secondary);
+      border: 1px solid transparent;
+      background-color: transparent;
+      transition: background-color 130ms cubic-bezier(0.16, 1, 0.3, 1), color 130ms ease, border-color 130ms ease;
+    }
+    @media (min-width: 640px) {
+      .tone-pill {
+        padding: 0 8px;
+        font-size: 11px;
+      }
+    }
+    .tone-pill:hover {
+      background-color: var(--bg-hover);
+      color: var(--ink-primary);
+    }
+    .tone-pill.is-active {
+      background-color: rgba(94, 106, 210, 0.14);
+      border-color: rgba(94, 106, 210, 0.35);
+      color: var(--accent);
+    }
+    html.dark .tone-pill.is-active {
+      color: #C7D2FE;
+      background-color: rgba(94, 106, 210, 0.22);
+      border-color: rgba(94, 106, 210, 0.42);
+    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { scrollbar-width: none; }
 
     /* Understated Linear label pill with 6px dot */
     .label-pill {
@@ -295,14 +465,17 @@
     .btn-primary {
       background-color: var(--accent);
       color: #FFFFFF;
-      border: 1px solid rgba(255, 255, 255, 0.10);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 1px 2px rgba(0, 0, 0, 0.14);
       border-radius: 6px;
       font-weight: 500;
-      transition: background-color 120ms ease, opacity 120ms ease;
+      transition: background-color 150ms cubic-bezier(0.16, 1, 0.3, 1), transform 110ms cubic-bezier(0.16, 1, 0.3, 1), opacity 120ms ease;
     }
     .btn-primary:hover:not(:disabled) {
       background-color: var(--accent-hover);
+    }
+    .btn-primary:active:not(:disabled) {
+      transform: scale(0.98);
     }
     .btn-primary:disabled {
       opacity: 0.5;
@@ -424,6 +597,7 @@
     .pane-resizer.is-dragging::after {
       width: 2px;
       background-color: var(--accent);
+      box-shadow: 0 0 8px rgba(94, 106, 210, 0.45);
     }
 
     #readerBackdrop {
@@ -626,7 +800,7 @@
          ================================================================ -->
     <aside id="leftSidebar" class="fixed lg:static inset-y-0 left-0 z-50 lg:z-20 w-[238px] shrink-0 border-r border-hair flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-200" style="background-color: var(--bg-sidebar);">
       <!-- 44px Top Header (Brand + Ghost Location Trigger + Search & Compose Icons) -->
-      <div class="h-[44px] px-2.5 border-b border-hair flex items-center justify-between gap-1 shrink-0">
+      <div class="glass-sidebar-header h-[44px] px-2.5 border-b border-hair flex items-center justify-between gap-1 shrink-0">
         <div class="flex items-center gap-1.5 min-w-0">
           <div class="w-[18px] h-[18px] rounded-[5px] bg-[#5E6AD2] text-white flex items-center justify-center shrink-0">
             <i class="fa-solid fa-crosshairs text-[9px]"></i>
@@ -755,10 +929,13 @@
             <span id="noiseGuardText" class="truncate">Noise Guard</span>
           </button>
 
-          <div class="flex items-center gap-1 shrink-0">
+          <div class="flex items-center gap-0.5 shrink-0">
             <button type="button" onclick="toggleAutoScanQuick()" id="btnAutoScanToggle" class="btn-ghost h-6 px-1.5 text-[10.5px] flex items-center gap-1" title="Toggle Background Auto-Scan">
               <span id="autoScanDot" class="w-1.5 h-1.5 rounded-full bg-[#5F6570]"></span>
               <span id="autoScanLabel" class="mono-tag">Off</span>
+            </button>
+            <button type="button" id="btnShortcutsHelp" onclick="openShortcutsModal()" class="btn-ghost w-6 h-6 flex items-center justify-center text-[11px] font-medium" title="Keyboard Shortcuts (?)" aria-label="Keyboard Shortcuts">
+              <span class="mono-tag">?</span>
             </button>
             <button type="button" id="btnThemeToggle" onclick="toggleTheme()" class="btn-ghost w-6 h-6 flex items-center justify-center" title="Switch Light / Dark Mode" aria-label="Toggle Theme">
               <i class="theme-icon fa-solid fa-sun text-[10.5px]"></i>
@@ -773,7 +950,7 @@
          ================================================================ -->
     <section id="feedPane" class="w-full lg:w-[360px] shrink-0 min-w-0 overflow-hidden flex flex-col min-h-0" style="background-color: var(--bg-canvas);">
       <!-- Streamlined Sticky Search & Scan Header -->
-      <div class="px-3 pt-2.5 pb-2 border-b border-hair shrink-0" style="background-color: var(--bg-canvas);">
+      <div class="glass-header px-3 pt-2.5 pb-2 border-b border-hair shrink-0">
         <!-- 32px Search Input + Right-Side Minimize / Maximize Filters Button -->
         <div class="flex items-center gap-1.5">
           <div class="relative flex items-center flex-1 min-w-0">
@@ -973,14 +1150,26 @@
       <div id="leadsListScroll" class="flex-1 overflow-y-auto min-h-0 px-1.5 py-1.5">
         <div id="leadsContainer" role="listbox" aria-label="Leads Inbox" class="space-y-0.5"></div>
 
-        <div id="emptyState" class="hidden px-6 py-16 text-center">
-          <div class="w-9 h-9 rounded-lg border border-hair mx-auto mb-3 flex items-center justify-center" style="background-color: var(--bg-elevated); color: var(--ink-muted);">
-            <i class="fa-solid fa-inbox text-xs"></i>
+        <div id="emptyState" class="hidden px-5 py-14 text-center">
+          <div class="w-10 h-10 rounded-[10px] border border-hair mx-auto mb-3 flex items-center justify-center surface-card" style="background-color: var(--bg-elevated); color: var(--ink-muted);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/>
+              <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+            </svg>
           </div>
           <h3 class="text-[13px] font-medium" style="color: var(--ink-primary);">No leads match this filter</h3>
-          <p class="text-[12px] mt-1 leading-relaxed" style="color: var(--ink-muted);">
-            Select a platform above and click Scan.
+          <p class="text-[12px] mt-1 leading-relaxed max-w-[240px] mx-auto" style="color: var(--ink-muted);">
+            Select a platform above and run a live scan, or clear active filters.
           </p>
+          <div class="mt-4 flex flex-wrap items-center justify-center gap-2">
+            <button type="button" onclick="triggerLiveSearch()" class="btn-primary h-[28px] px-3 text-[11.5px] inline-flex items-center gap-1.5">
+              <i class="fa-solid fa-bolt text-[10px]"></i>
+              <span>Scan Selected Platforms</span>
+            </button>
+            <button type="button" onclick="resetSearch()" class="btn-secondary h-[28px] px-3 text-[11.5px] inline-flex items-center gap-1.5">
+              <span>Reset Filters</span>
+            </button>
+          </div>
         </div>
       </div>
     </section>
@@ -994,27 +1183,35 @@
     <main id="readerPane" class="hidden lg:flex flex-1 min-w-0 flex-col min-h-0 relative" style="background-color: var(--bg-canvas);">
       <!-- Calm Empty Reader State -->
       <div id="readerEmptyState" class="flex-1 flex flex-col items-center justify-center p-8 text-center">
-        <div class="w-10 h-10 rounded-lg border border-hair flex items-center justify-center mb-3" style="background-color: var(--bg-elevated); color: var(--ink-muted);">
-          <i class="fa-regular fa-envelope-open text-sm"></i>
+        <div class="w-11 h-11 rounded-[10px] border border-hair flex items-center justify-center mb-3.5 surface-card" style="background-color: var(--bg-elevated); color: var(--ink-muted);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="4" width="20" height="16" rx="2"/>
+            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+          </svg>
         </div>
         <h2 class="text-[14px] font-medium" style="color: var(--ink-primary);">No lead selected</h2>
         <p class="text-[12.5px] mt-1 max-w-xs leading-relaxed" style="color: var(--ink-muted);">
-          Select a lead from the stream to read the full post, review Gemini AI context, add notes, and compose your reply.
+          Choose a lead from the stream to inspect full context, Gemini AI activity, internal notes, and instant outreach drafts.
         </p>
-        <div class="mt-4 flex items-center gap-1.5 text-[11px]" style="color: var(--ink-muted);">
-          <kbd class="code-chip">↑</kbd>
-          <kbd class="code-chip">↓</kbd>
-          <span>or</span>
+        <div class="mt-4 flex flex-wrap items-center justify-center gap-1.5 text-[11px]" style="color: var(--ink-muted);">
           <kbd class="code-chip">J</kbd>
           <kbd class="code-chip">K</kbd>
-          <span>to step through leads</span>
+          <span>navigate</span>
+          <span>&middot;</span>
+          <kbd class="code-chip">E</kbd>
+          <span>contacted</span>
+          <span>&middot;</span>
+          <button type="button" onclick="openShortcutsModal()" class="inline-flex items-center gap-1 hover:text-[var(--ink-primary)] transition">
+            <kbd class="code-chip">?</kbd>
+            <span>all shortcuts</span>
+          </button>
         </div>
       </div>
 
       <!-- Active Lead View -->
       <div id="readerContent" class="hidden flex-1 flex flex-col min-h-0">
         <!-- 44px Sticky Breadcrumb & Window Controls Top Bar (Container-Query Zoom Safe) -->
-        <div id="readerTopBar" class="h-[44px] px-2.5 sm:px-5 border-b border-hair flex items-center justify-between gap-1.5 sm:gap-2 shrink-0" style="background-color: var(--bg-canvas);">
+        <div id="readerTopBar" class="glass-header h-[44px] px-2.5 sm:px-5 border-b border-hair flex items-center justify-between gap-1.5 sm:gap-2 shrink-0">
           <!-- Mobile Back Button (Always Protected, Never Clipped or Overlapped) -->
           <button type="button" onclick="closeMobileReader()" class="lg:hidden btn-ghost h-7 px-1.5 sm:px-2 text-xs inline-flex items-center gap-1 shrink-0 whitespace-nowrap">
             <i class="fa-solid fa-arrow-left text-[10px]"></i>
@@ -1033,10 +1230,10 @@
           <div class="flex items-center gap-0.5 sm:gap-1 shrink-0">
             <div class="rb-stepper flex items-center gap-0.5 mr-0.5">
               <span id="readerPositionCounter" class="rb-counter mono-tag text-[11.5px] tabular-nums mr-1 whitespace-nowrap" style="color: var(--ink-muted);">0 / 0</span>
-              <button type="button" id="btnPrevLead" onclick="stepLeadSelection(-1)" class="btn-ghost w-[26px] h-[26px] flex items-center justify-center" title="Previous lead (↑ or K)">
+              <button type="button" id="btnPrevLead" onclick="stepLeadSelection(-1)" class="btn-ghost w-[26px] h-[26px] flex items-center justify-center" title="Previous Lead (K / ↑)">
                 <i class="fa-solid fa-chevron-up text-[10px]"></i>
               </button>
-              <button type="button" id="btnNextLead" onclick="stepLeadSelection(1)" class="btn-ghost w-[26px] h-[26px] flex items-center justify-center" title="Next lead (↓ or J)">
+              <button type="button" id="btnNextLead" onclick="stepLeadSelection(1)" class="btn-ghost w-[26px] h-[26px] flex items-center justify-center" title="Next Lead (J / ↓)">
                 <i class="fa-solid fa-chevron-down text-[10px]"></i>
               </button>
             </div>
@@ -1089,7 +1286,7 @@
 
         <!-- Refined Embedded Reach Out Composer Card (Smooth Minimize / Maximize Accordion) -->
         <div id="composerContainer" class="px-3.5 sm:px-6 lg:px-10 pb-3 sm:pb-4 pt-2 sm:pt-2.5 border-t border-hair shrink-0 transition-all duration-200" style="background-color: var(--bg-canvas);">
-          <div id="composerCard" class="max-w-[700px] rounded-[10px] border border-hair overflow-hidden transition focus-within:border-[var(--border-hover)]" style="background-color: var(--bg-elevated);">
+          <div id="composerCard" class="surface-card max-w-[700px] rounded-[10px] border border-hair overflow-hidden transition focus-within:border-[var(--border-hover)]" style="background-color: var(--bg-elevated);">
             <!-- Always-visible Composer Header Bar (Click to Minimize/Maximize Reply Box) -->
             <div onclick="toggleComposerCollapse()" class="h-[34px] px-3 sm:px-3.5 flex items-center justify-between gap-2 cursor-pointer select-none hover:bg-[var(--bg-hover)] transition">
               <div class="flex items-center gap-1.5 sm:gap-2 min-w-0 text-[12px]">
@@ -1099,11 +1296,11 @@
                 <span id="composerIntentHint" class="text-[11.5px] truncate min-w-0" style="color: var(--ink-muted);">Tailored reply</span>
               </div>
               <div class="flex items-center gap-1 shrink-0" onclick="event.stopPropagation()">
-                <a id="btnMiniComposerOpen" href="#" target="_blank" rel="noopener noreferrer" class="hidden btn-ghost h-6 px-2 text-[11px] flex items-center gap-1" title="Open original post">
+                <a id="btnMiniComposerOpen" href="#" target="_blank" rel="noopener noreferrer" class="hidden btn-ghost h-6 px-2 text-[11px] flex items-center gap-1" title="Open original post (O)">
                   <span>Open</span>
                   <i class="fa-solid fa-arrow-up-right-from-square text-[9px] opacity-80"></i>
                 </a>
-                <button type="button" id="btnMiniComposerCopy" onclick="copyComposerMessage()" class="hidden btn-ghost h-6 px-2 text-[11px] flex items-center gap-1" title="Quick copy reply">
+                <button type="button" id="btnMiniComposerCopy" onclick="copyComposerMessage()" class="hidden btn-ghost h-6 px-2 text-[11px] flex items-center gap-1" title="Copy message (C)">
                   <i class="fa-regular fa-copy text-[10px]"></i>
                   <span>Copy</span>
                 </button>
@@ -1116,27 +1313,43 @@
             <!-- Collapsible Smooth Grid Accordion Body -->
             <div id="composerBodyWrap" class="composer-body-wrap">
               <div class="composer-body-inner border-t border-hair">
+                <!-- 1-Click Pitch Tone Switcher -->
+                <div class="px-2.5 sm:px-3.5 py-1.5 border-b border-hair flex items-center justify-between gap-1.5">
+                  <div id="pitchToneRow" class="flex flex-wrap items-center gap-0.5 sm:gap-1 min-w-0" role="group" aria-label="Pitch Tone">
+                    <button type="button" data-tone="friendly" onclick="setPitchTone('friendly')" class="tone-pill is-active">Friendly</button>
+                    <button type="button" data-tone="direct" onclick="setPitchTone('direct')" class="tone-pill">Direct</button>
+                    <button type="button" data-tone="bisaya" onclick="setPitchTone('bisaya')" class="tone-pill">Bisaya / Taglish</button>
+                    <button type="button" data-tone="short" onclick="setPitchTone('short')" class="tone-pill">Short DM</button>
+                  </div>
+                </div>
+
                 <textarea
                   id="composerPitchText"
                   rows="3"
-                  placeholder="Reply / Reach Out..."
+                  placeholder="Reply / Reach Out... (⌘↵ to Copy &amp; Mark Contacted)"
+                  oninput="updateComposerCharCount()"
+                  onkeydown="if((event.metaKey || event.ctrlKey) && event.key === 'Enter'){ event.preventDefault(); copyAndMarkContacted(); }"
                   class="w-full h-[64px] sm:h-[82px] bg-transparent border-0 focus:outline-none px-3 sm:px-4 pt-2.5 pb-1.5 text-[12.5px] sm:text-[13px] leading-[1.55] resize-none placeholder-[#5F6570]"
                   style="color: var(--ink-primary);"
                 ></textarea>
 
                 <div class="px-3 sm:px-3.5 py-2 border-t border-hair flex flex-wrap items-center justify-between gap-1.5">
-                  <button type="button" onclick="resetComposerTemplate()" class="text-[11.5px] hover:text-[var(--ink-primary)] transition shrink-0 whitespace-nowrap" style="color: var(--ink-muted);">Reset template</button>
+                  <div class="flex items-center gap-2 shrink-0">
+                    <button type="button" onclick="resetComposerTemplate()" class="text-[11.5px] hover:text-[var(--ink-primary)] transition whitespace-nowrap" style="color: var(--ink-muted);">Reset template</button>
+                    <span class="text-[10px]" style="color: var(--ink-muted);">&middot;</span>
+                    <span id="composerCharCount" class="mono-tag text-[10.5px] tabular-nums whitespace-nowrap" style="color: var(--ink-muted);">0 chars</span>
+                  </div>
                   <div class="flex flex-wrap items-center justify-end gap-1.5 ml-auto">
-                    <a id="composerOpenLink" href="#" target="_blank" rel="noopener noreferrer" class="btn-secondary h-[28px] px-2 sm:px-2.5 text-[11.5px] inline-flex items-center gap-1.5 whitespace-nowrap" title="Go to original post">
+                    <a id="composerOpenLink" href="#" target="_blank" rel="noopener noreferrer" class="btn-secondary h-[28px] px-2 sm:px-2.5 text-[11.5px] inline-flex items-center gap-1.5 whitespace-nowrap" title="Open original post (O)">
                       <span id="composerOpenLabel">Open</span>
                       <span id="composerOpenHost" class="mono-tag text-[10px] opacity-70 max-w-[92px] sm:max-w-none truncate">link</span>
                       <i class="fa-solid fa-arrow-up-right-from-square text-[9.5px] opacity-75 shrink-0"></i>
                     </a>
-                    <button type="button" id="btnComposerCopy" onclick="copyComposerMessage()" class="btn-ghost h-[28px] px-2 sm:px-2.5 text-[11.5px] sm:text-[12px] flex items-center gap-1.5 whitespace-nowrap">
+                    <button type="button" id="btnComposerCopy" onclick="copyComposerMessage()" class="btn-ghost h-[28px] px-2 sm:px-2.5 text-[11.5px] sm:text-[12px] flex items-center gap-1.5 whitespace-nowrap" title="Copy message (C)">
                       <i class="fa-regular fa-copy text-[11px]"></i>
                       <span>Copy</span>
                     </button>
-                    <button type="button" id="btnComposerCopyContact" onclick="copyAndMarkContacted()" class="btn-primary h-[28px] px-2.5 sm:px-3 text-[11.5px] sm:text-[12px] flex items-center gap-1.5 whitespace-nowrap">
+                    <button type="button" id="btnComposerCopyContact" onclick="copyAndMarkContacted()" class="btn-primary h-[28px] px-2.5 sm:px-3 text-[11.5px] sm:text-[12px] flex items-center gap-1.5 whitespace-nowrap" title="Copy &amp; Mark Contacted (⌘↵)">
                       <i class="fa-solid fa-check text-[10.5px]"></i>
                       <span>Copy &amp; Mark Contacted</span>
                     </button>
@@ -1164,7 +1377,7 @@
        SETTINGS MODAL (Separated API Keys & Scanner Options, Linear Graphite)
        ================================================================ -->
   <div id="settingsModal" class="modal-backdrop fixed inset-0 z-[70] hidden flex items-center justify-center p-4">
-    <div class="rounded-[12px] border border-hair shadow-2xl max-w-2xl w-full max-h-[88vh] flex flex-col overflow-hidden" style="background-color: var(--bg-canvas);">
+    <div class="modal-card rounded-[12px] border border-hair max-w-2xl w-full max-h-[88vh] flex flex-col overflow-hidden" style="background-color: var(--bg-canvas);">
       <div class="px-3.5 sm:px-5 pt-4 pb-3.5 border-b border-hair shrink-0 space-y-3">
         <div class="flex justify-between items-start gap-3">
           <div>
@@ -1399,7 +1612,7 @@
        LOG MANUAL LEAD MODAL (Linear Graphite Style)
        ================================================================ -->
   <div id="addModal" class="modal-backdrop fixed inset-0 z-[70] hidden flex items-center justify-center p-4">
-    <div class="rounded-[12px] border border-hair shadow-2xl max-w-md w-full max-h-[90vh] flex flex-col overflow-hidden" style="background-color: var(--bg-canvas);">
+    <div class="modal-card rounded-[12px] border border-hair max-w-md w-full max-h-[90vh] flex flex-col overflow-hidden" style="background-color: var(--bg-canvas);">
       <div class="px-4 sm:px-5 py-3.5 border-b border-hair flex justify-between items-center shrink-0">
         <div>
           <span class="text-[11px] font-medium" style="color: var(--ink-section);">Manual Entry</span>
@@ -1456,19 +1669,68 @@
     </div>
   </div>
 
-  <!-- LIVE TOAST NOTIFICATION -->
-  <div id="liveAlertToast" class="fixed bottom-4 left-4 right-4 sm:left-auto sm:w-full max-w-sm z-[70] hidden rounded-[10px] border border-hair shadow-xl p-3.5" style="background-color: var(--bg-elevated);">
-    <div class="flex items-start justify-between gap-3">
+  <!-- KEYBOARD SHORTCUTS MODAL (z-[70]) -->
+  <div id="shortcutsModal" onclick="if(event.target === this) closeModal('shortcutsModal')" class="modal-backdrop fixed inset-0 z-[70] hidden flex items-center justify-center p-4">
+    <div class="modal-card rounded-[12px] border border-hair max-w-md w-full max-h-[88vh] flex flex-col overflow-hidden" style="background-color: var(--bg-canvas);">
+      <div class="px-4 sm:px-5 py-3.5 border-b border-hair flex justify-between items-center shrink-0">
+        <div>
+          <span class="text-[11px] font-medium" style="color: var(--ink-section);">Speed Triage</span>
+          <h3 class="text-[15px] font-medium" style="color: var(--ink-primary);">Keyboard Shortcuts</h3>
+        </div>
+        <button type="button" onclick="closeModal('shortcutsModal')" class="btn-ghost w-7 h-7 flex items-center justify-center text-sm shrink-0">&times;</button>
+      </div>
+      <div class="p-4 sm:p-5 space-y-2.5 text-[12.5px] overflow-y-auto flex-1 min-h-0">
+        <div class="flex items-center justify-between gap-3 py-1 border-b border-hair">
+          <span style="color: var(--ink-secondary);">Next / Previous lead</span>
+          <span class="flex items-center gap-1 shrink-0"><kbd class="code-chip">J</kbd><kbd class="code-chip">K</kbd><span class="text-[11px]" style="color: var(--ink-muted);">or</span><kbd class="code-chip">↑</kbd><kbd class="code-chip">↓</kbd></span>
+        </div>
+        <div class="flex items-center justify-between gap-3 py-1 border-b border-hair">
+          <span style="color: var(--ink-secondary);">Focus search bar</span>
+          <span class="flex items-center gap-1 shrink-0"><kbd class="code-chip">/</kbd><span class="text-[11px]" style="color: var(--ink-muted);">or</span><kbd class="code-chip">⌘K</kbd></span>
+        </div>
+        <div class="flex items-center justify-between gap-3 py-1 border-b border-hair">
+          <span style="color: var(--ink-secondary);">Open original post</span>
+          <kbd class="code-chip shrink-0">O</kbd>
+        </div>
+        <div class="flex items-center justify-between gap-3 py-1 border-b border-hair">
+          <span style="color: var(--ink-secondary);">Copy &amp; focus Reach Out reply</span>
+          <kbd class="code-chip shrink-0">C</kbd>
+        </div>
+        <div class="flex items-center justify-between gap-3 py-1 border-b border-hair">
+          <span style="color: var(--ink-secondary);">Mark selected lead Contacted</span>
+          <kbd class="code-chip shrink-0">E</kbd>
+        </div>
+        <div class="flex items-center justify-between gap-3 py-1 border-b border-hair">
+          <span style="color: var(--ink-secondary);">Copy &amp; Mark Contacted (in reply box)</span>
+          <kbd class="code-chip shrink-0">⌘↵</kbd>
+        </div>
+        <div class="flex items-center justify-between gap-3 py-1">
+          <span style="color: var(--ink-secondary);">Show / hide shortcuts</span>
+          <kbd class="code-chip shrink-0">?</kbd>
+        </div>
+      </div>
+      <div class="px-4 sm:px-5 py-2.5 border-t border-hair flex justify-end shrink-0" style="background-color: var(--bg-sidebar);">
+        <button type="button" onclick="closeModal('shortcutsModal')" class="btn-secondary h-7 px-3 text-xs">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIVE TOAST NOTIFICATION (z-[70], Actionable Undo Support) -->
+  <div id="liveAlertToast" class="fixed bottom-4 left-4 right-4 sm:left-auto sm:w-full max-w-sm z-[70] hidden rounded-[10px] border border-hair p-3" style="background-color: var(--bg-elevated); box-shadow: var(--shadow-toast);">
+    <div class="flex items-center justify-between gap-2.5">
       <div class="flex items-start gap-2.5 min-w-0">
         <div class="w-7 h-7 rounded-[6px] border border-hair flex items-center justify-center shrink-0 mt-0.5" style="background-color: var(--bg-chip); color: var(--ink-primary);">
           <i class="fa-regular fa-bell text-[11px]"></i>
         </div>
         <div class="min-w-0">
-          <h4 id="toastAlertTitle" class="text-[13px] font-medium truncate" style="color: var(--ink-primary);">Notification</h4>
-          <p id="toastAlertSub" class="text-[12px] mt-0.5 line-clamp-2" style="color: var(--ink-secondary);"></p>
+          <h4 id="toastAlertTitle" class="text-[12.5px] font-medium truncate" style="color: var(--ink-primary);">Notification</h4>
+          <p id="toastAlertSub" class="text-[11.5px] mt-0.5 line-clamp-2" style="color: var(--ink-secondary);"></p>
         </div>
       </div>
-      <button type="button" onclick="hideLiveToast()" class="btn-ghost w-6 h-6 flex items-center justify-center text-sm shrink-0">&times;</button>
+      <div class="flex items-center gap-1 shrink-0">
+        <button type="button" id="toastUndoBtn" onclick="undoLastStatusChange()" class="hidden btn-secondary h-7 px-2.5 text-[11.5px] whitespace-nowrap">Undo</button>
+        <button type="button" onclick="hideLiveToast()" class="btn-ghost w-6 h-6 flex items-center justify-center text-sm shrink-0">&times;</button>
+      </div>
     </div>
   </div>
 
@@ -1629,13 +1891,17 @@
         if (window.innerWidth < 1024) {
           feed.style.width = '';
           if (readerViewMode === 'maximized') setReaderViewMode('docked');
+          if (reader && !feed.classList.contains('hidden')) {
+            reader.classList.add('hidden');
+            reader.classList.remove('flex');
+          }
           return;
         }
         // Always restore split-pane visibility when resizing from mobile/tablet up to desktop
         feed.classList.remove('hidden');
         if (reader) {
-          reader.classList.remove('hidden');
-          reader.classList.add('lg:flex');
+          reader.classList.add('hidden', 'lg:flex');
+          reader.classList.remove('flex');
         }
         if (readerViewMode === 'closed') return;
         const sidebarW = sidebar ? sidebar.getBoundingClientRect().width : 238;
@@ -1815,8 +2081,14 @@
     } catch (e) {}
 
     /* ================================================================
-       KEYBOARD NAVIGATION (Cmd+K, Up/Down, J/K, Escape)
+       KEYBOARD NAVIGATION (Cmd+K, /, J/K, O, C, E, ?, Escape)
        ================================================================ */
+    function openShortcutsModal() {
+      toggleMobileSidebar(false);
+      const modal = document.getElementById('shortcutsModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
     document.addEventListener('keydown', (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
@@ -1824,6 +2096,11 @@
         return;
       }
       if (e.key === 'Escape') {
+        const scModal = document.getElementById('shortcutsModal');
+        if (scModal && !scModal.classList.contains('hidden')) {
+          closeModal('shortcutsModal');
+          return;
+        }
         if (readerViewMode === 'maximized') {
           setReaderViewMode('docked');
           return;
@@ -1840,14 +2117,40 @@
 
       const settingsOpen = !document.getElementById('settingsModal').classList.contains('hidden');
       const addOpen = !document.getElementById('addModal').classList.contains('hidden');
+      const shortcutsOpen = !document.getElementById('shortcutsModal').classList.contains('hidden');
       if (settingsOpen || addOpen) return;
 
-      if (e.key === 'ArrowDown' || e.key.toLowerCase() === 'j') {
+      if (e.key === '?') {
+        e.preventDefault();
+        if (shortcutsOpen) closeModal('shortcutsModal');
+        else openShortcutsModal();
+        return;
+      }
+      if (shortcutsOpen) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+      const k = e.key.toLowerCase();
+      if (e.key === '/') {
+        e.preventDefault();
+        focusSearch();
+      } else if (e.key === 'ArrowDown' || k === 'j') {
         e.preventDefault();
         stepLeadSelection(1);
-      } else if (e.key === 'ArrowUp' || e.key.toLowerCase() === 'k') {
+      } else if (e.key === 'ArrowUp' || k === 'k') {
         e.preventDefault();
         stepLeadSelection(-1);
+      } else if (k === 'o' && selectedLeadId) {
+        e.preventDefault();
+        openLeadUrlById(selectedLeadId);
+      } else if (k === 'c' && selectedLeadId) {
+        e.preventDefault();
+        if (composerCollapsed) applyComposerCollapseState(false);
+        copyComposerMessage(true);
+        const pitch = document.getElementById('composerPitchText');
+        if (pitch) pitch.focus();
+      } else if (k === 'e' && selectedLeadId) {
+        e.preventDefault();
+        quickUpdateLeadStatus(selectedLeadId, 'contacted');
       }
     });
 
@@ -1979,8 +2282,40 @@
     /* ================================================================
        DATA LOADING, LIVE SCANNING & POLLING
        ================================================================ */
-    async function loadLeads() {
+    let hasCompletedInitialLoad = false;
+
+    function renderLeadSkeletons(count = 6) {
+      const container = document.getElementById('leadsContainer');
+      const emptyState = document.getElementById('emptyState');
+      if (!container) return;
+      if (emptyState) emptyState.classList.add('hidden');
+      let html = '';
+      for (let i = 0; i < count; i++) {
+        const w1 = 44 + ((i * 17) % 28);
+        const w2 = 72 + ((i * 13) % 22);
+        const w3 = 52 + ((i * 19) % 26);
+        html += `
+          <div class="px-3 py-2.5 rounded-[8px] space-y-2" aria-hidden="true">
+            <div class="flex items-center justify-between gap-2">
+              <div class="skel-bar h-3" style="width:${w1}%"></div>
+              <div class="skel-bar h-2.5 w-10"></div>
+            </div>
+            <div class="skel-bar h-3.5" style="width:${w2}%"></div>
+            <div class="flex items-center justify-between gap-2">
+              <div class="skel-bar h-2.5" style="width:${w3}%"></div>
+              <div class="skel-bar h-4 w-16 rounded-full"></div>
+            </div>
+          </div>
+        `;
+      }
+      container.innerHTML = html;
+    }
+
+    async function loadLeads(opts = {}) {
       try {
+        if (!hasCompletedInitialLoad || opts.showSkeleton) {
+          renderLeadSkeletons(6);
+        }
         const query = document.getElementById('searchQuery').value.trim();
         const location = document.getElementById('searchLocation').value;
         const platforms = getActivePlatformScope().join(',');
@@ -1999,6 +2334,7 @@
 
         const res = await fetch(`/api/leads?${params.toString()}`);
         const data = await res.json();
+        hasCompletedInitialLoad = true;
         checkBackendVersion(data.adapters);
         renderStats(data.stats);
         renderLeads(data.leads);
@@ -2452,6 +2788,70 @@
       return '<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/15 text-emerald-800 dark:text-[#6EE7B7] border border-emerald-500/35 whitespace-nowrap"><span class="label-dot" style="background:#4ADE80"></span>Jobseeker</span>';
     }
 
+    let activePitchTone = 'friendly';
+    let lastRenderedLeadId = null;
+    let lastUndoAction = null;
+
+    try {
+      const savedTone = localStorage.getItem('uls_pitch_tone');
+      if (['friendly', 'direct', 'bisaya', 'short'].includes(savedTone)) activePitchTone = savedTone;
+    } catch (e) {}
+
+    function syncPitchTonePills() {
+      document.querySelectorAll('#pitchToneRow .tone-pill').forEach(btn => {
+        btn.classList.toggle('is-active', btn.dataset.tone === activePitchTone);
+      });
+    }
+
+    function setPitchTone(tone) {
+      if (!['friendly', 'direct', 'bisaya', 'short'].includes(tone)) return;
+      activePitchTone = tone;
+      try { localStorage.setItem('uls_pitch_tone', tone); } catch (e) {}
+      syncPitchTonePills();
+      const ld = leadsById[selectedLeadId];
+      const pitchEl = document.getElementById('composerPitchText');
+      if (ld && pitchEl) {
+        pitchEl.value = buildOutreachMessage(ld, activePitchTone);
+        updateComposerCharCount();
+      }
+    }
+
+    function updateComposerCharCount() {
+      const pitchEl = document.getElementById('composerPitchText');
+      const countEl = document.getElementById('composerCharCount');
+      if (!pitchEl || !countEl) return;
+      const len = pitchEl.value.length;
+      countEl.innerText = `${len} char${len === 1 ? '' : 's'}`;
+    }
+
+    function getDateGroupLabel(tsStr) {
+      if (!tsStr) return 'Older';
+      const d = new Date(String(tsStr).replace(' ', 'T') + 'Z');
+      if (isNaN(d)) return 'Older';
+      const now = new Date();
+      const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const startYesterday = startToday - 86400000;
+      const startWeek = startToday - 6 * 86400000;
+      const t = d.getTime();
+      if (t >= startToday) return 'Today';
+      if (t >= startYesterday) return 'Yesterday';
+      if (t >= startWeek) return 'Earlier This Week';
+      return 'Older';
+    }
+
+    function highlightMatchedKeyword(rawText, keyword) {
+      const safeText = escapeHtml(rawText || '');
+      const cleanKw = String(keyword || '').trim();
+      if (cleanKw.length < 2) return safeText;
+      const safeKw = escapeHtml(cleanKw);
+      const escapedRe = safeKw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      try {
+        return safeText.replace(new RegExp(`(${escapedRe})`, 'gi'), '<mark class="kw-mark">$1</mark>');
+      } catch (e) {
+        return safeText;
+      }
+    }
+
     /* ================================================================
        PANE 2 (INBOX STREAM) & PANE 3 (LINEAR ISSUE READER + REPLY BOX)
        ================================================================ */
@@ -2507,7 +2907,17 @@
         return tsB - tsA;
       });
 
-      displayedLeads = cleanLeads;
+      // Bucket into sticky date groups (preserving sort order inside each bucket)
+      const groupOrder = ['Today', 'Yesterday', 'Earlier This Week', 'Older'];
+      const buckets = { Today: [], Yesterday: [], 'Earlier This Week': [], Older: [] };
+      cleanLeads.forEach(l => {
+        const g = getDateGroupLabel(l.posted_at || l.found_at);
+        buckets[g].push(l);
+      });
+      const orderedLeads = [];
+      groupOrder.forEach(g => { buckets[g].forEach(l => orderedLeads.push(l)); });
+
+      displayedLeads = orderedLeads;
       leadsById = {};
       displayedLeads.forEach(l => { leadsById[l.id] = l; });
 
@@ -2523,12 +2933,13 @@
         const emptySub = emptyState.querySelector('p');
         if (lastTotalStored > 0) {
           emptyTitle.innerText = `No leads match this filter (${lastTotalStored} stored)`;
-          emptySub.innerHTML = `Click <button type="button" onclick="resetSearch()" class="underline font-medium" style="color:var(--ink-primary)">Reset</button> to view all saved leads.`;
+          emptySub.innerText = 'Try resetting your filters or run a fresh scan across your selected platforms.';
         } else {
           emptyTitle.innerText = 'No leads stored yet';
-          emptySub.innerHTML = 'Select a platform above and click <strong>Scan</strong> to pull live leads.';
+          emptySub.innerText = 'Select one or more platforms above and run a live scan to populate your triage inbox.';
         }
         selectedLeadId = null;
+        lastRenderedLeadId = null;
         updateStepperState();
         renderReader(null);
         return;
@@ -2541,52 +2952,84 @@
       }
 
       const frag = document.createDocumentFragment();
-      displayedLeads.forEach(l => {
-        const isSelected = l.id === selectedLeadId;
-        const isComment = l.kind === 'comment' || (l.source || '').toLowerCase().includes('comment');
-        const stInfo = STATUS_META[l.status || 'new'] || STATUS_META.new;
-        const ago = timeAgo(l.posted_at || l.found_at);
-        const excerpt = cleanExcerpt(l.content);
+      groupOrder.forEach(groupName => {
+        const items = buckets[groupName];
+        if (!items.length) return;
 
-        const row = document.createElement('button');
-        row.type = 'button';
-        row.setAttribute('role', 'option');
-        row.setAttribute('aria-selected', isSelected ? 'true' : 'false');
-        row.dataset.leadId = String(Number(l.id));
-        row.className = `inbox-row ${isSelected ? 'is-selected' : ''}`;
-        row.onclick = () => selectLeadById(Number(l.id), { openMobile: true });
+        const divider = document.createElement('div');
+        divider.className = 'feed-date-divider';
+        divider.innerHTML = `<span>${escapeHtml(groupName)}</span><span class="mono-tag text-[10px] tabular-nums" style="color: var(--ink-muted);">${items.length}</span>`;
+        frag.appendChild(divider);
 
-        const platMeta = getPlatformMeta(l);
-        const hasGeminiAi = l.ai_reason && String(l.ai_reason).startsWith('Gemini AI:');
-        row.innerHTML = `
-          <!-- Line 1: Emphasized Platform icon + Author + AI dot + Timestamp -->
-          <div class="flex items-center justify-between gap-2 mb-1">
-            <div class="flex items-center gap-1.5 min-w-0 text-[12.5px]">
-              <i class="${platMeta.icon} text-[12px] shrink-0" style="color: ${platMeta.iconColor};" title="${escapeHtml(l.source || platMeta.shortLabel)}"></i>
-              <span class="truncate font-medium" style="color: var(--ink-body);">${escapeHtml(l.author || 'Unknown')}</span>
-              ${hasGeminiAi ? '<i class="fa-solid fa-wand-magic-sparkles text-[10px] text-violet-600 dark:text-[#C4B5FD] shrink-0" title="Verified by Gemini AI"></i>' : ''}
+        items.forEach(l => {
+          const leadIdNum = Number(l.id);
+          const isSelected = leadIdNum === Number(selectedLeadId);
+          const isComment = l.kind === 'comment' || (l.source || '').toLowerCase().includes('comment');
+          const statusKey = l.status || 'new';
+          const isSoftened = statusKey === 'contacted' || statusKey === 'archived';
+          const stInfo = STATUS_META[statusKey] || STATUS_META.new;
+          const ago = timeAgo(l.posted_at || l.found_at);
+          const excerpt = cleanExcerpt(l.content);
+
+          const row = document.createElement('div');
+          row.setAttribute('role', 'option');
+          row.setAttribute('tabindex', '0');
+          row.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+          row.dataset.leadId = String(leadIdNum);
+          row.className = `inbox-row ${isSelected ? 'is-selected' : ''} ${isSoftened ? 'is-softened' : ''}`;
+          row.onclick = () => selectLeadById(leadIdNum, { openMobile: true });
+          row.onkeydown = (ev) => {
+            if (ev.key === 'Enter' || ev.key === ' ') {
+              ev.preventDefault();
+              selectLeadById(leadIdNum, { openMobile: true });
+            }
+          };
+
+          const platMeta = getPlatformMeta(l);
+          const hasGeminiAi = l.ai_reason && String(l.ai_reason).startsWith('Gemini AI:');
+          row.innerHTML = `
+            <!-- Desktop Hover Quick-Actions Floating Pill -->
+            <div class="row-quick-actions hidden lg:flex" onclick="event.stopPropagation()">
+              <button type="button" onclick="openLeadUrlById(${leadIdNum})" class="btn-ghost w-6 h-6 flex items-center justify-center" title="Open Post (O)">
+                <i class="fa-solid fa-arrow-up-right-from-square text-[9.5px]"></i>
+              </button>
+              <button type="button" onclick="quickUpdateLeadStatus(${leadIdNum}, 'contacted')" class="btn-ghost w-6 h-6 flex items-center justify-center hover:text-[#4ADE80]" title="Mark Contacted (E)">
+                <i class="fa-solid fa-check text-[10px]"></i>
+              </button>
+              <button type="button" onclick="quickUpdateLeadStatus(${leadIdNum}, 'archived')" class="btn-ghost w-6 h-6 flex items-center justify-center" title="Archive Lead">
+                <i class="fa-solid fa-box-archive text-[9.5px]"></i>
+              </button>
             </div>
-            <span class="mono-tag text-[11.5px] shrink-0 tabular-nums" style="color: var(--ink-muted);">${escapeHtml(ago)}</span>
-          </div>
 
-          <!-- Line 2: 1-line Medium Title -->
-          <div class="text-[13px] font-medium truncate leading-snug mb-1.5" style="color: var(--ink-primary);">
-            ${escapeHtml(cleanExcerpt(l.title))}
-          </div>
-
-          <!-- Line 3: 1-line Muted Preview + Emphasized Platform/Intent Pills -->
-          <div class="flex items-center justify-between gap-2">
-            <span class="text-[12px] truncate min-w-0" style="color: var(--ink-secondary);">
-              ${escapeHtml(excerpt || l.source || '')}
-            </span>
-            <div class="flex items-center gap-1.5 shrink-0">
-              ${isComment ? '<span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-violet-500/15 text-violet-700 dark:text-violet-300 border border-violet-500/30">Comment</span>' : ''}
-              ${getIntentLabelPill(l.intent)}
-              <span class="w-1.5 h-1.5 rounded-full ${stInfo.dot}" title="${escapeHtml(stInfo.label)}"></span>
+            <!-- Line 1: Emphasized Platform icon + Author + AI dot + Timestamp -->
+            <div class="flex items-center justify-between gap-2 mb-1">
+              <div class="flex items-center gap-1.5 min-w-0 text-[12.5px]">
+                <i class="${platMeta.icon} text-[12px] shrink-0" style="color: ${platMeta.iconColor};" title="${escapeHtml(l.source || platMeta.shortLabel)}"></i>
+                <span class="truncate font-medium" style="color: var(--ink-body);">${escapeHtml(l.author || 'Unknown')}</span>
+                ${hasGeminiAi ? '<i class="fa-solid fa-wand-magic-sparkles text-[10px] text-violet-600 dark:text-[#C4B5FD] shrink-0" title="Verified by Gemini AI"></i>' : ''}
+              </div>
+              <span class="mono-tag text-[11.5px] shrink-0 tabular-nums" style="color: var(--ink-muted);">${escapeHtml(ago)}</span>
             </div>
-          </div>
-        `;
-        frag.appendChild(row);
+
+            <!-- Line 2: 1-line Medium Title -->
+            <div class="text-[13px] font-medium truncate leading-snug mb-1.5" style="color: var(--ink-primary);">
+              ${escapeHtml(cleanExcerpt(l.title))}
+            </div>
+
+            <!-- Line 3: 1-line Muted Preview + Emphasized Platform/Intent Pills -->
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-[12px] truncate min-w-0" style="color: var(--ink-secondary);">
+                ${escapeHtml(excerpt || l.source || '')}
+              </span>
+              <div class="flex items-center gap-1.5 shrink-0">
+                ${isComment ? '<span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-violet-500/15 text-violet-700 dark:text-violet-300 border border-violet-500/30">Comment</span>' : ''}
+                ${getIntentLabelPill(l.intent)}
+                <span class="w-1.5 h-1.5 rounded-full ${stInfo.dot} shrink-0" title="${escapeHtml(stInfo.label)}"></span>
+              </div>
+            </div>
+          `;
+          frag.appendChild(row);
+        });
       });
 
       container.appendChild(frag);
@@ -2616,23 +3059,47 @@
       if (opts.openMobile) openMobileReader();
     }
 
-    function buildOutreachMessage(lead) {
+    function buildOutreachMessage(lead, tone = activePitchTone) {
       if (!lead) return '';
       const isComment = lead.kind === 'comment' || (lead.source || '').toLowerCase().includes('comment');
       const actionWord = isComment ? 'comment' : 'post';
       const cleanLoc = String(lead.location || 'Cebu').replace(/\s*\/\s*Remote PH/i, '').trim() || 'Cebu';
-      const topicHint = lead.title ? ` ("${cleanExcerpt(lead.title).slice(0, 55)}")` : '';
+      const shortTitle = cleanExcerpt(lead.title || '').slice(0, 50);
+      const topicHint = shortTitle ? ` ("${shortTitle}")` : '';
+      const author = lead.author || 'there';
 
+      if (tone === 'direct') {
+        if (lead.intent === 'employer') return `Hi ${author} — regarding your ${cleanLoc} hiring ${actionWord}${topicHint}, we have pre-screened candidates ready to start immediately. Can I send over matching profiles via DM?`;
+        if (lead.intent === 'seller') return `Hi ${author} — checking if your item${topicHint} in ${cleanLoc} is still available. What is your best price and pickup/meetup area?`;
+        if (lead.intent === 'buyer') return `Hi ${author} — I have an available unit matching your ${actionWord}${topicHint} in ${cleanLoc}. Sending specs, photos, and price via DM now.`;
+        return `Hi ${author} — saw your ${actionWord}${topicHint} for work in ${cleanLoc}. We have immediate openings matching your profile; reply or DM so I can share requirements and schedule.`;
+      }
+
+      if (tone === 'bisaya') {
+        if (lead.intent === 'employer') return `Hi ${author}! Nakita nako imong ${actionWord}${topicHint} nga hiring sa ${cleanLoc}. Naa miy mga ready-to-start ug pre-screened applicants — pwede ko mo-DM para ma-refer namo? Salamat!`;
+        if (lead.intent === 'seller') return `Hi ${author}! Available pa ni imong post${topicHint} diri sa ${cleanLoc}? Pila last price ani ug asa ang meetup/pickup? Nag-DM pud ko!`;
+        if (lead.intent === 'buyer') return `Hi ${author}! Nakita nako nangita ka ani${topicHint} sa ${cleanLoc}. Naa koy available unit in great condition — gi-DM nako ang specs, pics, ug price!`;
+        return `Hi ${author}! Nakita nako imong ${actionWord}${topicHint} nga nangita ug trabaho sa ${cleanLoc}. Naa miy mga urgent hiring karon — reply lang or DM ko para ma-send nako ang details!`;
+      }
+
+      if (tone === 'short') {
+        if (lead.intent === 'employer') return `Hi ${author}! Re: your ${cleanLoc} hiring ${actionWord} — we have ready candidates available ASAP. Sent a quick DM!`;
+        if (lead.intent === 'seller') return `Hi ${author}! Still available in ${cleanLoc}? Last price & meetup area please. Sent a DM!`;
+        if (lead.intent === 'buyer') return `Hi ${author}! Have this available in ${cleanLoc} — sent you a DM with photos & price!`;
+        return `Hi ${author}! Saw you're looking for work in ${cleanLoc} — we have immediate openings. DM me for details!`;
+      }
+
+      // Default: 'friendly'
       if (lead.intent === 'employer') {
-        return `Hi ${lead.author}! Saw your recent ${actionWord}${topicHint} hiring in ${cleanLoc}. We have pre-screened, ready-to-start candidates available right now. Sent you a DM if you'd like us to refer applicants!`;
+        return `Hi ${author}! Saw your recent ${actionWord}${topicHint} hiring in ${cleanLoc}. We have pre-screened, ready-to-start candidates available right now. Sent you a DM if you'd like us to refer applicants!`;
       }
       if (lead.intent === 'seller') {
-        return `Hi ${lead.author}! Saw your recent ${actionWord}${topicHint} in ${cleanLoc}. Is this item still available? Please let me know the last price and meetup/pickup location. Sent you a DM!`;
+        return `Hi ${author}! Saw your recent ${actionWord}${topicHint} in ${cleanLoc}. Is this item still available? Please let me know the last price and meetup/pickup location. Sent you a DM!`;
       }
       if (lead.intent === 'buyer') {
-        return `Hi ${lead.author}! Saw your recent ${actionWord}${topicHint} looking for an item in ${cleanLoc}. I have a unit available in great condition — sent you a DM with specs, photos, and price!`;
+        return `Hi ${author}! Saw your recent ${actionWord}${topicHint} looking for an item in ${cleanLoc}. I have a unit available in great condition — sent you a DM with specs, photos, and price!`;
       }
-      return `Hi ${lead.author}! Saw your recent ${actionWord}${topicHint} looking for work in ${cleanLoc}. We are actively connecting jobseekers with immediate openings. Send me a quick DM or reply so I can share the details!`;
+      return `Hi ${author}! Saw your recent ${actionWord}${topicHint} looking for work in ${cleanLoc}. We are actively connecting jobseekers with immediate openings. Send me a quick DM or reply so I can share the details!`;
     }
 
     function renderReader(lead) {
@@ -2650,6 +3117,9 @@
 
       empty.classList.add('hidden');
       content.classList.remove('hidden');
+
+      const switchedLead = Number(lastRenderedLeadId) !== Number(lead.id);
+      lastRenderedLeadId = lead.id;
 
       // Update 44px Breadcrumb Top Bar
       const bcDot = document.getElementById('readerBreadcrumbDot');
@@ -2680,75 +3150,81 @@
       const miniOpen = document.getElementById('btnMiniComposerOpen');
       if (compOpen) {
         compOpen.href = safeUrl;
-        compOpen.title = safeUrl;
+        compOpen.title = `Open on ${hostLabel} (O)`;
       }
       if (compOpenLbl) compOpenLbl.innerText = isComment ? 'Comment' : 'Open';
       if (compOpenHost) compOpenHost.innerText = hostLabel;
       if (miniOpen) {
         miniOpen.href = safeUrl;
-        miniOpen.title = `Open on ${hostLabel}`;
+        miniOpen.title = `Open on ${hostLabel} (O)`;
       }
 
       const ago = timeAgo(lead.posted_at || lead.found_at);
       const cleanAuthorNorm = String(lead.author || '?').normalize('NFKD').replace(/^(@|u\/)/i, '').trim();
       const authorInitial = escapeHtml((Array.from(cleanAuthorNorm)[0] || '?').toUpperCase());
       const rawBody = String(lead.content || '').trim();
+      const stInfo = STATUS_META[statusVal] || STATUS_META.new;
 
-      // Emphasized Gemini AI / Filter Callout Card (Full Unwrapped Text)
-      let aiActivityHtml = '';
+      // Linear-Style Vertical Hairline Activity Timeline (Discovery + Gemini AI + Status)
+      let aiTimelineItem = '';
       if (statusVal === 'ai_filtered' || lead.ai_verdict === 'filtered') {
         const filteredText = lead.ai_reason || 'Post matched keyword but context appears misaligned or non-actionable.';
-        aiActivityHtml = `
-          <div class="rounded-[9px] px-3.5 py-2.5 border border-rose-400/30 bg-rose-500/10 flex items-start justify-between gap-3 text-[12.5px] leading-relaxed">
-            <div class="flex items-start gap-2.5 min-w-0">
-              <i class="fa-solid fa-wand-magic-sparkles text-[12px] text-rose-400 mt-[3.5px] shrink-0"></i>
+        aiTimelineItem = `
+          <div class="relative flex items-start gap-2.5">
+            <span class="w-4 h-4 rounded-full bg-rose-500/15 border border-rose-400/40 flex items-center justify-center shrink-0 mt-0.5">
+              <i class="fa-solid fa-wand-magic-sparkles text-[8.5px] text-rose-500 dark:text-rose-300"></i>
+            </span>
+            <div class="flex-1 min-w-0 rounded-[8px] px-3 py-2 border border-rose-400/30 bg-rose-500/10 flex flex-wrap items-start justify-between gap-2 text-[12px] leading-relaxed">
               <div class="min-w-0 break-words whitespace-normal">
-                <span class="font-semibold text-rose-700 dark:text-rose-200 block mb-0.5">AI Filtered Out (Misaligned / Rant)</span>
+                <span class="font-semibold text-rose-700 dark:text-rose-200 block">AI Filtered Out (Misaligned / Rant)</span>
                 <span class="text-rose-800/90 dark:text-rose-200/85">${escapeHtml(filteredText)}</span>
               </div>
+              <button type="button" onclick="approveSelectedLead()" class="btn-secondary h-7 px-2.5 text-[11px] shrink-0">Approve Lead</button>
             </div>
-            <button type="button" onclick="approveSelectedLead()" class="btn-secondary h-7 px-2.5 text-[11px] shrink-0">Approve Lead</button>
           </div>
         `;
       } else if (lead.ai_reason && String(lead.ai_reason).startsWith('Gemini AI:')) {
         const cleanAi = String(lead.ai_reason).replace(/^Gemini AI:\s*/i, '');
-        aiActivityHtml = `
-          <div class="rounded-[9px] px-3.5 py-2.5 border border-[#a78bfa]/30 bg-[#a78bfa]/[0.09] flex items-start gap-2.5 text-[12.5px] leading-relaxed">
-            <i class="fa-solid fa-wand-magic-sparkles text-[12px] text-violet-600 dark:text-[#C4B5FD] mt-[3.5px] shrink-0"></i>
-            <span class="min-w-0 break-words whitespace-normal text-violet-900 dark:text-[#DDD6FE]">
-              <strong class="font-semibold text-violet-950 dark:text-[#F3F0FF]">Gemini AI:</strong> ${escapeHtml(cleanAi)}
+        aiTimelineItem = `
+          <div class="relative flex items-start gap-2.5">
+            <span class="w-4 h-4 rounded-full bg-[#a78bfa]/20 border border-[#a78bfa]/40 flex items-center justify-center shrink-0 mt-0.5">
+              <i class="fa-solid fa-wand-magic-sparkles text-[8.5px] text-violet-600 dark:text-[#C4B5FD]"></i>
             </span>
+            <div class="flex-1 min-w-0 rounded-[8px] px-3 py-2 border border-[#a78bfa]/30 bg-[#a78bfa]/[0.09] text-[12px] leading-relaxed text-violet-900 dark:text-[#DDD6FE] break-words whitespace-normal">
+              <strong class="font-semibold text-violet-950 dark:text-[#F3F0FF]">Gemini AI:</strong> ${escapeHtml(cleanAi)}
+            </div>
           </div>
         `;
       }
 
       const bodyContentHtml = rawBody
-        ? `<div class="text-[13.5px] leading-[1.65] whitespace-pre-wrap break-words ${isComment ? 'border-l-2 border-[#A78BFA]/55 pl-3.5' : ''}" style="color: var(--ink-body);">${escapeHtml(rawBody)}</div>`
+        ? `<div class="text-[13.5px] leading-[1.68] whitespace-pre-wrap break-words ${isComment ? 'border-l-2 border-[#A78BFA]/55 pl-3.5' : ''}" style="color: var(--ink-body);">${highlightMatchedKeyword(rawBody, lead.matched_keyword)}</div>`
         : `<p class="text-[13px] italic" style="color: var(--ink-muted);">No additional post body text captured.</p>`;
 
       article.innerHTML = `
-        <!-- Editorial Headline (20px Medium, Calm Letter-Spacing) -->
+        <!-- Editorial Headline + Structured Properties Strip -->
         <div class="space-y-3">
           <h1 class="text-[20px] font-medium tracking-[-0.02em] leading-[1.35] break-words" style="color: var(--ink-primary);">
-            ${escapeHtml(lead.title || 'Untitled Lead')}
+            ${highlightMatchedKeyword(lead.title || 'Untitled Lead', lead.matched_keyword)}
           </h1>
 
-          <!-- Emphasized Platform + Intent Metadata Strip -->
-          <div class="flex flex-wrap items-center gap-2 text-[12px]" style="color: var(--ink-secondary);">
+          <!-- Structured Properties Strip -->
+          <div class="flex flex-wrap items-center gap-x-2.5 gap-y-2 py-2.5 px-3 rounded-[9px] border border-hair text-[11.5px]" style="background-color: var(--bg-elevated); color: var(--ink-secondary);">
             ${getPlatformBadgeHtml(lead, true)}
             ${getIntentLabelPill(lead.intent)}
             ${isComment ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-violet-500/15 text-violet-800 dark:text-[#DDD6FE] border border-violet-500/35">Comment</span>' : ''}
             ${lead._prio && lead._prio.isHot ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/15 text-amber-800 dark:text-[#FCD34D] border border-amber-500/35"><i class="fa-solid fa-fire text-[9.5px]"></i>${escapeHtml(lead._prio.label)}</span>` : ''}
-            <span style="color: var(--ink-muted);">${escapeHtml(lead.location || 'Cebu')}${ago ? ` &middot; ${escapeHtml(ago)}` : ''}</span>
-            ${lead.matched_keyword ? `<span class="code-chip">matched: "${escapeHtml(lead.matched_keyword)}"</span>` : ''}
+            <span class="inline-flex items-center gap-1.5" style="color: var(--ink-secondary);">
+              <i class="fa-solid fa-location-dot text-[10px] opacity-70"></i>
+              <span>${escapeHtml(lead.location || 'Cebu')}</span>
+            </span>
+            ${ago ? `<span class="inline-flex items-center gap-1.5 mono-tag text-[11px] tabular-nums" style="color: var(--ink-muted);"><i class="fa-regular fa-clock text-[10px] opacity-75"></i><span>${escapeHtml(ago)}</span></span>` : ''}
+            ${lead.matched_keyword ? `<span class="code-chip"><i class="fa-solid fa-hashtag text-[9px] mr-1 opacity-60"></i>${escapeHtml(lead.matched_keyword)}</span>` : ''}
           </div>
         </div>
 
-        <!-- Emphasized Gemini AI / Filter Callout -->
-        ${aiActivityHtml}
-
-        <!-- Elevated Linear Thread Card (Author Header + Full Unclamped Body) -->
-        <div class="rounded-[10px] border border-hair p-4 sm:p-5 space-y-3.5" style="background-color: var(--bg-elevated);">
+        <!-- Elevated Linear Thread Card (Author Header + Highlighted Body) -->
+        <div class="surface-card rounded-[10px] border border-hair p-4 sm:p-5 space-y-3.5" style="background-color: var(--bg-elevated);">
           <div class="flex items-center justify-between gap-2">
             <div class="flex items-center gap-2.5 min-w-0">
               <span class="w-6 h-6 rounded-full border border-hair flex items-center justify-center text-[11px] font-medium shrink-0" style="background-color: var(--bg-chip); color: var(--ink-primary);">
@@ -2761,6 +3237,27 @@
           </div>
 
           ${bodyContentHtml}
+        </div>
+
+        <!-- Linear-Style Vertical Hairline Activity Timeline -->
+        <div class="space-y-2">
+          <div class="text-[11.5px] font-medium" style="color: var(--ink-section);">Activity</div>
+          <div class="relative pl-1 space-y-2.5">
+            <div class="absolute left-[11px] top-2 bottom-2 w-px" style="background-color: var(--border-hairline);"></div>
+            <div class="relative flex items-center gap-2.5 text-[12px]" style="color: var(--ink-secondary);">
+              <span class="w-4 h-4 rounded-full border border-hair flex items-center justify-center shrink-0" style="background-color: var(--bg-elevated);">
+                <span class="w-1.5 h-1.5 rounded-full bg-[#5E6AD2]"></span>
+              </span>
+              <span class="min-w-0 truncate">Captured from <strong class="font-medium" style="color: var(--ink-primary);">${escapeHtml(lead.source || 'Feed')}</strong>${ago ? ` &middot; ${escapeHtml(ago)}` : ''}</span>
+            </div>
+            ${aiTimelineItem}
+            <div class="relative flex items-center gap-2.5 text-[12px]" style="color: var(--ink-secondary);">
+              <span class="w-4 h-4 rounded-full border border-hair flex items-center justify-center shrink-0" style="background-color: var(--bg-elevated);">
+                <span class="w-1.5 h-1.5 rounded-full ${stInfo.dot}"></span>
+              </span>
+              <span>Pipeline status: <strong class="font-medium" style="color: var(--ink-primary);">${escapeHtml(stInfo.label)}</strong></span>
+            </div>
+          </div>
         </div>
 
         <!-- Compact Inline Internal Notes -->
@@ -2783,10 +3280,20 @@
         </div>
       `;
 
+      if (switchedLead) {
+        article.classList.remove('reader-settle');
+        void article.offsetWidth;
+        article.classList.add('reader-settle');
+      }
+
       // Populate Embedded Reach Out Composer
+      syncPitchTonePills();
       const pitchEl = document.getElementById('composerPitchText');
       const hintEl = document.getElementById('composerIntentHint');
-      if (pitchEl) pitchEl.value = buildOutreachMessage(lead);
+      if (pitchEl) {
+        pitchEl.value = buildOutreachMessage(lead, activePitchTone);
+        updateComposerCharCount();
+      }
       if (hintEl) {
         const roleTxt = lead.intent === 'employer' ? 'Employer reply'
           : lead.intent === 'seller' ? 'Seller inquiry'
@@ -2796,7 +3303,7 @@
       }
 
       const bodyScroll = document.getElementById('readerBodyScroll');
-      if (bodyScroll) bodyScroll.scrollTop = 0;
+      if (bodyScroll && switchedLead) bodyScroll.scrollTop = 0;
     }
 
     /* ================================================================
@@ -2827,7 +3334,10 @@
     function resetComposerTemplate() {
       const ld = leadsById[selectedLeadId];
       const pitch = document.getElementById('composerPitchText');
-      if (ld && pitch) pitch.value = buildOutreachMessage(ld);
+      if (ld && pitch) {
+        pitch.value = buildOutreachMessage(ld, activePitchTone);
+        updateComposerCharCount();
+      }
     }
 
     function copyTextSafely(text) {
@@ -2851,7 +3361,7 @@
       } catch (e) {}
     }
 
-    function copyComposerMessage() {
+    function copyComposerMessage(showToast = false) {
       const pitchEl = document.getElementById('composerPitchText');
       const btn = document.getElementById('btnComposerCopy');
       if (!pitchEl) return;
@@ -2861,27 +3371,61 @@
         btn.innerHTML = '<i class="fa-solid fa-check text-[10.5px] text-[#4ADE80]"></i><span>Copied</span>';
         setTimeout(() => { btn.innerHTML = orig; }, 1600);
       }
+      if (showToast) {
+        showLiveToast('Copied to clipboard', 'Reach Out draft is ready to paste.');
+      }
     }
 
     async function copyAndMarkContacted() {
       if (!selectedLeadId) return;
-      copyComposerMessage();
-      await changeLeadStatus(selectedLeadId, 'contacted');
-      showLiveToast('Copied & Marked Contacted', 'Lead moved to Contacted in your pipeline.');
+      const prevStatus = (leadsById[selectedLeadId] && leadsById[selectedLeadId].status) || 'new';
+      const targetId = selectedLeadId;
+      copyComposerMessage(false);
+      await changeLeadStatus(targetId, 'contacted', { silent: true });
+      showLiveToast('Copied & Marked Contacted ✓', 'Lead moved to Contacted in your pipeline.', {
+        undo: { leadId: targetId, prevStatus }
+      });
+    }
+
+    async function quickUpdateLeadStatus(leadId, newStatus) {
+      if (!leadId) return;
+      const prevStatus = (leadsById[leadId] && leadsById[leadId].status) || 'new';
+      const label = (STATUS_META[newStatus] && STATUS_META[newStatus].label) || newStatus;
+      await changeLeadStatus(leadId, newStatus, { silent: true });
+      const title = newStatus === 'contacted' ? 'Marked as Contacted ✓'
+        : newStatus === 'archived' ? 'Lead Archived'
+        : `Moved to ${label}`;
+      showLiveToast(title, `Pipeline status updated to ${label}.`, {
+        undo: { leadId, prevStatus }
+      });
     }
 
     async function changeSelectedLeadStatus(newStatus) {
       if (!selectedLeadId) return;
-      await changeLeadStatus(selectedLeadId, newStatus);
+      await quickUpdateLeadStatus(selectedLeadId, newStatus);
     }
 
     async function approveSelectedLead() {
       if (!selectedLeadId) return;
-      await changeLeadStatus(selectedLeadId, 'new');
-      showLiveToast('Lead Approved', 'Moved back to New leads in your inbox.');
+      const prevStatus = (leadsById[selectedLeadId] && leadsById[selectedLeadId].status) || 'ai_filtered';
+      const targetId = selectedLeadId;
+      await changeLeadStatus(targetId, 'new', { silent: true });
+      showLiveToast('Lead Approved ✓', 'Moved back to New leads in your inbox.', {
+        undo: { leadId: targetId, prevStatus }
+      });
     }
 
-    async function changeLeadStatus(leadId, newStatus) {
+    async function undoLastStatusChange() {
+      if (!lastUndoAction) return;
+      const { leadId, prevStatus } = lastUndoAction;
+      lastUndoAction = null;
+      hideLiveToast();
+      await changeLeadStatus(leadId, prevStatus, { silent: true });
+      const label = (STATUS_META[prevStatus] && STATUS_META[prevStatus].label) || prevStatus;
+      showLiveToast('Status Reverted', `Restored lead back to ${label}.`);
+    }
+
+    async function changeLeadStatus(leadId, newStatus, opts = {}) {
       try {
         await fetch('/api/lead/status', {
           method: 'POST',
@@ -3142,16 +3686,24 @@
       } catch (e) {}
     }
 
-    function showLiveToast(title, subtitle) {
+    function showLiveToast(title, subtitle, opts = {}) {
       const toast = document.getElementById('liveAlertToast');
       const tEl = document.getElementById('toastAlertTitle');
       const sEl = document.getElementById('toastAlertSub');
+      const undoBtn = document.getElementById('toastUndoBtn');
       if (!toast) return;
       if (tEl) tEl.innerText = title || 'Notification';
       if (sEl) sEl.innerText = subtitle || '';
+      if (opts && opts.undo && opts.undo.leadId) {
+        lastUndoAction = opts.undo;
+        if (undoBtn) undoBtn.classList.remove('hidden');
+      } else {
+        lastUndoAction = null;
+        if (undoBtn) undoBtn.classList.add('hidden');
+      }
       toast.classList.remove('hidden');
       if (toastAutoHideTimer) clearTimeout(toastAutoHideTimer);
-      toastAutoHideTimer = setTimeout(hideLiveToast, 4500);
+      toastAutoHideTimer = setTimeout(hideLiveToast, opts && opts.undo ? 5500 : 4500);
     }
 
     function hideLiveToast() {
