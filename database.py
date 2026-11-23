@@ -17,6 +17,7 @@ EXTRA_COLUMNS = {
     "ai_verdict": "TEXT DEFAULT ''",
     "ai_reason": "TEXT DEFAULT ''",
     "updated_at": "TIMESTAMP",
+    "followup_at": "TIMESTAMP",
 }
 
 ALLOWED_WEB_DOMAINS = (
@@ -125,21 +126,8 @@ def _term_in_text(hay, term):
     return re.search(r"(?<!\w)" + re.escape(t) + r"(?!\w)", hay) is not None
 
 
-def smart_query_matches(haystack, query):
-    """
-    Matches user search queries accurately without false positives on phone storage ('128gb')
-    or piece count ('1 pc'). Supports negative -exclude terms (e.g. 'barista -manila -agency').
-    """
-    pos_raw, neg_terms = parse_search_query(query)
-    hay = (haystack or "").lower()
-
-    # 1. Negative exclusions always veto a match
-    for neg in neg_terms:
-        syns = QUERY_SYNONYMS.get(neg, (neg,))
-        if any(_term_in_text(hay, s) for s in syns):
-            return False
-
-    q = re.sub(r"\s+", " ", pos_raw.lower()).rstrip("?")
+def _single_query_matches(hay, q_part):
+    q = re.sub(r"\s+", " ", (q_part or "").strip().lower()).rstrip("?")
     if not q:
         return True
 
@@ -174,13 +162,39 @@ def smart_query_matches(haystack, query):
     return True
 
 
+def smart_query_matches(haystack, query):
+    """
+    Matches user search queries accurately without false positives on phone storage ('128gb')
+    or piece count ('1 pc'). Supports negative -exclude terms (e.g. 'barista -manila -agency')
+    and uppercase OR / | branches (e.g. 'dishwasher OR cook OR service crew').
+    """
+    pos_raw, neg_terms = parse_search_query(query)
+    hay = (haystack or "").lower()
+
+    # 1. Negative exclusions always veto a match
+    for neg in neg_terms:
+        syns = QUERY_SYNONYMS.get(neg, (neg,))
+        if any(_term_in_text(hay, s) for s in syns):
+            return False
+
+    pos_raw = (pos_raw or "").strip()
+    if not pos_raw:
+        return True
+
+    branches = [b.strip() for b in re.split(r"\s+(?:OR|\|)\s+", pos_raw) if b.strip()]
+    if not branches:
+        return True
+    return any(_single_query_matches(hay, b) for b in branches)
+
+
 def score_query_relevance(row, pos_query):
     """
     Ranks exact matches in title or comment body above weak/secondary matches.
     """
-    q = re.sub(r"\s+", " ", (pos_query or "").strip().lower()).rstrip("?")
-    if not q:
+    raw_q = (pos_query or "").strip()
+    if not raw_q:
         return 0
+    branches = [b.strip() for b in re.split(r"\s+(?:OR|\|)\s+", raw_q) if b.strip()]
     title = (row.get("title") or "").lower()
     content = (row.get("content") or "").lower()
     kind = (row.get("kind") or ("comment" if "comment" in (row.get("source") or "").lower() else "post")).lower()
@@ -188,26 +202,27 @@ def score_query_relevance(row, pos_query):
     secondary_text = title if kind == "comment" else content
     meta_text = " ".join(str(row.get(k) or "") for k in ("matched_keyword", "author", "source", "notes", "ai_reason")).lower()
 
-    raw_words = [w for w in re.split(r"\W+", q) if w]
-    core_words = [w for w in raw_words if w not in QUERY_FILLER_WORDS] or raw_words
-
-    score = 0
-    # Exact phrase in primary field (title for posts, comment body for comments)
-    if _term_in_text(primary_text, q):
-        score += 100
-    elif core_words and all(any(_term_in_text(primary_text, s) for s in QUERY_SYNONYMS.get(w, (w,))) for w in core_words):
-        score += 65
-
-    # Exact phrase / all words in secondary field (post body for posts, parent title for comments)
-    if _term_in_text(secondary_text, q):
-        score += 45
-    elif core_words and all(any(_term_in_text(secondary_text, s) for s in QUERY_SYNONYMS.get(w, (w,))) for w in core_words):
-        score += 25
-
-    # Secondary metadata (matched_keyword, author, source, notes, ai_reason)
-    if _term_in_text(meta_text, q):
-        score += 10
-    return score
+    best = 0
+    for b in branches:
+        q = re.sub(r"\s+", " ", b.lower()).rstrip("?")
+        if not q:
+            continue
+        raw_words = [w for w in re.split(r"\W+", q) if w]
+        core_words = [w for w in raw_words if w not in QUERY_FILLER_WORDS] or raw_words
+        score = 0
+        if _term_in_text(primary_text, q):
+            score += 100
+        elif core_words and all(any(_term_in_text(primary_text, s) for s in QUERY_SYNONYMS.get(w, (w,))) for w in core_words):
+            score += 65
+        if _term_in_text(secondary_text, q):
+            score += 45
+        elif core_words and all(any(_term_in_text(secondary_text, s) for s in QUERY_SYNONYMS.get(w, (w,))) for w in core_words):
+            score += 25
+        if _term_in_text(meta_text, q):
+            score += 10
+        if score > best:
+            best = score
+    return best
 
 
 def is_valid_lead_url(platform, url, external_id=""):
@@ -500,6 +515,16 @@ def init_db():
         conn.execute("CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_leads_found ON leads(found_at)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_leads_posted ON leads(posted_at)")
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS api_usage_daily (
+                date TEXT NOT NULL,
+                provider TEXT NOT NULL,
+                calls INTEGER NOT NULL DEFAULT 0,
+                PRIMARY KEY (date, provider)
+            )
+            """
+        )
     conn.close()
 
 
@@ -618,7 +643,11 @@ def search_leads(query="", platforms=None, intents=None, location="Any", status_
     if not status_filter or status_filter == "all":
         sql += " AND status NOT IN ('ai_filtered', 'archived')"
     elif status_filter == "followup":
-        sql += " AND (status = 'followup' OR (status = 'contacted' AND COALESCE(updated_at, found_at) <= datetime('now', '-2 days')))"
+        sql += (
+            " AND (status = 'followup'"
+            " OR (followup_at IS NOT NULL AND followup_at <= datetime('now') AND status NOT IN ('closed', 'archived', 'ai_filtered'))"
+            " OR (status = 'contacted' AND COALESCE(updated_at, found_at) <= datetime('now', '-2 days')))"
+        )
     else:
         sql += " AND status = ?"
         params.append(status_filter)
@@ -680,6 +709,15 @@ def search_leads(query="", platforms=None, intents=None, location="Any", status_
     return out[:limit]
 
 
+def get_lead_by_id(lead_id):
+    conn = get_db()
+    try:
+        row = conn.execute("SELECT * FROM leads WHERE id = ?", (lead_id,)).fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+
 def update_lead_status(lead_id, new_status):
     conn = get_db()
     try:
@@ -689,10 +727,41 @@ def update_lead_status(lead_id, new_status):
                     "UPDATE leads SET status = ?, ai_verdict = CASE WHEN ai_verdict = 'filtered' THEN 'approved' ELSE ai_verdict END, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
                     (new_status, lead_id),
                 )
+            elif new_status in ("closed", "archived", "ai_filtered"):
+                conn.execute(
+                    "UPDATE leads SET status = ?, followup_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                    (new_status, lead_id),
+                )
             else:
                 conn.execute(
                     "UPDATE leads SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
                     (new_status, lead_id),
+                )
+    finally:
+        conn.close()
+
+
+def update_lead_followup(lead_id, followup_at=None):
+    """Sets or clears the follow-up reminder timestamp (`followup_at`) for a lead."""
+    val = (str(followup_at).strip() if followup_at is not None else "") or None
+    conn = get_db()
+    try:
+        with conn:
+            if val:
+                conn.execute(
+                    """
+                    UPDATE leads
+                    SET followup_at = ?,
+                        status = CASE WHEN status IN ('new', 'contacted', 'followup') THEN 'followup' ELSE status END,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                    """,
+                    (val, lead_id),
+                )
+            else:
+                conn.execute(
+                    "UPDATE leads SET followup_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                    (lead_id,),
                 )
     finally:
         conn.close()
@@ -891,7 +960,11 @@ def get_stats(platforms=None):
                 "total": one(f"SELECT COUNT(*) FROM leads WHERE {active_where}"),
                 "new": one("SELECT COUNT(*) FROM leads WHERE status = 'new'"),
                 "contacted": one("SELECT COUNT(*) FROM leads WHERE status IN ('contacted', 'followup', 'closed')"),
-                "followup": one("SELECT COUNT(*) FROM leads WHERE status = 'followup' OR (status = 'contacted' AND COALESCE(updated_at, found_at) <= datetime('now', '-2 days'))"),
+                "followup": one(
+                    "SELECT COUNT(*) FROM leads WHERE status = 'followup'"
+                    " OR (followup_at IS NOT NULL AND followup_at <= datetime('now') AND status NOT IN ('closed', 'archived', 'ai_filtered'))"
+                    " OR (status = 'contacted' AND COALESCE(updated_at, found_at) <= datetime('now', '-2 days'))"
+                ),
                 "closed": one("SELECT COUNT(*) FROM leads WHERE status = 'closed'"),
                 "archived": one("SELECT COUNT(*) FROM leads WHERE status = 'archived'"),
                 "ai_filtered": one("SELECT COUNT(*) FROM leads WHERE status = 'ai_filtered'"),
@@ -908,8 +981,9 @@ def get_stats(platforms=None):
             dict(r)
             for r in conn.execute(
                 """
-                SELECT platform, source, kind, intent, status, url, external_id,
-                       (COALESCE(updated_at, found_at) <= datetime('now', '-2 days')) AS is_stale
+                SELECT platform, source, kind, intent, status, url, external_id, followup_at,
+                       (COALESCE(updated_at, found_at) <= datetime('now', '-2 days')) AS is_stale,
+                       (followup_at IS NOT NULL AND followup_at <= datetime('now')) AS is_followup_due
                 FROM leads
                 """
             ).fetchall()
@@ -939,7 +1013,7 @@ def get_stats(platforms=None):
                 counts["closed"] += 1
             if st in ("contacted", "followup", "closed"):
                 counts["contacted"] += 1
-            if st == "followup" or (st == "contacted" and row.get("is_stale")):
+            if st == "followup" or (row.get("is_followup_due") and st not in ("closed", "archived", "ai_filtered")) or (st == "contacted" and row.get("is_stale")):
                 counts["followup"] += 1
             if st not in ("ai_filtered", "archived"):
                 counts["total"] += 1
@@ -956,5 +1030,69 @@ def get_stats(platforms=None):
                 if kind == "comment":
                     counts["comments"] += 1
         return counts
+    finally:
+        conn.close()
+
+
+def utc_today_sql():
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+
+def record_api_usage(provider, count=1):
+    """Increments the daily external API call counter for `provider` (never called on cache hits)."""
+    prov = str(provider or "").strip().lower()
+    inc = int(count or 0)
+    if not prov or inc <= 0:
+        return
+    day = utc_today_sql()
+    conn = get_db()
+    try:
+        with conn:
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS api_usage_daily (
+                    date TEXT NOT NULL,
+                    provider TEXT NOT NULL,
+                    calls INTEGER NOT NULL DEFAULT 0,
+                    PRIMARY KEY (date, provider)
+                )
+                """
+            )
+            conn.execute(
+                """
+                INSERT INTO api_usage_daily (date, provider, calls)
+                VALUES (?, ?, ?)
+                ON CONFLICT(date, provider) DO UPDATE SET calls = calls + excluded.calls
+                """,
+                (day, prov, inc),
+            )
+    except Exception:
+        pass
+    finally:
+        conn.close()
+
+
+def get_api_usage_today(date_str=None):
+    """Returns `{provider: calls_int}` for the specified UTC date (defaults to today)."""
+    day = str(date_str or utc_today_sql()).strip()
+    conn = get_db()
+    try:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS api_usage_daily (
+                date TEXT NOT NULL,
+                provider TEXT NOT NULL,
+                calls INTEGER NOT NULL DEFAULT 0,
+                PRIMARY KEY (date, provider)
+            )
+            """
+        )
+        rows = conn.execute(
+            "SELECT provider, calls FROM api_usage_daily WHERE date = ?",
+            (day,),
+        ).fetchall()
+        return {str(r["provider"]): int(r["calls"] or 0) for r in rows}
+    except Exception:
+        return {}
     finally:
         conn.close()

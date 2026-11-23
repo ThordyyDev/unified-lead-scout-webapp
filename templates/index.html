@@ -1130,6 +1130,20 @@
             </button>
           </nav>
         </div>
+
+        <!-- Collapsible Saved Watchlists (1-Click Niche Presets + Custom Saved Filters) -->
+        <div id="watchlistsSection" class="mt-4 pt-3 border-t border-hair">
+          <div class="px-2 mb-1.5 flex items-center justify-between gap-1">
+            <button type="button" id="btnToggleWatchlists" onclick="toggleWatchlistsSection()" class="flex items-center gap-1 text-[11.5px] font-medium hover:text-[var(--ink-primary)] transition" style="color: var(--ink-section);" aria-expanded="true">
+              <svg id="watchlistsChevron" class="lucide-ic w-3 h-3 transition-transform" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+              <span>Watchlists</span>
+            </button>
+            <button type="button" id="btnSaveWatchlist" onclick="saveCurrentWatchlist()" class="text-[10.5px] font-medium px-1.5 py-0.5 rounded-[5px] hover:bg-[var(--bg-hover)] hover:text-[var(--ink-primary)] transition" style="color: var(--ink-muted);" title="Save current keywords, category, location, type &amp; platforms as a Watchlist">
+              + Save
+            </button>
+          </div>
+          <div id="watchlistsList" class="space-y-0.5" aria-label="Saved Watchlists"></div>
+        </div>
       </div>
 
       <!-- Quiet Minimal Single-Row Footer (Secondary utilities live in Scout ▾ menu) -->
@@ -1601,7 +1615,7 @@
             <!-- Collapsible Smooth Grid Accordion Body -->
             <div id="composerBodyWrap" class="composer-body-wrap">
               <div class="composer-body-inner border-t border-hair">
-                <!-- 1-Click Pitch Tone Switcher -->
+                <!-- 1-Click Pitch Tone Switcher + On-Demand Gemini AI Draft -->
                 <div class="px-2.5 sm:px-3.5 py-1.5 border-b border-hair flex items-center justify-between gap-1.5">
                   <div id="pitchToneRow" class="flex flex-wrap items-center gap-0.5 sm:gap-1 min-w-0" role="group" aria-label="Pitch Tone">
                     <button type="button" data-tone="friendly" onclick="setPitchTone('friendly')" class="tone-pill is-active">Friendly</button>
@@ -1609,6 +1623,12 @@
                     <button type="button" data-tone="bisaya" onclick="setPitchTone('bisaya')" class="tone-pill">Bisaya / Taglish</button>
                     <button type="button" data-tone="short" onclick="setPitchTone('short')" class="tone-pill">Short DM</button>
                   </div>
+                  <button type="button" id="btnAiDraftReply" onclick="generateAiReplyDraft()" class="tone-pill shrink-0 inline-flex items-center gap-1 !text-[#7C3AED] dark:!text-[#C4B5FD] hover:border-[#8B5CF6]/45" title="Generate a personalized Gemini AI reply referencing this post (on-demand)">
+                    <span id="aiDraftIcon" class="inline-flex items-center justify-center">
+                      <svg class="lucide-ic w-3 h-3" viewBox="0 0 24 24"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+                    </span>
+                    <span id="aiDraftLabel">AI Draft</span>
+                  </button>
                 </div>
 
                 <textarea
@@ -1693,6 +1713,23 @@
       <div id="settingsModalBody" class="p-5 overflow-y-auto text-[12.5px]">
         <!-- PANEL 1: API KEYS -->
         <div id="settingsPanelApi" class="hidden space-y-5">
+          <!-- Live API Credits & Daily Usage Card -->
+          <div id="apiCreditsCard" class="surface-card rounded-[10px] border border-hair p-3.5 space-y-2.5" style="background-color: var(--bg-elevated);">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="text-[12px] font-medium" style="color: var(--ink-primary);">API Credits &amp; Usage</span>
+                <span id="apiCreditsSummaryBadge" class="code-chip !text-[10px] !py-0 !px-1.5 tabular-nums" style="color: var(--ink-muted);">0 calls today</span>
+              </div>
+              <button type="button" id="btnRefreshCredits" onclick="loadApiCredits(true)" class="btn-ghost h-6 px-2 text-[11px] inline-flex items-center gap-1" title="Refresh live API balances">
+                <span id="refreshCreditsIcon" class="inline-flex items-center justify-center">
+                  <svg class="lucide-ic w-3 h-3" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+                </span>
+                <span id="refreshCreditsLabel">Refresh</span>
+              </button>
+            </div>
+            <div id="apiCreditsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+          </div>
+
           <p class="leading-relaxed" style="color: var(--ink-secondary);">
             Credentials are stored privately in local <span class="code-chip">config.json</span>. Reddit and free Public Web work out of the box; add Apify, Gemini, or alternative search keys below.
           </p>
@@ -1769,6 +1806,33 @@
               <input id="cfgCustomApiUrl" type="url" oninput="updateApiKeyBadge()" placeholder="http://localhost:8787/search or https://your-api.example/search" class="ui-input w-full h-9 px-3 text-[13px]">
             </div>
           </div>
+
+          <div class="pt-4 border-t border-hair space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <span class="block text-[12px] font-medium" style="color: var(--ink-primary);">Instant Phone Alerts (Telegram &amp; Discord)</span>
+                <span class="text-[11px]" style="color: var(--ink-muted);">Pushes fresh Hot approved leads on Auto-Scan directly to your phone.</span>
+              </div>
+              <button type="button" id="btnTestAlertApi" onclick="triggerTestAlert()" class="btn-secondary h-7 px-2.5 text-[11px] flex items-center gap-1.5 shrink-0">
+                <i class="fa-regular fa-bell"></i>
+                <span>Test Alert</span>
+              </button>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <label for="cfgTelegramBotToken" class="block text-[11.5px] font-medium mb-1.5" style="color: var(--ink-secondary);">Telegram Bot Token (Optional)</label>
+                <input id="cfgTelegramBotToken" type="password" oninput="updateApiKeyBadge()" placeholder="123456:ABC-DEF..." class="ui-input w-full h-9 px-3 text-[13px]">
+              </div>
+              <div>
+                <label for="cfgTelegramChatId" class="block text-[11.5px] font-medium mb-1.5" style="color: var(--ink-secondary);">Telegram Chat ID (Optional)</label>
+                <input id="cfgTelegramChatId" type="text" oninput="updateApiKeyBadge()" placeholder="e.g. 987654321 or -100..." class="ui-input w-full h-9 px-3 text-[13px]">
+              </div>
+            </div>
+            <div>
+              <label for="cfgWebhookUrl" class="block text-[11.5px] font-medium mb-1.5" style="color: var(--ink-secondary);">Discord / Slack Webhook URL (Optional)</label>
+              <input id="cfgWebhookUrl" type="url" oninput="updateApiKeyBadge()" placeholder="https://discord.com/api/webhooks/..." class="ui-input w-full h-9 px-3 text-[13px]">
+            </div>
+          </div>
         </div>
 
         <!-- PANEL 2: SCANNER OPTIONS -->
@@ -1798,6 +1862,41 @@
                 <option value="60">1 hour (High Savings)</option>
                 <option value="360">6 hours (Max Cache)</option>
               </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div>
+              <label for="cfgFbMaxPosts" class="block text-[11.5px] font-medium mb-1.5" style="color: var(--ink-secondary);">Facebook Posts Per Group</label>
+              <select id="cfgFbMaxPosts" class="ui-input w-full h-9 px-2.5 text-[12.5px]">
+                <option value="20">20 posts (Light)</option>
+                <option value="35">35 posts (Default)</option>
+                <option value="50">50 posts (Deep)</option>
+                <option value="80">80 posts (Max Discovery)</option>
+              </select>
+            </div>
+            <div>
+              <label for="cfgFbCommentsPerPost" class="block text-[11.5px] font-medium mb-1.5" style="color: var(--ink-secondary);">Facebook Comments Per Post</label>
+              <select id="cfgFbCommentsPerPost" class="ui-input w-full h-9 px-2.5 text-[12.5px]">
+                <option value="0">0 (Off — Save Credits)</option>
+                <option value="10">10 comments</option>
+                <option value="15">15 comments (Default)</option>
+                <option value="30">30 comments (High Recall)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="pt-4 border-t border-hair space-y-3">
+            <span class="block text-[12px] font-medium" style="color: var(--ink-primary);">AI Draft Identity (Optional)</span>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <label for="cfgBusinessName" class="block text-[11.5px] font-medium mb-1.5" style="color: var(--ink-secondary);">Business / Team Name</label>
+                <input id="cfgBusinessName" type="text" placeholder="e.g. Cebu Kitchen Staffing" class="ui-input w-full h-9 px-3 text-[13px]">
+              </div>
+              <div>
+                <label for="cfgBusinessContact" class="block text-[11.5px] font-medium mb-1.5" style="color: var(--ink-secondary);">Contact Info (Phone / Email / Page)</label>
+                <input id="cfgBusinessContact" type="text" placeholder="e.g. 0917-xxx-xxxx or fb.com/yourpage" class="ui-input w-full h-9 px-3 text-[13px]">
+              </div>
             </div>
           </div>
 
@@ -1866,9 +1965,9 @@
                 </label>
               </div>
             </div>
-            <div>
-              <label for="cfgWebhookUrl" class="block text-[11.5px] font-medium mb-1.5" style="color: var(--ink-secondary);">Discord / Slack / Webhook Alert URL (Optional)</label>
-              <input id="cfgWebhookUrl" type="url" placeholder="https://discord.com/api/webhooks/..." class="ui-input w-full h-9 px-3 text-[13px]">
+            <div class="flex items-center justify-between gap-2 px-3 py-2 rounded-[7px] border border-hair text-[11.5px]" style="background-color: var(--bg-sidebar); color: var(--ink-secondary);">
+              <span>Telegram Bot &amp; Discord Webhook phone alerts are configured in API Keys.</span>
+              <button type="button" onclick="switchSettingsTab('api')" class="font-medium text-[#5E6AD2] hover:underline shrink-0">Configure &rarr;</button>
             </div>
           </div>
 
@@ -2968,6 +3067,7 @@
       const donePlats = entries.filter(([, a]) => a.status !== 'running' && a.status !== 'queued').length;
       if (chev) chev.classList.toggle('hidden', totalPlats === 0);
 
+      const hasCachedAdapter = entries.some(([, a]) => /cached/i.test(String(a.message || '')));
       if (scan.running) {
         const progressLabel = totalPlats > 0
           ? `Scanning ${Math.min(donePlats + 1, totalPlats)}/${totalPlats} platforms…`
@@ -2977,7 +3077,10 @@
       } else if (scan.cancelled) {
         text.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-400 shrink-0"></span><span class="truncate">Scan stopped &middot; ${scan.new_total || 0} new saved</span>`;
       } else {
-        text.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-[#4ADE80] shrink-0"></span><span class="truncate">Done &middot; ${scan.matched_total || 0} matches (${scan.new_total || 0} new)</span>`;
+        const cachedChip = hasCachedAdapter
+          ? '<span class="code-chip !text-[9.5px] !py-0 !px-1.5 shrink-0" title="Reused recent Apify dataset (0 compute credits used)">Cached</span>'
+          : '';
+        text.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-[#4ADE80] shrink-0"></span><span class="truncate">Done &middot; ${scan.matched_total || 0} matches (${scan.new_total || 0} new)</span>${cachedChip}`;
       }
 
       grid.innerHTML = '';
@@ -2990,9 +3093,10 @@
         const pill = document.createElement('span');
         pill.className = 'code-chip !text-[10px] gap-1.5';
         pill.title = a.message || `${a.matched || 0} matches (${a.fetched || 0} checked)`;
+        const isCached = /cached/i.test(String(a.message || ''));
         const detailTxt = (a.status === 'running' || a.status === 'queued')
           ? 'scanning…'
-          : `${a.matched || 0} matches (${a.fetched || 0} checked)`;
+          : `${a.matched || 0} matches (${a.fetched || 0} checked)${isCached ? ' · Cached' : ''}`;
         pill.innerHTML = `<span class="w-1.5 h-1.5 rounded-full ${dotColor} shrink-0"></span><span>${escapeHtml(a.label)}</span><span style="color:var(--ink-muted)">${escapeHtml(detailTxt)}</span>`;
         grid.appendChild(pill);
       });
@@ -3190,7 +3294,7 @@
 
     function checkBackendVersion(adapters) {
       let banner = document.getElementById('versionNoticeBanner');
-      const isLatest = Array.isArray(adapters) && adapters.some(a => (a.version === 'v3.6' || a.version === 'v3.5' || a.version === 'v3.4') || String(a.hint || '').includes('v3.'));
+      const isLatest = Array.isArray(adapters) && adapters.some(a => (a.version === 'v3.7' || a.version === 'v3.6' || a.version === 'v3.5' || a.version === 'v3.4') || String(a.hint || '').includes('v3.'));
       if (!isLatest && Array.isArray(adapters) && adapters.length > 0) {
         if (!banner) {
           banner = document.createElement('div');
@@ -3274,6 +3378,32 @@
         s = lower;
       }
       return s;
+    }
+
+    function getFollowupMeta(lead) {
+      if (!lead || !lead.followup_at) return null;
+      const st = lead.status || 'new';
+      if (st === 'closed' || st === 'archived' || st === 'ai_filtered') return null;
+      const d = new Date(String(lead.followup_at).replace(' ', 'T') + 'Z');
+      if (isNaN(d)) return null;
+      const diffMs = d.getTime() - Date.now();
+      const dateStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      if (diffMs <= -7200000) {
+        return { state: 'overdue', shortLabel: 'Overdue', detail: `Overdue (since ${dateStr})`, pillClass: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/35' };
+      }
+      if (diffMs <= 0) {
+        return { state: 'due', shortLabel: 'Due', detail: `Follow-up due (${dateStr})`, pillClass: 'bg-amber-500/15 text-amber-800 dark:text-[#FCD34D] border-amber-500/35' };
+      }
+      const hrs = Math.ceil(diffMs / 3600000);
+      const days = Math.ceil(diffMs / 86400000);
+      const shortLabel = hrs < 24 ? `In ${hrs}h` : (days === 1 ? 'Tomorrow' : `In ${days}d`);
+      return { state: 'scheduled', shortLabel, detail: `Reminder set for ${dateStr}`, pillClass: 'bg-amber-500/10 text-amber-700 dark:text-amber-300/90 border-amber-500/25' };
+    }
+
+    function getFollowupFeedBadgeHtml(lead) {
+      const fm = getFollowupMeta(lead);
+      if (!fm) return '';
+      return `<span class="inline-flex items-center px-1.5 py-0 rounded-full text-[10px] font-medium border ${fm.pillClass} whitespace-nowrap" title="${escapeHtml(fm.detail)}">${escapeHtml(fm.shortLabel)}</span>`;
     }
 
     function getSereneIntentDotLabel(intent) {
@@ -3682,6 +3812,7 @@
                 ${escapeHtml(excerpt || l.source || '')}
               </span>
               <div class="flex items-center gap-1.5 shrink-0">
+                ${getFollowupFeedBadgeHtml(l)}
                 ${getSereneIntentDotLabel(l.intent)}
               </div>
             </div>
@@ -3909,7 +4040,39 @@
 
       currentLeadExtractedContacts = extractLeadContacts(lead);
       const profileUrl = buildAuthorProfileUrl(lead);
+      const isFacebookPost = !isComment && (
+        (lead.platform || '').toLowerCase() === 'facebook' ||
+        (lead.source || '').toLowerCase().includes('facebook')
+      );
+      const mineCommentersBtnHtml = isFacebookPost
+        ? `<button type="button" id="btnMineComments" onclick="mineSelectedPostComments()" class="active-filter-chip !h-[23px] !px-2 cursor-pointer hover:border-[#60A5FA]/60 !text-blue-700 dark:!text-[#93C5FD]" title="Mine commenters on just this Facebook post using Apify (cached to prevent double charges)"><span id="mineCommentsIcon" class="inline-flex items-center justify-center"><svg class="lucide-ic w-3 h-3" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><span id="mineCommentsLabel">Mine Commenters</span></button>`
+        : '';
+
+      const fm = getFollowupMeta(lead);
+      const showSnoozeBar = statusVal === 'followup' || Boolean(lead.followup_at);
+      const followupSnoozeBarHtml = showSnoozeBar
+        ? `
+          <div class="flex flex-wrap items-center justify-between gap-2 py-2 px-3 rounded-[9px] border border-hair text-[11.5px]" style="background-color: var(--bg-sidebar); color: var(--ink-secondary);">
+            <div class="flex items-center gap-1.5 min-w-0">
+              ${LUCIDE_ICONS.clock}
+              <span class="font-medium" style="color: var(--ink-primary);">Follow-Up</span>
+              ${fm
+                ? `<span class="inline-flex items-center px-1.5 py-0 rounded-full text-[10.5px] font-medium border ${fm.pillClass}">${escapeHtml(fm.detail)}</span>`
+                : `<span style="color: var(--ink-muted);">No reminder date set</span>`
+              }
+            </div>
+            <div class="flex flex-wrap items-center gap-1 shrink-0">
+              <button type="button" onclick="snoozeSelectedLead(1)" class="tone-pill !h-[22px] !px-2">Tomorrow</button>
+              <button type="button" onclick="snoozeSelectedLead(3)" class="tone-pill !h-[22px] !px-2">3 days</button>
+              <button type="button" onclick="snoozeSelectedLead(7)" class="tone-pill !h-[22px] !px-2">Next week</button>
+              ${lead.followup_at ? `<button type="button" onclick="snoozeSelectedLead(null)" class="tone-pill !h-[22px] !px-2 hover:!text-rose-400">Clear</button>` : ''}
+            </div>
+          </div>
+        `
+        : '';
+
       const contactChipsHtml = [
+        mineCommentersBtnHtml,
         profileUrl
           ? `<a href="${escapeHtml(profileUrl)}" target="_blank" rel="noopener noreferrer" class="active-filter-chip !h-[23px] !px-2 hover:border-[var(--border-hover)]" title="Open author profile / search">${LUCIDE_ICONS.userLink}<span>Profile</span>${LUCIDE_ICONS.extLink}</a>`
           : '',
@@ -3939,6 +4102,7 @@
             ${lead.matched_keyword ? `<span class="code-chip">${LUCIDE_ICONS.hash}${escapeHtml(lead.matched_keyword)}</span>` : ''}
             ${contactChipsHtml}
           </div>
+          ${followupSnoozeBarHtml}
         </div>
 
         ${aiSummaryBannerHtml}
@@ -4164,6 +4328,290 @@
       }
     }
 
+    async function snoozeSelectedLead(days) {
+      if (!selectedLeadId) return;
+      const targetId = selectedLeadId;
+      try {
+        const res = await fetch('/api/lead/followup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: targetId, days: days })
+        });
+        const data = await res.json();
+        if (!res.ok || data.error) {
+          showLiveToast('Reminder Failed', data.error || 'Could not update follow-up reminder.');
+          return;
+        }
+        if (leadsById[targetId]) {
+          leadsById[targetId].followup_at = data.followup_at || null;
+          if (days) leadsById[targetId].status = 'followup';
+        }
+        if (data.stats) renderStats(data.stats);
+        await loadLeads();
+        const label = !days ? 'Reminder cleared.' : days === 1 ? 'Snoozed until tomorrow.' : days === 7 ? 'Snoozed until next week.' : `Snoozed for ${days} days.`;
+        showLiveToast(days ? 'Follow-Up Scheduled' : 'Reminder Cleared', label);
+      } catch (e) {
+        console.error('Follow-up snooze error', e);
+      }
+    }
+
+    async function mineSelectedPostComments() {
+      if (!selectedLeadId) return;
+      const btn = document.getElementById('btnMineComments');
+      const icon = document.getElementById('mineCommentsIcon');
+      const lbl = document.getElementById('mineCommentsLabel');
+      const origIcon = icon ? icon.innerHTML : '';
+      if (btn) btn.disabled = true;
+      if (icon) icon.innerHTML = LUCIDE_ICONS.spinner;
+      if (lbl) lbl.innerText = 'Mining...';
+      try {
+        const res = await fetch('/api/lead/mine-comments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: selectedLeadId,
+            max_comments: 35,
+            platforms: getActivePlatformScope()
+          })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          showLiveToast('Mine Commenters', data.error || 'Could not mine comments for this post.');
+          return;
+        }
+        if (data.stats) renderStats(data.stats);
+        await loadLeads();
+        const savedSeekers = data.seekers_saved || 0;
+        const savedTotal = data.saved || 0;
+        const cacheHint = data.cached ? ' (Cached · 0 credits)' : '';
+        if (savedSeekers > 0) {
+          showLiveToast(`Found ${savedSeekers} new jobseeker comment${savedSeekers === 1 ? '' : 's'}${cacheHint}`, `Checked ${data.fetched || 0} comments on this post.`);
+        } else if (savedTotal > 0) {
+          showLiveToast(`Saved ${savedTotal} new comment${savedTotal === 1 ? '' : 's'}${cacheHint}`, `Checked ${data.fetched || 0} comments on this post.`);
+        } else {
+          showLiveToast(`No new comments${cacheHint}`, `Checked ${data.fetched || 0} comments (${data.matched || 0} already saved).`);
+        }
+      } catch (e) {
+        console.error('Mine comments error', e);
+        showLiveToast('Mine Commenters Failed', 'Network error while mining Facebook comments.');
+      } finally {
+        if (btn) btn.disabled = false;
+        if (icon && origIcon) icon.innerHTML = origIcon;
+        if (lbl) lbl.innerText = 'Mine Commenters';
+      }
+    }
+
+    async function generateAiReplyDraft() {
+      if (!selectedLeadId) return;
+      if (composerCollapsed) applyComposerCollapseState(false);
+      const btn = document.getElementById('btnAiDraftReply');
+      const icon = document.getElementById('aiDraftIcon');
+      const lbl = document.getElementById('aiDraftLabel');
+      const pitchEl = document.getElementById('composerPitchText');
+      if (btn) btn.disabled = true;
+      if (icon) icon.innerHTML = LUCIDE_ICONS.spinner;
+      if (lbl) lbl.innerText = 'Drafting...';
+      try {
+        const res = await fetch('/api/lead/ai-draft', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: selectedLeadId, tone: activePitchTone })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          showLiveToast('AI Draft Unavailable', data.error || 'Add your Gemini API key in Settings -> API Keys.');
+          return;
+        }
+        if (pitchEl && data.draft) {
+          pitchEl.value = data.draft;
+          updateComposerCharCount();
+          pitchEl.focus();
+        }
+        showLiveToast('AI Draft Ready', `Tailored ${activePitchTone} reply generated with Gemini.`);
+      } catch (e) {
+        console.error('AI draft error', e);
+        showLiveToast('AI Draft Failed', 'Could not reach Gemini API right now.');
+      } finally {
+        if (btn) btn.disabled = false;
+        if (icon) icon.innerHTML = LUCIDE_ICONS.sparkles;
+        if (lbl) lbl.innerText = 'AI Draft';
+      }
+    }
+
+    /* ================================================================
+       SAVED WATCHLISTS (1-Click Niche Presets + Custom Watchlists)
+       ================================================================ */
+    const DEFAULT_WATCHLISTS = [
+      {
+        id: 'preset_cebu_seekers',
+        name: 'Cebu Jobseekers',
+        builtin: true,
+        query: '',
+        intent: 'seeker',
+        location: 'Cebu',
+        kind: 'all',
+        platforms: ['facebook', 'reddit_posts', 'reddit_comments']
+      },
+      {
+        id: 'preset_cebu_kitchen',
+        name: 'Cebu Kitchen & Service',
+        builtin: true,
+        query: 'dishwasher OR kitchen helper OR service crew OR cook',
+        intent: 'seeker,employer',
+        location: 'Cebu',
+        kind: 'all',
+        platforms: ['facebook', 'reddit_posts']
+      },
+      {
+        id: 'preset_cebu_pc',
+        name: 'Cebu PC Buy & Sell',
+        builtin: true,
+        query: 'gpu OR ram OR pc set OR laptop',
+        intent: 'buyer,seller',
+        location: 'Cebu',
+        kind: 'all',
+        platforms: ['facebook', 'reddit_posts']
+      }
+    ];
+
+    let activeWatchlistId = null;
+    let watchlistsCollapsed = false;
+    let renderedWatchlists = [];
+
+    function getCustomWatchlists() {
+      if (currentConfig && Array.isArray(currentConfig.watchlists)) {
+        return currentConfig.watchlists.filter(w => w && w.name);
+      }
+      try {
+        const raw = localStorage.getItem('uls_watchlists');
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed.filter(w => w && w.name) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function getActiveWatchlists() {
+      return [...DEFAULT_WATCHLISTS, ...getCustomWatchlists()];
+    }
+
+    function toggleWatchlistsSection() {
+      watchlistsCollapsed = !watchlistsCollapsed;
+      const list = document.getElementById('watchlistsList');
+      const chev = document.getElementById('watchlistsChevron');
+      const btn = document.getElementById('btnToggleWatchlists');
+      if (list) list.classList.toggle('hidden', watchlistsCollapsed);
+      if (chev) chev.style.transform = watchlistsCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
+      if (btn) btn.setAttribute('aria-expanded', watchlistsCollapsed ? 'false' : 'true');
+    }
+
+    function renderWatchlists() {
+      const container = document.getElementById('watchlistsList');
+      if (!container) return;
+      renderedWatchlists = getActiveWatchlists();
+      container.innerHTML = renderedWatchlists.map((w, idx) => {
+        const isActive = activeWatchlistId && activeWatchlistId === w.id;
+        const dotColor = w.intent === 'seeker' ? '#4ADE80'
+          : w.intent === 'employer' ? '#F59E0B'
+          : (w.intent || '').includes('buyer') || (w.intent || '').includes('seller') ? '#38BDF8'
+          : '#8B5CF6';
+        return `
+          <div class="group flex items-center gap-0.5">
+            <button type="button" onclick="applyWatchlist(${idx})" class="nav-item flex-1 min-w-0 !py-1.5 ${isActive ? 'active-nav' : ''}" title="${escapeHtml(w.query || w.name)}">
+              <span class="flex items-center gap-2 min-w-0">
+                <span class="w-3.5 flex justify-center shrink-0"><span class="w-1.5 h-1.5 rounded-full" style="background:${dotColor}"></span></span>
+                <span class="truncate text-[12px]">${escapeHtml(w.name)}</span>
+              </span>
+            </button>
+            ${!w.builtin ? `<button type="button" onclick="deleteWatchlist(${idx})" class="btn-ghost w-5 h-5 opacity-0 group-hover:opacity-100 focus:opacity-100 flex items-center justify-center shrink-0 hover:text-rose-400" title="Remove watchlist" aria-label="Remove watchlist"><svg class="lucide-ic w-3 h-3" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function applyWatchlist(idx) {
+      const w = renderedWatchlists[idx];
+      if (!w) return;
+      activeWatchlistId = w.id;
+      const qEl = document.getElementById('searchQuery');
+      const intentEl = document.getElementById('searchIntent');
+      const locEl = document.getElementById('searchLocation');
+      if (qEl) qEl.value = w.query || '';
+      toggleClearBtn();
+      if (intentEl && w.intent) intentEl.value = w.intent;
+      if (locEl && w.location) {
+        locEl.value = w.location;
+        const badge = document.getElementById('targetLoc');
+        if (badge) badge.innerText = w.location === 'Cebu' ? 'Cebu' : 'Any PH';
+      }
+      currentKindFilter = w.kind || 'all';
+      syncKindFilterPills();
+
+      const targetPlats = new Set(Array.isArray(w.platforms) ? w.platforms : []);
+      lastScannedPlatforms = [];
+      document.querySelectorAll('.plat-cb').forEach(cb => {
+        cb.checked = targetPlats.has(cb.value);
+      });
+      syncPlatformPills();
+      renderWatchlists();
+      toggleMobileSidebar(false);
+      setFilter('all');
+      showLiveToast('Watchlist Loaded', w.name);
+    }
+
+    async function saveCurrentWatchlist() {
+      const query = (document.getElementById('searchQuery') || {}).value?.trim() || '';
+      const intent = (document.getElementById('searchIntent') || {}).value || 'seeker,employer';
+      const location = (document.getElementById('searchLocation') || {}).value || 'Cebu';
+      const platforms = getSelectedPlatforms();
+      const suggested = query
+        ? `${location} ${query.slice(0, 24)}`
+        : `${location} ${intent === 'seeker' ? 'Jobseekers' : intent === 'employer' ? 'Employers' : 'Leads'}`;
+      const name = window.prompt('Watchlist name:', suggested);
+      if (!name || !name.trim()) return;
+      const newItem = {
+        id: `wl_${Date.now()}`,
+        name: name.trim().slice(0, 40),
+        builtin: false,
+        query,
+        intent,
+        location,
+        kind: currentKindFilter || 'all',
+        platforms
+      };
+      const nextCustom = [...getCustomWatchlists(), newItem];
+      currentConfig.watchlists = nextCustom;
+      activeWatchlistId = newItem.id;
+      try { localStorage.setItem('uls_watchlists', JSON.stringify(nextCustom)); } catch (e) {}
+      renderWatchlists();
+      try {
+        await fetch('/api/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(currentConfig)
+        });
+      } catch (e) {}
+      showLiveToast('Watchlist Saved', `Added "${newItem.name}" to your sidebar.`);
+    }
+
+    async function deleteWatchlist(idx) {
+      const target = renderedWatchlists[idx];
+      if (!target || target.builtin) return;
+      const nextCustom = getCustomWatchlists().filter(w => w.id !== target.id);
+      currentConfig.watchlists = nextCustom;
+      if (activeWatchlistId === target.id) activeWatchlistId = null;
+      try { localStorage.setItem('uls_watchlists', JSON.stringify(nextCustom)); } catch (e) {}
+      renderWatchlists();
+      try {
+        await fetch('/api/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(currentConfig)
+        });
+      } catch (e) {}
+      showLiveToast('Watchlist Removed', `Removed "${target.name}".`);
+    }
+
     let noteAutoSaveTimer = null;
     let noteSavedFadeTimer = null;
 
@@ -4346,7 +4794,7 @@
     function updateApiKeyBadge() {
       const badge = document.getElementById('apiKeysConfiguredBadge');
       if (!badge) return;
-      const keyIds = ['cfgApifyToken', 'cfgGeminiKey', 'cfgSerperKey', 'cfgTavilyKey', 'cfgBraveKey', 'cfgCustomApiUrl'];
+      const keyIds = ['cfgApifyToken', 'cfgGeminiKey', 'cfgSerperKey', 'cfgTavilyKey', 'cfgBraveKey', 'cfgCustomApiUrl', 'cfgTelegramBotToken', 'cfgWebhookUrl'];
       const count = keyIds.reduce((acc, id) => {
         const el = document.getElementById(id);
         return acc + (el && el.value.trim() ? 1 : 0);
@@ -4373,6 +4821,98 @@
       if (title) title.innerText = isApi ? 'API Keys & Integrations' : 'Scanner Options & Sources';
       if (saveBtn) saveBtn.innerText = isApi ? 'Save API Keys' : 'Save Scanner Options';
       if (body) body.scrollTop = 0;
+      if (isApi) loadApiCredits(false);
+    }
+
+    let lastCreditsFetchTs = 0;
+    let cachedCreditsData = null;
+
+    function renderApiCreditsCard(data) {
+      const grid = document.getElementById('apiCreditsGrid');
+      const badge = document.getElementById('apiCreditsSummaryBadge');
+      if (!grid) return;
+      const providers = (data && Array.isArray(data.providers)) ? data.providers : [];
+      const visible = providers.filter(p => p && (p.configured || p.calls_today > 0 || p.key === 'reddit'));
+      const totalCalls = (data && typeof data.total_calls_today === 'number')
+        ? data.total_calls_today
+        : providers.reduce((acc, p) => acc + (p.calls_today || 0), 0);
+      const activeCount = providers.filter(p => p && p.configured).length;
+      if (badge) {
+        badge.innerText = `${activeCount} configured · ${totalCalls} call${totalCalls === 1 ? '' : 's'} today`;
+      }
+
+      if (!visible.length) {
+        grid.innerHTML = `<div class="col-span-full text-[11.5px] py-1.5" style="color: var(--ink-muted);">No paid/API keys configured yet — using free Reddit RSS &amp; Public Web index.</div>`;
+        return;
+      }
+
+      grid.innerHTML = visible.map(p => {
+        const dotColor = p.health === 'error'
+          ? '#EF4444'
+          : p.health === 'low'
+          ? '#F59E0B'
+          : '#4ADE80';
+        const callsTxt = `${p.calls_today || 0} call${(p.calls_today || 0) === 1 ? '' : 's'} today`;
+        const billingHtml = p.billing_url
+          ? `<a href="${escapeHtml(p.billing_url)}" target="_blank" rel="noopener noreferrer" class="text-[10.5px] hover:underline inline-flex items-center gap-0.5 shrink-0" style="color: var(--ink-muted);" title="Open ${escapeHtml(p.label)} Billing / Usage"><span>Billing</span><span>&#8599;</span></a>`
+          : '';
+        let pctBarHtml = '';
+        if (typeof p.pct_remaining === 'number' && !isNaN(p.pct_remaining)) {
+          const clamped = Math.max(0, Math.min(100, p.pct_remaining));
+          pctBarHtml = `
+            <div class="w-full h-[3px] rounded-full overflow-hidden mt-1" style="background-color: var(--border-hairline);">
+              <div class="h-full rounded-full transition-all duration-300" style="width:${clamped}%; background-color:${dotColor};"></div>
+            </div>
+          `;
+        }
+        return `
+          <div class="rounded-[8px] border border-hair px-2.5 py-2 flex flex-col justify-between gap-1" style="background-color: var(--bg-canvas);">
+            <div class="flex items-center justify-between gap-1.5">
+              <div class="flex items-center gap-1.5 min-w-0">
+                <span class="w-1.5 h-1.5 rounded-full shrink-0" style="background-color:${dotColor}"></span>
+                <span class="text-[12px] font-medium truncate" style="color: var(--ink-primary);">${escapeHtml(p.label)}</span>
+              </div>
+              ${billingHtml}
+            </div>
+            <div class="flex items-center justify-between gap-2 text-[11px]">
+              <span class="font-medium truncate" style="color: var(--ink-secondary);">${escapeHtml(p.status_text || 'Active')}</span>
+              <span class="mono-tag text-[10.5px] tabular-nums shrink-0" style="color: var(--ink-muted);">${escapeHtml(callsTxt)}</span>
+            </div>
+            ${pctBarHtml}
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function loadApiCredits(force = false) {
+      const grid = document.getElementById('apiCreditsGrid');
+      const btn = document.getElementById('btnRefreshCredits');
+      const icon = document.getElementById('refreshCreditsIcon');
+      const now = Date.now();
+      if (!force && cachedCreditsData && (now - lastCreditsFetchTs) < 60000) {
+        renderApiCreditsCard(cachedCreditsData);
+        return;
+      }
+      const origIcon = icon ? icon.innerHTML : '';
+      if (btn) btn.disabled = true;
+      if (icon) icon.innerHTML = LUCIDE_ICONS.spinner;
+      if (grid && !cachedCreditsData) {
+        grid.innerHTML = `<div class="col-span-full text-[11.5px] py-1.5" style="color: var(--ink-muted);">Checking live API balances&hellip;</div>`;
+      }
+      try {
+        const res = await fetch(`/api/credits${force ? '?refresh=1' : ''}`);
+        const data = await res.json();
+        cachedCreditsData = data;
+        lastCreditsFetchTs = Date.now();
+        renderApiCreditsCard(data);
+      } catch (e) {
+        if (grid && !cachedCreditsData) {
+          grid.innerHTML = `<div class="col-span-full text-[11.5px] py-1.5 text-rose-400">Could not load API credits status.</div>`;
+        }
+      } finally {
+        if (btn) btn.disabled = false;
+        if (icon && origIcon) icon.innerHTML = origIcon;
+      }
     }
 
     async function openSettingsModal(initialTab = 'scanner') {
@@ -4384,6 +4924,10 @@
       const sCfg = currentConfig.search_settings || {};
       document.getElementById('cfgSearchMode').value = providers.search_mode || currentConfig.search_mode || 'auto';
       document.getElementById('cfgApifyCacheMinutes').value = String(providers.apify_cache_minutes || currentConfig.apify_cache_minutes || 10);
+      document.getElementById('cfgFbMaxPosts').value = String(social.fb_max_posts_per_group ?? sCfg.fb_max_posts_per_group ?? 35);
+      document.getElementById('cfgFbCommentsPerPost').value = String(social.fb_comments_per_post ?? sCfg.fb_comments_per_post ?? 15);
+      document.getElementById('cfgBusinessName').value = sCfg.business_name || currentConfig.business_name || '';
+      document.getElementById('cfgBusinessContact').value = sCfg.business_contact || currentConfig.business_contact || '';
       document.getElementById('cfgApifyToken').value = currentConfig.apify_token || '';
       document.getElementById('cfgGeminiKey').value = providers.gemini_api_key || currentConfig.gemini_api_key || '';
       document.getElementById('cfgGeminiModel').value = providers.gemini_model || currentConfig.gemini_model || 'gemini-3.5-flash-lite';
@@ -4394,6 +4938,8 @@
       document.getElementById('cfgBraveKey').value = providers.brave_api_key || currentConfig.brave_api_key || '';
       document.getElementById('cfgCustomApiUrl').value = providers.custom_api_url || currentConfig.custom_api_url || '';
       document.getElementById('cfgCustomApiKey').value = providers.custom_api_key || currentConfig.custom_api_key || '';
+      document.getElementById('cfgTelegramBotToken').value = providers.telegram_bot_token || sCfg.telegram_bot_token || currentConfig.telegram_bot_token || '';
+      document.getElementById('cfgTelegramChatId').value = providers.telegram_chat_id || sCfg.telegram_chat_id || currentConfig.telegram_chat_id || '';
       document.getElementById('cfgSubreddits').value = (currentConfig.subreddits || []).join(', ');
       document.getElementById('cfgIgHashtags').value = (social.instagram_hashtags || []).join(', ');
       document.getElementById('cfgFbGroups').value = (social.facebook_groups || []).join('\n');
@@ -4401,7 +4947,7 @@
       document.getElementById('cfgTiktokQueries').value = queries.join('\n');
       document.getElementById('cfgAutoScanMinutes').value = String(sCfg.autoscan_minutes || currentConfig.autoscan_minutes || 0);
       document.getElementById('cfgDesktopNotify').checked = sCfg.desktop_notifications !== false;
-      document.getElementById('cfgWebhookUrl').value = sCfg.alert_webhook_url || currentConfig.alert_webhook_url || '';
+      document.getElementById('cfgWebhookUrl').value = providers.alert_webhook_url || sCfg.alert_webhook_url || currentConfig.alert_webhook_url || '';
       document.getElementById('cfgBlockedKeywords').value = getActiveBlockedKeywords().join(', ');
       document.getElementById('cfgBlockedAuthors').value = getActiveBlockedAuthors().join(', ');
       updateApiKeyBadge();
@@ -4423,8 +4969,13 @@
       currentConfig.providers.brave_api_key = document.getElementById('cfgBraveKey').value.trim();
       currentConfig.providers.custom_api_url = document.getElementById('cfgCustomApiUrl').value.trim();
       currentConfig.providers.custom_api_key = document.getElementById('cfgCustomApiKey').value.trim();
+      currentConfig.providers.telegram_bot_token = document.getElementById('cfgTelegramBotToken').value.trim();
+      currentConfig.providers.telegram_chat_id = document.getElementById('cfgTelegramChatId').value.trim();
+      currentConfig.providers.alert_webhook_url = document.getElementById('cfgWebhookUrl').value.trim();
       currentConfig.subreddits = document.getElementById('cfgSubreddits').value.split(',').map(s => s.trim()).filter(Boolean);
       currentConfig.social = currentConfig.social || {};
+      currentConfig.social.fb_max_posts_per_group = parseInt(document.getElementById('cfgFbMaxPosts').value || '35', 10);
+      currentConfig.social.fb_comments_per_post = parseInt(document.getElementById('cfgFbCommentsPerPost').value || '15', 10);
       currentConfig.social.instagram_hashtags = document.getElementById('cfgIgHashtags').value.split(',').map(s => s.trim().replace(/^#/, '')).filter(Boolean);
       currentConfig.social.facebook_groups = document.getElementById('cfgFbGroups').value.split('\n').map(s => s.trim()).filter(Boolean);
       const qList = document.getElementById('cfgTiktokQueries').value.split('\n').map(s => s.trim()).filter(Boolean);
@@ -4436,6 +4987,8 @@
       currentConfig.search_settings.autoscan_minutes = mins;
       currentConfig.search_settings.desktop_notifications = document.getElementById('cfgDesktopNotify').checked;
       currentConfig.search_settings.alert_webhook_url = document.getElementById('cfgWebhookUrl').value.trim();
+      currentConfig.search_settings.business_name = document.getElementById('cfgBusinessName').value.trim();
+      currentConfig.search_settings.business_contact = document.getElementById('cfgBusinessContact').value.trim();
       currentConfig.search_settings.blocked_keywords = document.getElementById('cfgBlockedKeywords').value.split(/[\n,]/).map(s => s.trim()).filter(Boolean);
       currentConfig.search_settings.blocked_authors = document.getElementById('cfgBlockedAuthors').value.split(/[\n,]/).map(s => s.trim()).filter(Boolean);
 
@@ -4448,6 +5001,8 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(currentConfig)
       });
+      lastCreditsFetchTs = 0;
+      cachedCreditsData = null;
       syncAutoScanTimer(mins);
       closeModal('settingsModal');
       showLiveToast('Settings Saved', 'Configuration updated in config.json.');
@@ -4504,7 +5059,6 @@
 
     async function triggerTestAlert() {
       playAlertChime();
-      showLiveToast('Test Alert Verified', 'Audio chime, toast notification, and desktop alerts are active.');
       if ('Notification' in window) {
         if (Notification.permission === 'default') {
           try { await Notification.requestPermission(); } catch (e) {}
@@ -4514,16 +5068,40 @@
         }
       }
       const whInput = document.getElementById('cfgWebhookUrl');
+      const tgTokInput = document.getElementById('cfgTelegramBotToken');
+      const tgChatInput = document.getElementById('cfgTelegramChatId');
       const whUrl = whInput ? whInput.value.trim() : '';
-      if (whUrl) {
+      const tgToken = tgTokInput ? tgTokInput.value.trim() : '';
+      const tgChat = tgChatInput ? tgChatInput.value.trim() : '';
+      if (whUrl || (tgToken && tgChat)) {
         try {
-          await fetch('/api/alerts/test', {
+          const res = await fetch('/api/alerts/test', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ webhook_url: whUrl })
+            body: JSON.stringify({
+              webhook_url: whUrl,
+              telegram_bot_token: tgToken,
+              telegram_chat_id: tgChat
+            })
           });
+          const data = await res.json();
+          const sent = [];
+          if (data.telegram_sent) sent.push('Telegram');
+          if (data.webhook_sent) sent.push('Discord/Webhook');
+          const failed = [];
+          if (data.telegram_configured && !data.telegram_sent) failed.push('Telegram');
+          if (data.webhook_configured && !data.webhook_sent) failed.push('Discord/Webhook');
+          if (sent.length > 0 && failed.length === 0) {
+            showLiveToast('Phone Alert Sent ✓', `Delivered test alert to ${sent.join(' & ')}.`);
+            return;
+          }
+          if (failed.length > 0) {
+            showLiveToast('Alert Check', `${sent.length ? `Sent: ${sent.join(', ')}. ` : ''}Could not reach: ${failed.join(', ')}.`);
+            return;
+          }
         } catch (e) {}
       }
+      showLiveToast('Test Alert Verified', 'Audio chime, toast notification, and desktop alerts are active.');
     }
 
     function notifyIfNewScanLeads(scan) {
@@ -4706,6 +5284,7 @@
         const sCfg = currentConfig.search_settings || {};
         syncAutoScanTimer(sCfg.autoscan_minutes || currentConfig.autoscan_minutes || 0);
       } catch (e) {}
+      renderWatchlists();
       loadLeads();
     }
 
@@ -4713,6 +5292,7 @@
     applyFeedDensity(feedDensity);
     syncPlatformPills();
     renderActiveFilterChips();
+    renderWatchlists();
     initConfigAndAutoScan();
   </script>
 </body>

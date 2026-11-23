@@ -25,16 +25,18 @@ from datetime import datetime, timedelta, timezone
 
 from database import (
     ALLOWED_WEB_DOMAINS,
+    get_api_usage_today,
     is_buy_sell_keyword,
     is_valid_lead_url,
     parse_search_query,
+    record_api_usage,
     save_lead,
     smart_query_matches,
     utc_now_sql,
 )
 
-SCANNER_VERSION = "v3.6"
-REDDIT_USER_AGENT = "linux:unified-lead-scout:v3.6 (by /u/unified_lead_scout)"
+SCANNER_VERSION = "v3.7"
+REDDIT_USER_AGENT = "linux:unified-lead-scout:v3.7 (by /u/unified_lead_scout)"
 BROWSER_USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
@@ -47,6 +49,12 @@ _LAST_REMOTE_UTC = None
 _REDDIT_GLOBAL_LOCK = threading.Lock()
 _REDDIT_RSS_CACHE = {}
 _SEARCH_GLOBAL_LOCK = threading.Lock()
+_MINED_POST_LOCK = threading.Lock()
+_MINED_POST_CACHE = {}
+_API_STATE_LOCK = threading.Lock()
+_LAST_PROVIDER_HTTP_STATUS = {}
+_BRAVE_RATE_LIMIT = {"remaining": None, "limit": None}
+_CREDITS_CACHE = {"ts": 0.0, "fingerprint": "", "data": None}
 
 APIFY_ACTORS = {
     "facebook_groups": "apify/facebook-groups-scraper",
@@ -62,16 +70,18 @@ APIFY_ACTORS = {
 DEFAULT_SEEKER_KEYWORDS = [
     "looking for a job", "looking for job", "looking for work",
     "looking for part time", "looking for part-time", "looking for full time",
-    "looking for side hustle", "looking for side hustles", "remote gigs",
+    "looking for side hustle", "looking for side hustles", "looking for raket",
+    "seeking a job", "remote gigs",
     "looking for gig", "looking for gigs", "need a job", "need work",
     "need part time", "need extra income", "open for work", "open to work",
-    "available for work", "available for any work", "available for any task",
+    "available for work", "available to work", "available for any work", "available for any task",
     "for hire", "hire me", "hiring me", "offering remote services", "offering services",
-    "offering coaching", "errand runner", "currently unemployed", "unemployed for",
+    "offering coaching", "errand runner", "currently unemployed", "unemployed for", "unemployed",
     "nangita kog trabaho", "nangita ug trabaho", "nangita ko trabaho",
     "ngita kog trabaho", "ngita ko trabaho", "ngita trabaho", "pangita trabaho",
     "mangita trabaho", "ngita unta ko work", "ngita unta kog work", "ngita unta ko trabaho",
     "ngita unta kog trabaho", "nangita unta ko", "nangita unta kog",
+    "basin naa moy", "kinsa naay bakante",
     "naghahanap ng trabaho", "naghahanap ako ng trabaho", "naghahanap po ako ng trabaho",
     "naghahanap po ng trabaho", "hanap trabaho", "hanap po ako ng trabaho",
     "pwede mo apply", "pwede pa mo apply", "pwede ko mo apply",
@@ -85,9 +95,11 @@ DEFAULT_SEEKER_KEYWORDS = [
     "kinsa naay hiring", "kinsay naay hiring", "any hiring", "who is hiring",
     "anyone hiring", "anybody hiring", "still hiring", "hiring pa",
     "pa-aplya ko", "pa aplya ko", "paaplya ko",
-    "pa apply", "apply ko", "apply ta", "pa refer", "how po", "no experience",
-    "mo duty", "pm sir", "pm boss", "pm maam", "pm sent", "details po",
-    "available pa po", "nag message ko", "nag pm ko", "check message",
+    "pa apply", "apply ko", "apply ta", "pa-refer", "pa refer", "how po", "no experience",
+    "mo duty", "pm sir", "pm boss", "pm maam", "pm sent", "sent pm", "dm sent",
+    "pa pm", "pa details", "details po", "loc po", "location po", "asa dapit", "asa ni",
+    "open pa", "pwede pa", "available pa po", "available pa",
+    "nag message ko", "nag pm ko", "check message",
 ]
 
 # 100% Employer Hiring keywords (never includes 'for sale' or buy/sell words)
@@ -146,7 +158,9 @@ REMOTE_WORK_TERMS = (
 
 
 class ScanError(Exception):
-    pass
+    def __init__(self, message, code=None):
+        super().__init__(message)
+        self.code = code
 
 
 # =====================================================================
@@ -189,7 +203,37 @@ def get_settings(config):
     blocked_authors = [re.sub(r"^(@|u/)", "", a.lower()) for a in _as_list(raw_blocked_authors)]
     autoscan_minutes = max(0, _safe_int(s.get("autoscan_minutes", config.get("autoscan_minutes", 0)), 0))
     desktop_notifications = bool(s.get("desktop_notifications", config.get("desktop_notifications", True)))
-    alert_webhook_url = str(s.get("alert_webhook_url") or config.get("alert_webhook_url") or "").strip()
+    alert_webhook_url = str(providers.get("alert_webhook_url") or s.get("alert_webhook_url") or config.get("alert_webhook_url") or "").strip()
+    telegram_bot_token = str(
+        os.environ.get("TELEGRAM_BOT_TOKEN")
+        or providers.get("telegram_bot_token")
+        or s.get("telegram_bot_token")
+        or config.get("telegram_bot_token")
+        or ""
+    ).strip()
+    telegram_chat_id = str(
+        os.environ.get("TELEGRAM_CHAT_ID")
+        or providers.get("telegram_chat_id")
+        or s.get("telegram_chat_id")
+        or config.get("telegram_chat_id")
+        or ""
+    ).strip()
+    business_name = str(s.get("business_name") or config.get("business_name") or "").strip()
+    business_contact = str(s.get("business_contact") or config.get("business_contact") or "").strip()
+    fb_max_posts_per_group = max(
+        5,
+        _safe_int(
+            social.get("fb_max_posts_per_group", s.get("fb_max_posts_per_group", config.get("fb_max_posts_per_group", 35))),
+            35,
+        ),
+    )
+    fb_comments_per_post = max(
+        0,
+        _safe_int(
+            social.get("fb_comments_per_post", s.get("fb_comments_per_post", config.get("fb_comments_per_post", 15))),
+            15,
+        ),
+    )
     # Filter out any buy/sell terms that might have been in config.json seeker/employer lists
     raw_seeker = [k for k in _as_list(s.get("seeker_keywords")) if not is_buy_sell_keyword(k)]
     raw_employer = [k for k in _as_list(s.get("employer_keywords")) if not is_buy_sell_keyword(k)]
@@ -212,6 +256,12 @@ def get_settings(config):
         "autoscan_minutes": autoscan_minutes,
         "desktop_notifications": desktop_notifications,
         "alert_webhook_url": alert_webhook_url,
+        "telegram_bot_token": telegram_bot_token,
+        "telegram_chat_id": telegram_chat_id,
+        "business_name": business_name,
+        "business_contact": business_contact,
+        "fb_max_posts_per_group": fb_max_posts_per_group,
+        "fb_comments_per_post": fb_comments_per_post,
         "custom_queries": custom_queries,
         "location_terms": {str(k).lower(): v for k, v in raw_loc_terms.items()},
         "subreddits": [re.sub(r"^/?r/", "", x) for x in (_as_list(config.get("subreddits")) or ["Cebu", "phclassifieds", "buhaydigital"])],
@@ -264,10 +314,54 @@ COMMENT_ONLY_SEEKER_PHRASES = {
     "interested ko", "interested maam", "interested sir", "i'm interested", "im interested",
     "how to apply", "paano mag apply", "pwede mo apply", "pwede pa mo apply",
     "pwede ko mo apply", "pwede pa apply", "pwede mag apply", "unsaon pag apply",
-    "available pa po", "available pa", "pm sent", "dm sent", "details po",
+    "available pa po", "available pa", "pm sent", "sent pm", "dm sent", "pa pm",
+    "pa details", "details po", "loc po", "location po", "asa dapit", "asa ni",
+    "open pa", "pwede pa",
     "how po", "pm sir", "pm boss", "pm maam", "nag message ko", "nag pm ko", "check message",
     "no experience", "still hiring", "hiring pa",
 }
+
+# Spam / bot / scam comment shield (always rejected when kind == 'comment')
+COMMENT_SPAM_PHRASES = (
+    "earn 5k daily", "earn daily", "earn money daily", "passive income",
+    "join my telegram", "join our telegram", "t.me/",
+    "loan", "pautang", "online lending", "cash loan",
+    "casino", "online casino", "scatter", "betting", "jili",
+    "gcash promo", "free gcash", "gcash giveaway",
+    "follow back", "f4f", "follow for follow",
+    "check my bio", "link in bio", "click my bio",
+    "crypto investment", "crypto signal", "forex signal", "binary option",
+    "paluwagan", "frontrow", "networking", "task scam",
+    "pm me for extra income", "earn while at home",
+)
+
+COMMENT_SPAM_PATTERNS = (
+    re.compile(r"\bearn\s+(?:₱|php|p)?\s*\d+[k,]?\d*\s*(?:daily|a\s+day|per\s+day|weekly)\b"),
+    re.compile(r"\b(?:telegram|whatsapp)\s*(?:me|channel|group|link)?\s*[:@]?\s*(?:https?://|t\.me/|@\w+)"),
+)
+
+_URL_TOKEN_RE = re.compile(r"(?:https?://\S+|www\.\S+|\bt\.me/\S+|\bbit\.ly/\S+|\btinyurl\.com/\S+)", re.I)
+
+
+def is_spam_comment(text_norm):
+    """Detects bot/scam/promo/URL-only spam comments so they never pollute Jobseekers."""
+    if not text_norm:
+        return True
+    for sp in COMMENT_SPAM_PHRASES:
+        if sp.endswith("/"):
+            if sp in text_norm:
+                return True
+        elif phrase_in(text_norm, sp):
+            return True
+    for pat in COMMENT_SPAM_PATTERNS:
+        if pat.search(text_norm):
+            return True
+    if _URL_TOKEN_RE.search(text_norm):
+        stripped = _URL_TOKEN_RE.sub(" ", text_norm)
+        stripped = re.sub(r"[^a-z0-9]+", " ", stripped).strip()
+        if len(stripped) < 4 or stripped in ("click", "link", "here", "check", "click here", "apply here", "join here", "visit"):
+            return True
+    return False
 
 # Phrases that also appear inside employer qualification sections (e.g. "Qualifications: can start ASAP, no experience")
 REQUIREMENT_LIKE_SEEKER_PHRASES = {
@@ -316,16 +410,19 @@ CORPORATE_AUTHOR_WORDS = (
     "careers", "career", "hiring", "recruitment", "recruiting", "recruiter",
     "hr", "hrd", "staffing", "agency", "inc", "corp", "corporation",
     "official", "jobs", "solutions", "hotels", "condotels",
-    "enterprise", "enterprises", "manpower",
+    "enterprise", "enterprises", "manpower", "bpo", "outsourcing",
+    "consulting", "consultancy", "holdings", "ventures",
 )
 
 FIRST_PERSON_START_RE = re.compile(
     r"^(?:\[?\s*for hire\s*\]?|hire me|i am looking for|i'm looking for|im looking for|"
-    r"looking for (?:a )?(?:(?:part[- ]?time|full[- ]?time)\s+)?(?:job|work|side hustle|gig)s?|"
+    r"looking for (?:a )?(?:(?:part[- ]?time|full[- ]?time)\s+)?(?:job|work|side hustle|gig|raket)s?|"
+    r"seeking (?:a )?(?:job|work)|pa[- ]?refer|basin naa moy|kinsa naay (?:bakante|hiring)|"
     r"nangita\s+(?:ko|kog|unta\s+ko)|ngita\s+(?:ko|kog|unta\s+ko)|"
-    r"naghahanap(?:\s+po)?\s+ako|hanap(?:\s+po)?\s+ako|currently unemployed|unemployed for|"
+    r"naghahanap(?:\s+po)?\s+ako|hanap(?:\s+po)?\s+ako|currently unemployed|unemployed\b|"
     r"fresh grad|need (?:a )?(?:job|work|extra income|part[- ]?time\s+(?:job|work))|"
-    r"offering (?:remote )?(?:services|coaching)|desperate to do anything|available for (?:any )?work)\b"
+    r"offering (?:remote )?(?:services|coaching)|desperate to do anything|"
+    r"available (?:for|to) (?:any )?work|willing to start)\b"
 )
 
 
@@ -351,14 +448,14 @@ def has_employer_veto(text_norm):
 
 
 def is_corporate_author(author):
-    """Detects corporate/recruiting page names on posts (e.g. 'PCNI Careers', 'HR Zai', 'Cebu Condotels')."""
+    """Detects corporate/recruiting page names on posts/comments (e.g. 'PCNI Careers', 'HR Zai', 'TalentCore PH')."""
     a = _norm(author)
     if not a:
         return False
     a_clean = re.sub(r"^(@|u/)", "", a).strip()
     if any(p in a_clean for p in CORPORATE_AUTHOR_PHRASES):
         return True
-    if re.match(r"^ta\s+[a-z]", a_clean):
+    if re.match(r"^ta\s+[a-z]", a_clean) or re.search(r"\btalent[a-z0-9]*\b", a_clean):
         return True
     for w in CORPORATE_AUTHOR_WORDS:
         if re.search(r"(?<!\w)" + re.escape(w) + r"(?!\w)", a_clean):
@@ -372,15 +469,17 @@ def starts_with_first_person_seeker(text_norm):
 
 
 AMBIGUOUS_JOB_PHRASES = {
-    "pm sent", "dm sent", "sent you a dm", "sent you a pm",
+    "pm sent", "sent pm", "dm sent", "sent you a dm", "sent you a pm",
+    "pa pm", "pa details", "details po", "loc po", "location po", "asa dapit", "asa ni",
+    "open pa", "pwede pa",
     "available pa", "available pa po", "naa pa ni", "qualifications", "requirements",
     "interested po", "interested ako", "interested here", "i'm interested", "im interested",
     "interested", "how po", "pm sir", "pm boss", "pm maam", "nag message ko",
-    "nag pm ko", "check message", "details po",
+    "nag pm ko", "check message",
 }
 
 UNAMBIGUOUS_JOB_WORDS = (
-    "job", "work", "trabaho", "hiring", "apply", "applicant", "vacancy",
+    "job", "work", "trabaho", "raket", "bakante", "hiring", "apply", "applicant", "vacancy",
     "resume", "cv", "staff", "crew", "salary", "part time", "part-time",
     "full time", "full-time", "for hire", "hire me", "freelance", "remote",
     "gig", "gigs", "unemployed", "opening", "dishwasher", "barista",
@@ -447,13 +546,21 @@ def classify_intent(text_norm, kind, settings, query="", full_context="", source
     """
     text_norm = _norm(text_norm)
     ctx_check = _norm(full_context) if full_context else text_norm
+    is_post = (kind or "post").lower() != "comment"
+
+    # Comment Spam Shield: immediately reject bot/promo/scam/URL-only comments
+    if not is_post and is_spam_comment(text_norm):
+        return None, ""
+
     src_low = (source_name or "").lower()
     is_merch_group = any(g in src_low for g in ("sales & repairs", "buy and sell", "buy & sell", "marketplace", "pc market"))
+    is_job_source = any(g in src_low for g in ("job", "hiring", "trabaho", "career", "work", "applicant", "employment"))
     has_merch_indicator = is_merch_group or _is_merch_sale_post(ctx_check)
     has_job_word = any(phrase_in(ctx_check, w) for w in UNAMBIGUOUS_JOB_WORDS)
+    has_job_context = has_job_word or is_job_source
 
     applicant_looking_m = re.search(
-        r"\blooking\s+for\s+(?:a\s+)?(?:[a-z0-9/-]+(?:\s+(?:or|and)\s+[a-z0-9/-]+)?\s+){1,3}(?:job|work|gig|position)s?\b",
+        r"\blooking\s+for\s+(?:a\s+)?(?:[a-z0-9/-]+(?:\s+(?:or|and)\s+[a-z0-9/-]+)?\s+){1,3}(?:job|work|gig|raket|position)s?\b",
         text_norm,
     )
     # Exclude employer copy like "looking for your next career opportunity" or "looking for a ... position? apply now"
@@ -462,11 +569,16 @@ def classify_intent(text_norm, kind, settings, query="", full_context="", source
 
     has_first_person_seeker = bool(
         applicant_looking_m
-        or re.search(r"\b(?:for hire|hire me|hiring me|fresh grad ko|graduate of|experienced\s+[a-z]+\s+here|if you are hiring|who is hiring|anyone hiring|naa moy nahibaw-an|kinsa naay hiring|ngita unta ko|nangita kog|ngita kog|naghahanap(?:\s+po)?\s+ako)\b", text_norm)
+        or re.search(
+            r"\b(?:for hire|hire me|hiring me|fresh grad ko|graduate of|experienced\s+[a-z]+\s+here|"
+            r"if you are hiring|who is hiring|anyone hiring|naa moy nahibaw-an|basin naa moy|"
+            r"kinsa naay (?:hiring|bakante)|pa[- ]?refer|seeking a job|looking for raket|"
+            r"available to work|ngita unta ko|nangita kog|ngita kog|naghahanap(?:\s+po)?\s+ako)\b",
+            text_norm,
+        )
         or (re.search(r"\b(?:po ako|ko po)\b", text_norm) and any(w in text_norm for w in ("looking for", "naghahanap", "apply", "trabaho", "job", "work")))
     )
 
-    is_post = (kind or "post").lower() != "comment"
     veto_match = has_employer_veto(text_norm)
     corp_author = is_corporate_author(author)
     fp_start = starts_with_first_person_seeker(text_norm) if is_post else False
@@ -480,7 +592,7 @@ def classify_intent(text_norm, kind, settings, query="", full_context="", source
         s_hits = [
             p for p in settings["seeker_keywords"]
             if phrase_in(text_norm, p)
-            and (p not in AMBIGUOUS_JOB_PHRASES or has_job_word)
+            and (p not in AMBIGUOUS_JOB_PHRASES or has_job_context)
             and (not is_post or p.lower() not in COMMENT_ONLY_SEEKER_PHRASES)
         ]
         if applicant_looking_m and not veto_match:
@@ -490,7 +602,7 @@ def classify_intent(text_norm, kind, settings, query="", full_context="", source
 
         e_hits = [
             p for p in settings["employer_keywords"]
-            if phrase_in(text_norm, p) and (p not in AMBIGUOUS_JOB_PHRASES or has_job_word)
+            if phrase_in(text_norm, p) and (p not in AMBIGUOUS_JOB_PHRASES or has_job_context)
         ]
 
         # Author / Page Name Corporate Classifier (for kind == 'post')
@@ -524,9 +636,11 @@ def classify_intent(text_norm, kind, settings, query="", full_context="", source
 
         if s_hits or e_hits or (not is_post and veto_match):
             if not is_post:
-                # If a comment is from a corporate recruiter or has ONLY employer veto/hiring phrases (e.g. 'Pm me to apply now'), classify as 'employer'
-                if not s_hits and (e_hits or veto_match):
-                    return "employer", (e_hits[0] if e_hits else veto_match)
+                # Corporate / recruiter comments (e.g. TalentCore PH: 'Pm me to apply now' or 'Interested? Send your resume')
+                if veto_match and not has_first_person_seeker:
+                    return "employer", veto_match
+                if not s_hits and e_hits:
+                    return "employer", e_hits[0]
                 if corp_author and (e_hits or veto_match) and not has_first_person_seeker:
                     return "employer", (e_hits[0] if e_hits else veto_match)
                 return "seeker", (s_hits[0] if s_hits else e_hits[0])
@@ -726,7 +840,63 @@ def _short(text, n=200):
 # HTTP / API CLIENTS
 # =====================================================================
 
-def http_request(url, method="GET", body=None, headers=None, timeout=20, raw=False):
+def _note_provider_call(provider, status_code=200, increment=True):
+    """Records a live external API call and tracks its latest HTTP status code safely."""
+    prov = str(provider or "").strip().lower()
+    if not prov:
+        return
+    if increment:
+        try:
+            record_api_usage(prov, 1)
+        except Exception:
+            pass
+    code_int = _safe_int(status_code, 0)
+    if code_int == 429:
+        label = "Quota 429"
+    elif code_int in (401, 403):
+        label = f"Auth {code_int}"
+    elif 200 <= code_int < 300:
+        label = "Active"
+    elif code_int > 0:
+        label = f"HTTP {code_int}"
+    else:
+        label = "Error"
+    with _API_STATE_LOCK:
+        _LAST_PROVIDER_HTTP_STATUS[prov] = {
+            "status": label,
+            "code": code_int,
+            "updated_at": time.time(),
+        }
+
+
+def _update_brave_headers(hdrs):
+    if not hdrs:
+        return
+    rem_raw = hdrs.get("X-RateLimit-Remaining") or hdrs.get("x-ratelimit-remaining")
+    lim_raw = hdrs.get("X-RateLimit-Limit") or hdrs.get("x-ratelimit-limit")
+    rem_val = None
+    lim_val = None
+    if rem_raw:
+        parts = [p.strip() for p in str(rem_raw).split(",") if p.strip()]
+        for p in reversed(parts):
+            if p.lstrip("-").isdigit():
+                rem_val = max(0, int(p))
+                break
+    if lim_raw:
+        parts = [p.strip() for p in str(lim_raw).split(",") if p.strip()]
+        for p in reversed(parts):
+            if p.lstrip("-").isdigit():
+                lim_val = max(1, int(p))
+                break
+    if rem_val is not None or lim_val is not None:
+        with _API_STATE_LOCK:
+            if rem_val is not None:
+                _BRAVE_RATE_LIMIT["remaining"] = rem_val
+            if lim_val is not None:
+                _BRAVE_RATE_LIMIT["limit"] = lim_val
+
+
+def http_request(url, method="GET", body=None, headers=None, timeout=20, raw=False, return_headers=False):
     host = urllib.parse.urlparse(url).netloc
     ua = REDDIT_USER_AGENT if "reddit.com" in host else BROWSER_USER_AGENT
     h = {"User-Agent": ua, "Accept": "application/json"}
@@ -739,25 +909,28 @@ def http_request(url, method="GET", body=None, headers=None, timeout=20, raw=Fal
         else:
             data = body
     req = urllib.request.Request(url, data=data, headers=h, method=method)
+    resp_headers = {}
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             _record_remote_date(resp.headers.get("Date"))
+            resp_headers = dict(resp.headers.items()) if resp.headers else {}
             payload = resp.read()
             if (resp.headers.get("Content-Encoding") or "").lower() == "gzip":
                 payload = gzip.decompress(payload)
     except urllib.error.HTTPError as e:
         _record_remote_date(e.headers.get("Date") if e.headers else None)
-        raise ScanError(f"HTTP {e.code} from {host}") from None
+        raise ScanError(f"HTTP {e.code} from {host}", code=e.code) from None
     except urllib.error.URLError as e:
-        raise ScanError(f"Network error reaching {host}: {e.reason}") from None
+        raise ScanError(f"Network error reaching {host}: {e.reason}", code=0) from None
     except (TimeoutError, OSError) as e:
-        raise ScanError(f"Connection problem with {host}: {e}") from None
+        raise ScanError(f"Connection problem with {host}: {e}", code=0) from None
     if raw:
-        return payload
+        return (payload, resp_headers) if return_headers else payload
     try:
-        return json.loads(payload.decode("utf-8"))
+        parsed = json.loads(payload.decode("utf-8"))
+        return (parsed, resp_headers) if return_headers else parsed
     except ValueError:
-        raise ScanError(f"Unexpected (non-JSON) response from {host}") from None
+        raise ScanError(f"Unexpected (non-JSON) response from {host}", code=0) from None
 
 
 class RedditClient:
@@ -802,7 +975,14 @@ class RedditClient:
             headers = {}
         with _REDDIT_GLOBAL_LOCK:
             try:
-                return http_request(url, headers=headers, timeout=20)
+                res = http_request(url, headers=headers, timeout=20)
+                if self.has_oauth:
+                    _note_provider_call("reddit", 200, increment=True)
+                return res
+            except ScanError as e:
+                if self.has_oauth:
+                    _note_provider_call("reddit", getattr(e, "code", 0), increment=True)
+                raise
             finally:
                 time.sleep(0.8)
 
@@ -1009,8 +1189,13 @@ def apify_run(actor_id, run_input, token, max_wait_s=600, ctx=None):
         raise ScanCancelled("Cancelled by user.")
     act = actor_id.replace("/", "~")
     headers = {"Authorization": f"Bearer {token}"}
-    run = http_request(f"{APIFY_BASE}/acts/{act}/runs?waitForFinish=5", "POST",
-                       body=run_input, headers=headers, timeout=30).get("data", {})
+    try:
+        run = http_request(f"{APIFY_BASE}/acts/{act}/runs?waitForFinish=5", "POST",
+                           body=run_input, headers=headers, timeout=30).get("data", {})
+        _note_provider_call("apify", 200, increment=True)
+    except ScanError as e:
+        _note_provider_call("apify", getattr(e, "code", 0), increment=True)
+        raise
     run_id = run.get("id")
     if ctx and run_id:
         ctx.register_apify_run(run_id, token)
@@ -1133,7 +1318,9 @@ def evaluate_item(it, ctx):
     own_text = _norm(body if it["kind"] == "comment" else f"{title} {body}")
     context = _norm(f"{own_text} {it.get('parent_text', '')}")
 
-    # 2b. Noise & Spam Blocker (blocked authors + negative keywords)
+    # 2b. Noise & Spam Blocker (blocked authors + negative keywords + comment spam shield)
+    if it["kind"] == "comment" and is_spam_comment(own_text):
+        return None
     author_norm = re.sub(r"^(@|u/)", "", _norm(it.get("author") or ""))
     if author_norm and any(author_norm == ba or ba in author_norm for ba in ctx.settings.get("blocked_authors", []) if ba):
         return None
@@ -1349,13 +1536,18 @@ def _search_yahoo_html(dork_query, max_age_days=7, platform=""):
 def _search_serper(dork_query, api_key, max_age_days=7, platform=""):
     tbs = "qdr:d" if max_age_days <= 1 else ("qdr:w" if max_age_days <= 7 else "qdr:m")
     body = {"q": dork_query, "gl": "ph", "hl": "en", "num": 20, "tbs": tbs}
-    data = http_request(
-        "https://google.serper.dev/search",
-        method="POST",
-        body=body,
-        headers={"X-API-KEY": api_key},
-        timeout=20,
-    )
+    try:
+        data = http_request(
+            "https://google.serper.dev/search",
+            method="POST",
+            body=body,
+            headers={"X-API-KEY": api_key},
+            timeout=20,
+        )
+        _note_provider_call("serper", 200, increment=True)
+    except ScanError as e:
+        _note_provider_call("serper", getattr(e, "code", 0), increment=True)
+        raise
     results = []
     seen = set()
     for row in (data or {}).get("organic", []) or []:
@@ -1389,13 +1581,18 @@ def _search_tavily(dork_query, api_key, max_age_days=7, platform=""):
         "time_range": time_range,
         "max_results": 20,
     }
-    data = http_request(
-        "https://api.tavily.com/search",
-        method="POST",
-        body=body,
-        headers={"Authorization": f"Bearer {api_key}"},
-        timeout=20,
-    )
+    try:
+        data = http_request(
+            "https://api.tavily.com/search",
+            method="POST",
+            body=body,
+            headers={"Authorization": f"Bearer {api_key}"},
+            timeout=20,
+        )
+        _note_provider_call("tavily", 200, increment=True)
+    except ScanError as e:
+        _note_provider_call("tavily", getattr(e, "code", 0), increment=True)
+        raise
     results = []
     seen = set()
     for row in (data or {}).get("results", []) or []:
@@ -1424,16 +1621,27 @@ def _search_brave(dork_query, api_key, max_age_days=7, platform=""):
     freshness = "pd" if max_age_days <= 1 else ("pw" if max_age_days <= 7 else "pm")
     qs = urllib.parse.urlencode({"q": dork_query, "freshness": freshness, "count": 20})
     url = f"https://api.search.brave.com/res/v1/web/search?{qs}"
-    data = http_request(
-        url,
-        method="GET",
-        headers={
-            "X-Subscription-Token": api_key,
-            "Accept": "application/json",
-            "Accept-Encoding": "identity",
-        },
-        timeout=20,
-    )
+    try:
+        res = http_request(
+            url,
+            method="GET",
+            headers={
+                "X-Subscription-Token": api_key,
+                "Accept": "application/json",
+                "Accept-Encoding": "identity",
+            },
+            timeout=20,
+            return_headers=True,
+        )
+        if isinstance(res, tuple) and len(res) == 2:
+            data, resp_headers = res
+            _update_brave_headers(resp_headers)
+        else:
+            data = res
+        _note_provider_call("brave", 200, increment=True)
+    except ScanError as e:
+        _note_provider_call("brave", getattr(e, "code", 0), increment=True)
+        raise
     results = []
     seen = set()
     rows = ((data or {}).get("web") or {}).get("results", []) or []
@@ -1466,30 +1674,35 @@ def _search_custom_api(dork_query, endpoint_url, api_key="", max_age_days=7,
         headers["Authorization"] = f"Bearer {api_key}"
         headers["X-API-Key"] = api_key
 
-    if "{query}" in endpoint_url:
-        req_url = endpoint_url.format(
-            query=urllib.parse.quote_plus(dork_query),
-            raw_query=urllib.parse.quote_plus(raw_query or ""),
-            platform=urllib.parse.quote_plus(platform or ""),
-            location=urllib.parse.quote_plus(location or ""),
-            max_age_days=max_age_days,
-        )
-        data = http_request(req_url, method="GET", headers=headers, timeout=25)
-    else:
-        data = http_request(
-            endpoint_url,
-            method="POST",
-            body={
-                "query": dork_query,
-                "raw_query": raw_query,
-                "platform": platform,
-                "location": location,
-                "max_age_days": max_age_days,
-                "intents": list(intents or []),
-            },
-            headers=headers,
-            timeout=25,
-        )
+    try:
+        if "{query}" in endpoint_url:
+            req_url = endpoint_url.format(
+                query=urllib.parse.quote_plus(dork_query),
+                raw_query=urllib.parse.quote_plus(raw_query or ""),
+                platform=urllib.parse.quote_plus(platform or ""),
+                location=urllib.parse.quote_plus(location or ""),
+                max_age_days=max_age_days,
+            )
+            data = http_request(req_url, method="GET", headers=headers, timeout=25)
+        else:
+            data = http_request(
+                endpoint_url,
+                method="POST",
+                body={
+                    "query": dork_query,
+                    "raw_query": raw_query,
+                    "platform": platform,
+                    "location": location,
+                    "max_age_days": max_age_days,
+                    "intents": list(intents or []),
+                },
+                headers=headers,
+                timeout=25,
+            )
+        _note_provider_call("custom_api", 200, increment=True)
+    except ScanError as e:
+        _note_provider_call("custom_api", getattr(e, "code", 0), increment=True)
+        raise
 
     rows = []
     if isinstance(data, list):
@@ -1581,15 +1794,23 @@ def _scan_public_social(platform, label, dork_prefixes, ctx, extra_note=""):
 
     queries = []
     custom_qs = ctx.settings.get("custom_queries") or []
+    seeker_only = ctx.intents == {"seeker"}
     for prefix in dork_prefixes:
         if ctx.query:
             queries.append(f'{prefix} {loc_term} {ctx.query}')
+        elif seeker_only:
+            queries.append(
+                f'{prefix} ("nangita kog trabaho {loc_term}" OR "looking for a job {loc_term}" OR "pa refer {loc_term}" OR "for hire {loc_term}")'
+            )
+            queries.append(
+                f'{prefix} {loc_term} ("nangita kog trabaho" OR "looking for work" OR "basin naa moy" OR "kinsa naay bakante")'
+            )
         elif custom_qs:
             q_joined = " OR ".join(f'"{q}"' for q in custom_qs[:4])
             queries.append(f'{prefix} {loc_term} ({q_joined})')
         else:
             if "seeker" in ctx.intents:
-                queries.append(f'{prefix} {loc_term} "nangita kog trabaho" OR "looking for work" OR "interested po" OR "for hire"')
+                queries.append(f'{prefix} {loc_term} "nangita kog trabaho" OR "looking for a job" OR "pa refer" OR "for hire"')
             if "employer" in ctx.intents:
                 queries.append(f'{prefix} {loc_term} "we are hiring" OR "urgent hiring" OR "job hiring"')
 
@@ -1705,6 +1926,8 @@ def adapter_reddit_posts(ctx):
     loc_prefix = f"{ctx.location} " if ctx.location.lower() != "any" else ""
     if ctx.query:
         search_q = f"{loc_prefix}{ctx.query}".strip()
+    elif ctx.intents == {"seeker"}:
+        search_q = f'{loc_prefix}("nangita kog trabaho" OR "looking for a job" OR "looking for work" OR "pa refer" OR "for hire" OR "hire me")'
     else:
         search_q = f"{loc_prefix}(hiring OR trabaho OR job OR work OR apply OR \"for hire\")"
 
@@ -1971,11 +2194,16 @@ def adapter_facebook(ctx):
             _fb_public_prefixes(s),
             ctx,
         )
-    token, limit = s["apify_token"], s["results_per_source"]
+    token = s["apify_token"]
+    fb_posts_limit = s.get("fb_max_posts_per_group") or s["results_per_source"]
+    fb_comments_limit = s.get("fb_comments_per_post", 15)
     cache_s = s["apify_cache_seconds"]
     items, errors, fetched, threads = [], [], 0, []
     seen_post_ids = set()
+    seen_comment_ids = set()
     configured_keys = {_url_group_key(u) for u in s["facebook_groups"]}
+    used_cache = False
+    ran_fresh = False
 
     def ingest_fb_posts(data_list, page_mode=False):
         nonlocal fetched
@@ -1986,21 +2214,33 @@ def adapter_facebook(ctx):
             seen_post_ids.add(post_it["external_id"])
             fetched += 1
             items.append(post_it)
-            embedded = pick(post, "topComments", "comments", "latestComments")
-            for c in embedded if isinstance(embedded, list) else []:
-                ci = _fb_comment_item(c, post_it, ctx)
-                if ci:
-                    fetched += 1
-                    items.append(ci)
+            if fb_comments_limit > 0:
+                extracted_here = 0
+                for c_key in ("topComments", "comments", "commentsList", "latestComments"):
+                    embedded = post.get(c_key)
+                    if not isinstance(embedded, list):
+                        continue
+                    for c in embedded:
+                        if extracted_here >= fb_comments_limit:
+                            break
+                        if not isinstance(c, dict):
+                            continue
+                        ci = _fb_comment_item(c, post_it, ctx)
+                        if ci and ci["external_id"] not in seen_comment_ids:
+                            seen_comment_ids.add(ci["external_id"])
+                            extracted_here += 1
+                            fetched += 1
+                            items.append(ci)
             n_comments = pick(post, "commentsCount", "comments_count")
-            if (isinstance(n_comments, int) and n_comments > 0 and ctx.is_recent(post_it["posted_ts"])
-                    and ctx.intent_of(f"{post_it['title']} {post_it['text']}") in ("employer", "seeker", "seller", "buyer")):
+            if (fb_comments_limit > 0 and isinstance(n_comments, int) and n_comments > 0 and ctx.is_recent(post_it["posted_ts"])
+                    and ctx.intent_of(f"{post_it['title']} {post_it['text']}", author=post_it.get("author", "")) in ("employer", "seeker", "seller", "buyer")):
                 threads.append(post_it)
 
     # 1. Only pull cached items that belong to the CURRENTLY configured facebook_groups in Settings!
     cached_all, latest_age_s = apify_fetch_recent_runs(APIFY_ACTORS["facebook_groups"], token, max_runs=2)
     cached_matching = [p for p in cached_all if _post_matches_configured_groups(p, configured_keys)]
     if cached_matching:
+        used_cache = True
         ingest_fb_posts(cached_matching, page_mode=False)
 
     covered_keys = {
@@ -2013,59 +2253,88 @@ def adapter_facebook(ctx):
     jobs = []
     if s["facebook_groups"] and (missing_groups or latest_age_s > cache_s or not cached_matching):
         target_groups = missing_groups if (missing_groups and latest_age_s <= cache_s) else s["facebook_groups"]
-        jobs.append((APIFY_ACTORS["facebook_groups"], False, {
-            "startUrls": [{"url": u} for u in target_groups], "resultsLimit": limit,
-            "viewOption": "CHRONOLOGICAL", "onlyPostsNewerThan": ctx.since_phrase()}))
+        grp_input = {
+            "startUrls": [{"url": u} for u in target_groups],
+            "resultsLimit": fb_posts_limit,
+            "viewOption": "CHRONOLOGICAL",
+            "onlyPostsNewerThan": ctx.since_phrase(),
+        }
+        if fb_comments_limit > 0:
+            grp_input["commentsLimit"] = fb_comments_limit
+        jobs.append((APIFY_ACTORS["facebook_groups"], False, grp_input))
     if s["facebook_pages"]:
         jobs.append((APIFY_ACTORS["facebook_pages"], True, {
-            "startUrls": [{"url": u} for u in s["facebook_pages"]], "resultsLimit": limit,
+            "startUrls": [{"url": u} for u in s["facebook_pages"]], "resultsLimit": fb_posts_limit,
             "onlyPostsNewerThan": ctx.since_phrase()}))
 
     for actor, page_mode, run_input in jobs:
         if ctx.is_cancelled():
             return result("cancelled", "Cancelled by user.", items, fetched)
         try:
+            ran_fresh = True
             data = apify_run(actor, run_input, token, ctx=ctx)
             ingest_fb_posts(data, page_mode=page_mode)
         except ScanCancelled:
             return result("cancelled", "Cancelled by user.", items, fetched)
         except ScanError as e:
-            errors.append(str(e))
+            if "HTTP 400" in str(e) and "commentsLimit" in run_input:
+                fallback_input = {k: v for k, v in run_input.items() if k != "commentsLimit"}
+                try:
+                    data = apify_run(actor, fallback_input, token, ctx=ctx)
+                    ingest_fb_posts(data, page_mode=page_mode)
+                    continue
+                except ScanCancelled:
+                    return result("cancelled", "Cancelled by user.", items, fetched)
+                except ScanError as e2:
+                    errors.append(str(e2))
+            else:
+                errors.append(str(e))
 
     if ctx.is_cancelled():
         return result("cancelled", "Cancelled by user.", items, fetched)
 
     # 3. Only ingest comments whose parent thread is in `threads` (from the currently configured groups)
-    by_url = {t["url"]: t for t in threads}
-    cached_comments, comment_age_s = apify_fetch_recent_runs(APIFY_ACTORS["facebook_comments"], token, max_runs=2)
-    for c in cached_comments:
-        parent = by_url.get(pick(c, "inputUrl", "facebookUrl", "postUrl"))
-        if not parent:
-            continue
-        ci = _fb_comment_item(c, parent, ctx)
-        if ci:
-            fetched += 1
-            items.append(ci)
+    if fb_comments_limit > 0 and threads:
+        by_url = {t["url"]: t for t in threads}
+        cached_comments, comment_age_s = apify_fetch_recent_runs(APIFY_ACTORS["facebook_comments"], token, max_runs=2)
+        for c in cached_comments:
+            parent = by_url.get(pick(c, "inputUrl", "facebookUrl", "postUrl"))
+            if not parent:
+                continue
+            ci = _fb_comment_item(c, parent, ctx)
+            if ci and ci["external_id"] not in seen_comment_ids:
+                seen_comment_ids.add(ci["external_id"])
+                used_cache = True
+                fetched += 1
+                items.append(ci)
 
-    unscraped_threads = [t for t in threads if t["url"] not in {pick(c, "inputUrl", "facebookUrl", "postUrl") for c in cached_comments}]
-    unscraped_threads = unscraped_threads[: s["comment_threads_per_platform"]]
-    if unscraped_threads and not ctx.is_cancelled():
-        try:
-            data = apify_run(APIFY_ACTORS["facebook_comments"], {
-                "startUrls": [{"url": t["url"]} for t in unscraped_threads],
-                "resultsLimit": s["comments_per_thread"], "includeNestedComments": True,
-                "viewOption": "RANKED_UNFILTERED"}, token, ctx=ctx)
-            for c in data:
-                parent = by_url.get(pick(c, "inputUrl", "facebookUrl", "postUrl")) or \
-                    (unscraped_threads[0] if len(unscraped_threads) == 1 else None)
-                ci = _fb_comment_item(c, parent, ctx)
-                if ci:
-                    fetched += 1
-                    items.append(ci)
-        except ScanCancelled:
-            return result("cancelled", "Cancelled by user.", items, fetched)
-        except ScanError as e:
-            errors.append(f"comments: {e}")
+        # When Jobseekers Only is active, prioritize hiring posts first so we capture commenters applying
+        if ctx.intents == {"seeker"}:
+            threads.sort(
+                key=lambda t: 0 if ctx.intent_of(f"{t['title']} {t['text']}", author=t.get("author", "")) == "employer" else 1
+            )
+        scraped_urls = {pick(c, "inputUrl", "facebookUrl", "postUrl") for c in cached_comments}
+        unscraped_threads = [t for t in threads if t["url"] not in scraped_urls]
+        unscraped_threads = unscraped_threads[: s["comment_threads_per_platform"]]
+        if unscraped_threads and not ctx.is_cancelled():
+            try:
+                ran_fresh = True
+                data = apify_run(APIFY_ACTORS["facebook_comments"], {
+                    "startUrls": [{"url": t["url"]} for t in unscraped_threads],
+                    "resultsLimit": fb_comments_limit, "includeNestedComments": True,
+                    "viewOption": "RANKED_UNFILTERED"}, token, ctx=ctx)
+                for c in data:
+                    parent = by_url.get(pick(c, "inputUrl", "facebookUrl", "postUrl")) or \
+                        (unscraped_threads[0] if len(unscraped_threads) == 1 else None)
+                    ci = _fb_comment_item(c, parent, ctx)
+                    if ci and ci["external_id"] not in seen_comment_ids:
+                        seen_comment_ids.add(ci["external_id"])
+                        fetched += 1
+                        items.append(ci)
+            except ScanCancelled:
+                return result("cancelled", "Cancelled by user.", items, fetched)
+            except ScanError as e:
+                errors.append(f"comments: {e}")
 
     if not items and errors and s.get("search_mode") == "auto":
         return _scan_public_social(
@@ -2075,7 +2344,138 @@ def adapter_facebook(ctx):
             extra_note=f"Apify fallback ({errors[0]})",
         )
 
-    return _finish(items, fetched, errors)
+    cache_note = f"Cached (0 credits) · Checked {fetched} posts/comments." if (used_cache and not ran_fresh and not errors) else ""
+    return _finish(items, fetched, errors, note=cache_note)
+
+
+def _norm_fb_post_url(url):
+    raw = str(url or "").strip()
+    if not raw:
+        return ""
+    try:
+        u = urllib.parse.urlparse(raw)
+        keep_qs = {}
+        for k, vals in urllib.parse.parse_qs(u.query).items():
+            if k.lower() in ("story_fbid", "fbid", "id", "v", "multi_permalinks"):
+                keep_qs[k] = vals[0]
+        qs = urllib.parse.urlencode(sorted(keep_qs.items()))
+        path = re.sub(r"/+$", "", u.path.lower())
+        return f"facebook.com{path}" + (f"?{qs}" if qs else "")
+    except Exception:
+        return raw.lower().rstrip("/")
+
+
+def mine_facebook_post_comments(lead_row, config, max_comments=35):
+    """
+    On-demand single-post commenter miner (`apify/facebook-comments-scraper`).
+    Caches recently mined post URLs within `apify_cache_seconds` so accidental
+    double-clicks never double-charge Apify credits.
+    """
+    if not isinstance(lead_row, dict):
+        return {"success": False, "error": "Lead not found."}
+    post_url = str(lead_row.get("url") or "").strip()
+    if not post_url or not is_valid_lead_url("facebook", post_url):
+        return {"success": False, "error": "This lead is not a valid Facebook post URL."}
+
+    settings = get_settings(config)
+    token = settings.get("apify_token") or ""
+    if not token:
+        return {"success": False, "error": "Apify API token is not configured in Settings -> API Keys."}
+
+    limit = max(5, min(100, _safe_int(max_comments, 35)))
+    cache_s = settings.get("apify_cache_seconds", 600)
+    norm_key = _norm_fb_post_url(post_url)
+    now_ts = time.time()
+    raw_comments = None
+    was_cached = False
+
+    with _MINED_POST_LOCK:
+        cached = _MINED_POST_CACHE.get(norm_key)
+        if cached and (now_ts - cached[0]) <= cache_s:
+            raw_comments = list(cached[1])
+            was_cached = True
+
+    if raw_comments is None:
+        recent_items, latest_age = apify_fetch_recent_runs(APIFY_ACTORS["facebook_comments"], token, max_runs=3)
+        if recent_items and latest_age <= cache_s:
+            matched_cached = [
+                c for c in recent_items
+                if _norm_fb_post_url(pick(c, "inputUrl", "facebookUrl", "postUrl")) == norm_key
+            ]
+            if matched_cached:
+                raw_comments = matched_cached
+                was_cached = True
+                with _MINED_POST_LOCK:
+                    _MINED_POST_CACHE[norm_key] = (now_ts, list(raw_comments))
+
+    if raw_comments is None:
+        try:
+            raw_comments = apify_run(
+                APIFY_ACTORS["facebook_comments"],
+                {
+                    "startUrls": [{"url": post_url}],
+                    "resultsLimit": limit,
+                    "includeNestedComments": True,
+                    "viewOption": "RANKED_UNFILTERED",
+                },
+                token,
+                max_wait_s=180,
+            )
+            with _MINED_POST_LOCK:
+                _MINED_POST_CACHE[norm_key] = (now_ts, list(raw_comments or []))
+        except ScanError as e:
+            return {"success": False, "error": str(e)}
+
+    parent_ctx = {
+        "title": lead_row.get("title") or "",
+        "text": lead_row.get("content") or "",
+        "url": post_url,
+        "source": lead_row.get("source") or "Facebook Group",
+    }
+    ctx = ScanContext(
+        config,
+        query="",
+        location=settings.get("location") or "Cebu",
+        max_age_days=max(30, settings.get("max_age_days", 7)),
+        intents=["seeker", "employer", "buyer", "seller"],
+        trigger="mine",
+    )
+
+    seen_ids = set()
+    candidates = []
+    for c in raw_comments or []:
+        if not isinstance(c, dict):
+            continue
+        ci = _fb_comment_item(c, parent_ctx, ctx)
+        if not ci:
+            continue
+        ci["parent_url"] = post_url
+        evaluated = evaluate_item(ci, ctx)
+        if not evaluated or evaluated["external_id"] in seen_ids:
+            continue
+        seen_ids.add(evaluated["external_id"])
+        candidates.append(evaluated)
+
+    if candidates:
+        screen_leads_with_ai(candidates, settings, skip_already_approved=True)
+
+    saved = 0
+    seekers_saved = 0
+    for ld in candidates:
+        is_new = save_lead(**ld)
+        if is_new:
+            saved += 1
+            if ld.get("intent") == "seeker" and ld.get("status") != "ai_filtered":
+                seekers_saved += 1
+
+    return {
+        "success": True,
+        "fetched": len(raw_comments or []),
+        "matched": len(candidates),
+        "saved": saved,
+        "seekers_saved": seekers_saved,
+        "cached": was_cached,
+    }
 
 
 # =====================================================================
@@ -2116,6 +2516,7 @@ def adapter_instagram(ctx):
     token = s["apify_token"]
     cache_s = s["apify_cache_seconds"]
     items, errors, fetched, threads = [], [], 0, []
+    used_cache = False
     try:
         data, age_s = apify_fetch_recent_runs(APIFY_ACTORS["instagram_hashtags"], token, max_runs=1)
         if ctx.is_cancelled():
@@ -2128,6 +2529,8 @@ def adapter_instagram(ctx):
             data = apify_run(APIFY_ACTORS["instagram_hashtags"], {
                 "hashtags": s["instagram_hashtags"], "resultsLimit": s["results_per_source"],
                 "resultsType": "posts", "onlyPostsNewerThan": ctx.since_phrase()}, token, ctx=ctx)
+        else:
+            used_cache = True
     except ScanCancelled:
         return result("cancelled", "Cancelled by user.", items, fetched)
     except ScanError as e:
@@ -2165,7 +2568,8 @@ def adapter_instagram(ctx):
                 and ctx.intent_of(post_it["text"]) == "employer"):
             threads.append(post_it)
 
-    return _finish(items, fetched, errors)
+    cache_note = f"Cached (0 credits) · Checked {fetched} posts/comments." if (used_cache and not errors) else ""
+    return _finish(items, fetched, errors, note=cache_note)
 
 
 # =====================================================================
@@ -2199,7 +2603,16 @@ def adapter_tiktok(ctx):
         )
     token = s["apify_token"]
     cache_s = s["apify_cache_seconds"]
-    queries = [("ram" if q.lower() == "rame" else q) for q in s["tiktok_search_queries"]]
+    loc_term = "Philippines" if ctx.location.lower() == "any" else ctx.location
+    if not ctx.query and ctx.intents == {"seeker"}:
+        queries = [
+            f"nangita kog trabaho {loc_term}",
+            f"looking for a job {loc_term}",
+            f"pa refer {loc_term}",
+            f"for hire {loc_term}",
+        ]
+    else:
+        queries = [("ram" if q.lower() == "rame" else q) for q in s["tiktok_search_queries"]]
     if ctx.query:
         q_clean = "ram" if ctx.query.lower() == "rame" else ctx.query
         queries.insert(0, q_clean if ctx.location.lower() == "any" else f"{q_clean} {ctx.location}")
@@ -2212,6 +2625,7 @@ def adapter_tiktok(ctx):
         run_input["hashtags"] = s["tiktok_hashtags"]
 
     items, errors, fetched, threads = [], [], 0, []
+    used_cache = False
     try:
         data, age_s = apify_fetch_recent_runs(APIFY_ACTORS["tiktok_search"], token, max_runs=2)
         if ctx.is_cancelled():
@@ -2222,6 +2636,8 @@ def adapter_tiktok(ctx):
         )
         if not data or age_s > cache_s or not cache_matches_query:
             data = apify_run(APIFY_ACTORS["tiktok_search"], run_input, token, ctx=ctx)
+        else:
+            used_cache = True
     except ScanCancelled:
         return result("cancelled", "Cancelled by user.", items, fetched)
     except ScanError as e:
@@ -2256,7 +2672,8 @@ def adapter_tiktok(ctx):
             fetched += 1
             items.append(ci)
 
-    return _finish(items, fetched, errors)
+    cache_note = f"Cached (0 credits) · Checked {fetched} videos/comments." if (used_cache and not errors) else ""
+    return _finish(items, fetched, errors, note=cache_note)
 
 
 # =====================================================================
@@ -2305,7 +2722,12 @@ def adapter_public_web(ctx):
             errors.append(f"{name}: {e}")
 
     loc_q = "Philippines" if ctx.location.lower() == "any" else ctx.location
-    q_expr = ctx.query if ctx.query else "hiring OR job"
+    if ctx.query:
+        q_expr = ctx.query
+    elif ctx.intents == {"seeker"}:
+        q_expr = '("nangita kog trabaho" OR "looking for a job" OR "pa refer" OR "for hire")'
+    else:
+        q_expr = "hiring OR job"
     for site_domain in ("mynimo.com", "jobstreet.com.ph", "ph.indeed.com", "onlinejobs.ph"):
         if ctx.is_cancelled():
             return result("cancelled", "Cancelled by user.", items, fetched)
@@ -2467,16 +2889,21 @@ def gemini_screen_leads_batch(leads_batch, api_key, model="gemini-3.5-flash-lite
     }
 
     url = "https://generativelanguage.googleapis.com/v1beta/interactions"
-    resp = http_request(
-        url,
-        method="POST",
-        body=body,
-        headers={
-            "x-goog-api-key": api_key,
-            "Api-Revision": "2026-05-20",
-        },
-        timeout=30,
-    )
+    try:
+        resp = http_request(
+            url,
+            method="POST",
+            body=body,
+            headers={
+                "x-goog-api-key": api_key,
+                "Api-Revision": "2026-05-20",
+            },
+            timeout=30,
+        )
+        _note_provider_call("gemini", 200, increment=True)
+    except ScanError as e:
+        _note_provider_call("gemini", getattr(e, "code", 0), increment=True)
+        raise
     raw_txt = _extract_interaction_text(resp)
     if not raw_txt:
         return {}
@@ -2497,17 +2924,130 @@ def gemini_screen_leads_batch(leads_batch, api_key, model="gemini-3.5-flash-lite
     return out
 
 
+def is_obvious_clean_seeker_comment(lead, settings=None):
+    """
+    Gemini Credit Saver: returns True for high-confidence short individual jobseeker comments
+    (< 100 chars, matching a clean comment-only seeker phrase with zero employer/spam triggers)
+    so Gemini tokens are reserved strictly for ambiguous full posts.
+    """
+    if (lead.get("kind") or "").lower() != "comment":
+        return False
+    if (lead.get("intent") or "").lower() != "seeker":
+        return False
+    body = str(lead.get("content") or "").strip()
+    if not body or len(body) >= 100:
+        return False
+    text_norm = _norm(body)
+    if is_spam_comment(text_norm) or has_employer_veto(text_norm) or is_corporate_author(lead.get("author") or ""):
+        return False
+    kw_low = _norm(lead.get("matched_keyword") or "")
+    if kw_low in COMMENT_ONLY_SEEKER_PHRASES:
+        return True
+    return any(phrase_in(text_norm, p) for p in COMMENT_ONLY_SEEKER_PHRASES)
+
+
+def generate_ai_reply_draft(lead_row, tone="friendly", settings=None):
+    """
+    On-demand Gemini AI reply composer (zero background credit spend).
+    Crafts a short, natural, human, non-spammy reply referencing a specific detail
+    from the lead's actual post/comment + optional business name/contact from Settings.
+    """
+    if not isinstance(lead_row, dict):
+        return {"success": False, "error": "Lead not found."}
+    s = settings or {}
+    api_key = (s.get("gemini_api_key") or "").strip()
+    if not api_key:
+        return {"success": False, "error": "Gemini API key is not configured in Settings -> API Keys."}
+    model = (s.get("gemini_model") or "gemini-3.5-flash-lite").strip()
+    chosen_model = model if model in ("gemini-3.5-flash-lite", "gemini-4-hydrogen", "gemini-4-argon", "gemini-3.1-flash-lite") else "gemini-3.5-flash-lite"
+
+    tone_key = str(tone or "friendly").strip().lower()
+    tone_instructions = {
+        "friendly": "Warm, natural, friendly English or light Taglish — sounds like a helpful local person in Cebu.",
+        "direct": "Concise, clear, and professional — gets straight to the point without corporate jargon.",
+        "bisaya": "Natural Cebuano / Bisaya mixed lightly with everyday Taglish (authentic Cebu conversational style, not robotic).",
+        "short": "Ultra-short 1 to 2 sentence DM or reply under 160 characters.",
+    }.get(tone_key, "Warm, natural, friendly English.")
+
+    intent = str(lead_row.get("intent") or "seeker").strip().lower()
+    role_goal = {
+        "seeker": "You are reaching out to a jobseeker who is looking for work or commented on a job post to invite them to apply / share quick next steps.",
+        "employer": "You are reaching out to an employer/hiring manager to offer qualified, ready-to-start candidates.",
+        "seller": "You are messaging a seller to ask about availability, condition, last price, and meetup/pickup in Cebu.",
+        "buyer": "You are replying to a buyer who wants to purchase an item to let them know you have a matching unit available.",
+    }.get(intent, "You are replying helpfully to this social media lead.")
+
+    biz_name = (s.get("business_name") or "").strip()
+    biz_contact = (s.get("business_contact") or "").strip()
+    biz_lines = []
+    if biz_name:
+        biz_lines.append(f"Sender Business / Team Name: {biz_name}")
+    if biz_contact:
+        biz_lines.append(f"Sender Contact Info (mention naturally only if relevant): {biz_contact}")
+    biz_block = ("\n".join(biz_lines) + "\n") if biz_lines else ""
+
+    prompt = (
+        f"Write ONE ready-to-send reply message to this Cebu/Philippines social media lead.\n"
+        f"Goal: {role_goal}\n"
+        f"Tone: {tone_instructions}\n"
+        f"{biz_block}"
+        f"Lead details:\n"
+        f"- Author: {_short(lead_row.get('author') or 'there', 60)}\n"
+        f"- Kind: {lead_row.get('kind') or 'post'}\n"
+        f"- Source: {lead_row.get('source') or ''}\n"
+        f"- Location: {lead_row.get('location') or 'Cebu'}\n"
+        f"- Title: {_short(lead_row.get('title') or '', 180)}\n"
+        f"- Post/Comment text: {_short(lead_row.get('content') or '', 700)}\n\n"
+        "Strict rules:\n"
+        "1. Reference at least one specific detail from their actual post/comment (role, skill, area, schedule, or item).\n"
+        "2. Sound genuinely human, warm, and non-spammy. NO hashtags, NO excessive emojis, NO bullet lists.\n"
+        "3. Keep it short (2-3 sentences max; 1-2 sentences if tone is Short).\n"
+        "4. Return ONLY the plain-text reply itself with no surrounding quotes or preamble."
+    )
+
+    body = {
+        "model": chosen_model,
+        "store": False,
+        "input": prompt,
+    }
+    try:
+        resp = http_request(
+            "https://generativelanguage.googleapis.com/v1beta/interactions",
+            method="POST",
+            body=body,
+            headers={
+                "x-goog-api-key": api_key,
+                "Api-Revision": "2026-05-20",
+            },
+            timeout=25,
+        )
+        _note_provider_call("gemini", 200, increment=True)
+        raw_txt = _extract_interaction_text(resp).strip()
+        raw_txt = re.sub(r"^```[a-z]*\s*|\s*```$", "", raw_txt).strip()
+        if len(raw_txt) >= 2 and raw_txt[0] == raw_txt[-1] and raw_txt[0] in ('"', "'"):
+            raw_txt = raw_txt[1:-1].strip()
+        if not raw_txt:
+            return {"success": False, "error": "Gemini returned an empty reply draft."}
+        return {"success": True, "draft": raw_txt, "model": chosen_model}
+    except ScanError as e:
+        _note_provider_call("gemini", getattr(e, "code", 0), increment=True)
+        return {"success": False, "error": f"Gemini AI draft failed: {e}"}
+    except Exception:
+        return {"success": False, "error": "Gemini AI draft request failed unexpectedly."}
+
+
 def screen_leads_with_ai(leads_list, settings, skip_already_approved=False):
     """
     Screens a list of lead dicts in-place:
     1. Runs deterministic intent check (Comment-Only Guard, Employer Veto, Corporate Author) on non-manual leads.
     2. Runs contextual rant/misaligned heuristic check.
-    3. If ai_filter_enabled and gemini_api_key is configured, batches remaining leads to Gemini
+    3. Gemini Credit Saver: skips obvious short individual seeker comments (< 100 chars) and already-evaluated leads.
+    4. If ai_filter_enabled and gemini_api_key is configured, batches remaining leads to Gemini
        and applies BOTH keep/filter verdict AND Gemini's corrected intent category.
     """
     if not leads_list:
         return leads_list
-    s = settings or {}
+    s = settings if (isinstance(settings, dict) and "seeker_keywords" in settings) else get_settings(settings)
     ai_enabled = bool(s.get("ai_filter_enabled", True))
     api_key = (s.get("gemini_api_key") or "").strip()
     model = (s.get("gemini_model") or "gemini-3.5-flash-lite").strip()
@@ -2521,13 +3061,19 @@ def screen_leads_with_ai(leads_list, settings, skip_already_approved=False):
                 if det_kw and not ld.get("matched_keyword"):
                     ld["matched_keyword"] = det_kw
 
-        if skip_already_approved and ld.get("ai_verdict") == "approved" and str(ld.get("ai_reason") or "").startswith("Gemini AI:"):
+        ai_rsn = str(ld.get("ai_reason") or "")
+        if skip_already_approved and ld.get("ai_verdict") in ("approved", "filtered") and (
+            ai_rsn.startswith("Gemini AI:") or ai_rsn.startswith("Fast-verified:")
+        ):
             continue
         aligned, reason = detect_rant_or_misaligned_heuristic(ld)
         if not aligned and ai_enabled:
             ld["ai_verdict"] = "filtered"
             ld["ai_reason"] = reason
             ld["status"] = "ai_filtered"
+        elif is_obvious_clean_seeker_comment(ld, s):
+            ld["ai_verdict"] = "approved"
+            ld["ai_reason"] = "Fast-verified: Short individual jobseeker comment."
         else:
             ld["ai_verdict"] = ld.get("ai_verdict") or "approved"
             ld["ai_reason"] = ld.get("ai_reason") or reason
@@ -2560,14 +3106,67 @@ def screen_leads_with_ai(leads_list, settings, skip_already_approved=False):
     return leads_list
 
 
+def is_hot_lead(lead):
+    """Matches UI Hot Lead scoring so Autoscan only pushes high-signal leads to phone alerts."""
+    if not isinstance(lead, dict):
+        return False
+    if lead.get("status") == "ai_filtered" or lead.get("ai_verdict") == "filtered":
+        return False
+    score = 0
+    text = _norm(f"{lead.get('title', '')} {lead.get('content', '')} {lead.get('matched_keyword', '')}")
+    is_comment = (lead.get("kind") or "").lower() == "comment" or "comment" in str(lead.get("source") or "").lower()
+    if is_comment:
+        score += 2
+    if re.search(
+        r"\b(?:asap|urgent|urgently|immediate|immediately|walk-in|walk in|hiring today|"
+        r"need work|need a job|how to apply|unsaon pag apply|pwede mo apply|pwede pa mo apply|"
+        r"interested po|nangita kog trabaho|pa[- ]?refer|basin naa moy|kinsa naay bakante|willing to start)\b",
+        text,
+    ):
+        score += 3
+    ts = to_epoch(lead.get("posted_at") or lead.get("found_at"))
+    if ts:
+        hrs = max(0.0, (time.time() - ts) / 3600.0)
+        if hrs <= 3:
+            score += 3
+        elif hrs <= 12:
+            score += 1
+    return score >= 4
+
+
+def format_lead_alert_text(new_leads, trigger="auto"):
+    """Formats a crisp, clickable instant alert for Telegram and Discord/Slack webhooks."""
+    intent_labels = {
+        "seeker": "Jobseeker",
+        "employer": "Employer",
+        "buyer": "Buyer",
+        "seller": "Seller",
+    }
+    header = (
+        f"Unified Lead Scout ({trigger}): {len(new_leads)} Hot lead(s)!"
+        if trigger == "auto"
+        else f"Unified Lead Scout ({trigger}): {len(new_leads)} lead(s)"
+    )
+    lines = [header]
+    for ld in (new_leads or [])[:5]:
+        src = str(ld.get("source") or "Lead").strip()
+        intent_lbl = intent_labels.get(str(ld.get("intent") or "").lower(), "Lead")
+        raw_snip = ld.get("title") or ld.get("content") or "New lead"
+        extra_body = (ld.get("content") or "").strip()
+        if extra_body and extra_body[:40].lower() not in str(raw_snip).lower():
+            snippet = _short(f"{raw_snip} — {extra_body}", 140)
+        else:
+            snippet = _short(raw_snip, 140)
+        url = str(ld.get("url") or "").strip()
+        lines.append(f"• [{src} · {intent_lbl}] {snippet}\n  {url}")
+    return "\n".join(lines)
+
+
 def send_webhook_notification(webhook_url, new_leads, trigger="auto"):
     webhook_url = (webhook_url or "").strip()
     if not webhook_url or not new_leads:
         return False
-    lines = [f"🔔 Unified Lead Scout ({trigger}): {len(new_leads)} new lead(s) found!"]
-    for ld in new_leads[:5]:
-        lines.append(f"• [{ld.get('source', 'Lead')}] {_short(ld.get('title') or ld.get('content'), 90)} -> {ld.get('url')}")
-    summary = "\n".join(lines)
+    summary = format_lead_alert_text(new_leads, trigger=trigger)
     try:
         http_request(
             webhook_url,
@@ -2576,9 +3175,398 @@ def send_webhook_notification(webhook_url, new_leads, trigger="auto"):
             timeout=10,
         )
         return True
-    except Exception as e:
-        print(f"[webhook] Notification failed: {e}")
+    except Exception:
+        print("[webhook] Notification failed (connection or HTTP error).")
         return False
+
+
+def send_telegram_notification(bot_token, chat_id, new_leads, trigger="auto"):
+    """Sends a Telegram Bot API message without ever printing raw bot tokens in logs."""
+    token = (bot_token or "").strip()
+    chat = str(chat_id or "").strip()
+    if not token or not chat or not new_leads:
+        return False
+    summary = format_lead_alert_text(new_leads, trigger=trigger)
+    api_url = f"https://api.telegram.org/bot{token}/sendMessage"
+    try:
+        http_request(
+            api_url,
+            method="POST",
+            body={
+                "chat_id": chat,
+                "text": summary[:3900],
+                "disable_web_page_preview": True,
+            },
+            timeout=10,
+        )
+        return True
+    except Exception:
+        print("[telegram] Notification failed (HTTP/network error).")
+        return False
+
+
+def send_hot_lead_alerts(settings, new_leads, trigger="auto"):
+    """Dispatches instant phone alerts (Telegram & Discord/Webhook) for fresh Hot approved leads."""
+    s = settings or {}
+    if not new_leads:
+        return {"webhook": False, "telegram": False}
+    approved = [ld for ld in new_leads if ld.get("status") != "ai_filtered"]
+    target_leads = [ld for ld in approved if is_hot_lead(ld)] if trigger == "auto" else approved
+    if not target_leads:
+        return {"webhook": False, "telegram": False}
+    wh_ok = send_webhook_notification(s.get("alert_webhook_url"), target_leads, trigger=trigger) if s.get("alert_webhook_url") else False
+    tg_ok = (
+        send_telegram_notification(s.get("telegram_bot_token"), s.get("telegram_chat_id"), target_leads, trigger=trigger)
+        if (s.get("telegram_bot_token") and s.get("telegram_chat_id"))
+        else False
+    )
+    return {"webhook": wh_ok, "telegram": tg_ok}
+
+
+def _safe_float_num(val, default=0.0):
+    try:
+        if val in (None, ""):
+            return default
+        return float(val)
+    except (ValueError, TypeError):
+        return default
+
+
+def get_api_credits_status(config, force=False):
+    """
+    Returns live remaining balances and daily usage for all configured APIs.
+    SECURITY: Never returns or logs raw API keys, tokens, headers, or credential URLs.
+    Caches external balance checks for 60s unless `force=True` while always returning fresh `calls_today`.
+    """
+    s = get_settings(config)
+    usage = get_api_usage_today()
+
+    fp_raw = "|".join([
+        hashlib.sha256((s.get(k) or "").encode("utf-8")).hexdigest()[:12]
+        for k in (
+            "apify_token", "gemini_api_key", "serper_api_key", "tavily_api_key",
+            "brave_api_key", "custom_api_url", "custom_api_key",
+            "reddit_client_id", "reddit_client_secret",
+        )
+    ])
+
+    now_ts = time.time()
+    cached_remote = None
+    with _API_STATE_LOCK:
+        if (
+            not force
+            and _CREDITS_CACHE.get("data") is not None
+            and _CREDITS_CACHE.get("fingerprint") == fp_raw
+            and (now_ts - float(_CREDITS_CACHE.get("ts") or 0.0)) < 60.0
+        ):
+            cached_remote = json.loads(json.dumps(_CREDITS_CACHE["data"]))
+
+    def _last_state(prov, default_status="Active"):
+        with _API_STATE_LOCK:
+            st = dict(_LAST_PROVIDER_HTTP_STATUS.get(prov) or {})
+        code = int(st.get("code") or 0)
+        label = str(st.get("status") or default_status)
+        if code == 429 or "429" in label:
+            health = "error"
+            label = "Quota 429"
+        elif code in (401, 403) or label.startswith(("Error", "Auth", "HTTP")):
+            health = "error"
+        else:
+            health = "healthy"
+        return label, code, health
+
+    if cached_remote is None:
+        remote_results = {}
+
+        def _fetch_apify():
+            tok = s.get("apify_token") or ""
+            if not tok:
+                return
+            try:
+                resp = http_request(
+                    f"{APIFY_BASE}/users/me/limits",
+                    method="GET",
+                    headers={"Authorization": f"Bearer {tok}"},
+                    timeout=5,
+                )
+                _note_provider_call("apify", 200, increment=False)
+                d = resp.get("data") if isinstance(resp, dict) and isinstance(resp.get("data"), dict) else (resp if isinstance(resp, dict) else {})
+                used_usd = round(_safe_float_num(pick(d, "current.monthlyUsageUsd", "currentMonthlyUsageUsd", "usedUsd"), 0.0), 2)
+                limit_usd = round(_safe_float_num(pick(d, "limits.maxMonthlyUsageUsd", "maxMonthlyUsageUsd", "limitUsd"), 5.0), 2)
+                if limit_usd <= 0:
+                    limit_usd = 5.0
+                rem_usd = round(max(0.0, limit_usd - used_usd), 2)
+                pct_rem = round((rem_usd / limit_usd) * 100.0, 1) if limit_usd > 0 else 0.0
+                reset_at = str(pick(d, "monthlyUsageCycle.endAt", "nextResetAt") or "")
+                health = "error" if rem_usd <= 0 else ("low" if pct_rem < 20.0 else "healthy")
+                remote_results["apify"] = {
+                    "used_usd": used_usd,
+                    "limit_usd": limit_usd,
+                    "remaining_usd": rem_usd,
+                    "pct_remaining": pct_rem,
+                    "reset_at": reset_at,
+                    "status_text": f"${rem_usd:.2f} / ${limit_usd:.2f} left",
+                    "http_code": 200,
+                    "health": health,
+                }
+            except ScanError as e:
+                code = int(getattr(e, "code", 0) or 0)
+                _note_provider_call("apify", code, increment=False)
+                remote_results["apify"] = {
+                    "status_text": "Quota 429" if code == 429 else (f"HTTP {code}" if code else "Error"),
+                    "http_code": code,
+                    "health": "error",
+                }
+            except Exception:
+                remote_results["apify"] = {"status_text": "Error", "http_code": 0, "health": "error"}
+
+        def _fetch_serper():
+            key = s.get("serper_api_key") or ""
+            if not key:
+                return
+            try:
+                resp = http_request(
+                    "https://google.serper.dev/account",
+                    method="GET",
+                    headers={"X-API-KEY": key},
+                    timeout=5,
+                )
+                _note_provider_call("serper", 200, increment=False)
+                d = resp if isinstance(resp, dict) else {}
+                raw_rem = pick(d, "balance", "remainingCredits", "remaining_credits", "credit", "credits", "creditsLeft")
+                rem_credits = int(_safe_float_num(raw_rem, 0)) if raw_rem is not None else None
+                limit_credits = int(_safe_float_num(pick(d, "totalCredits", "limit", "initialCredits"), 2500)) or 2500
+                if rem_credits is not None:
+                    pct_rem = round(min(100.0, max(0.0, (rem_credits / max(limit_credits, rem_credits, 1)) * 100.0)), 1)
+                    health = "error" if rem_credits <= 0 else ("low" if rem_credits < 500 else "healthy")
+                    status_text = f"{rem_credits:,} left"
+                else:
+                    pct_rem = None
+                    health = "healthy"
+                    status_text = "Active"
+                remote_results["serper"] = {
+                    "remaining_credits": rem_credits,
+                    "limit_credits": limit_credits,
+                    "pct_remaining": pct_rem,
+                    "status_text": status_text,
+                    "http_code": 200,
+                    "health": health,
+                }
+            except ScanError as e:
+                code = int(getattr(e, "code", 0) or 0)
+                _note_provider_call("serper", code, increment=False)
+                remote_results["serper"] = {
+                    "status_text": "Quota 429" if code == 429 else (f"HTTP {code}" if code else "Error"),
+                    "http_code": code,
+                    "health": "error",
+                }
+            except Exception:
+                remote_results["serper"] = {"status_text": "Error", "http_code": 0, "health": "error"}
+
+        def _fetch_tavily():
+            key = s.get("tavily_api_key") or ""
+            if not key:
+                return
+            try:
+                resp = http_request(
+                    "https://api.tavily.com/usage",
+                    method="GET",
+                    headers={"Authorization": f"Bearer {key}"},
+                    timeout=5,
+                )
+                _note_provider_call("tavily", 200, increment=False)
+                d = resp if isinstance(resp, dict) else {}
+                raw_used = pick(d, "account.plan_usage", "key.usage", "usage", "used", "data.usage")
+                raw_limit = pick(d, "account.plan_limit", "key.limit", "limit", "max_usage", "data.limit")
+                if raw_limit is not None and _safe_float_num(raw_limit, 0) > 0:
+                    used_c = int(_safe_float_num(raw_used, 0))
+                    limit_c = int(_safe_float_num(raw_limit, 1000))
+                    rem_c = max(0, limit_c - used_c)
+                    pct_rem = round((rem_c / limit_c) * 100.0, 1) if limit_c > 0 else 0.0
+                    health = "error" if rem_c <= 0 else ("low" if pct_rem < 20.0 else "healthy")
+                    status_text = f"{rem_c:,} / {limit_c:,} left"
+                elif raw_used is not None:
+                    used_c = int(_safe_float_num(raw_used, 0))
+                    limit_c = None
+                    rem_c = None
+                    pct_rem = None
+                    health = "healthy"
+                    status_text = f"{used_c:,} used"
+                else:
+                    used_c = limit_c = rem_c = pct_rem = None
+                    health = "healthy"
+                    status_text = "Active"
+                remote_results["tavily"] = {
+                    "used_credits": used_c,
+                    "limit_credits": limit_c,
+                    "remaining_credits": rem_c,
+                    "pct_remaining": pct_rem,
+                    "status_text": status_text,
+                    "http_code": 200,
+                    "health": health,
+                }
+            except ScanError as e:
+                code = int(getattr(e, "code", 0) or 0)
+                _note_provider_call("tavily", code, increment=False)
+                remote_results["tavily"] = {
+                    "status_text": "Quota 429" if code == 429 else (f"HTTP {code}" if code else "Error"),
+                    "http_code": code,
+                    "health": "error",
+                }
+            except Exception:
+                remote_results["tavily"] = {"status_text": "Error", "http_code": 0, "health": "error"}
+
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            futs = [pool.submit(fn) for fn in (_fetch_apify, _fetch_serper, _fetch_tavily)]
+            for f in futs:
+                try:
+                    f.result(timeout=6)
+                except Exception:
+                    pass
+
+        cached_remote = remote_results
+        with _API_STATE_LOCK:
+            _CREDITS_CACHE["ts"] = time.time()
+            _CREDITS_CACHE["fingerprint"] = fp_raw
+            _CREDITS_CACHE["data"] = json.loads(json.dumps(cached_remote))
+
+    providers_out = []
+
+    # 1. Apify
+    apify_cfg = bool(s.get("apify_token"))
+    apify_rem = dict(cached_remote.get("apify") or {})
+    providers_out.append({
+        "key": "apify",
+        "label": "Apify",
+        "configured": apify_cfg,
+        "calls_today": int(usage.get("apify", 0)),
+        "billing_url": "https://console.apify.com/billing",
+        "used_usd": apify_rem.get("used_usd"),
+        "limit_usd": apify_rem.get("limit_usd"),
+        "remaining_usd": apify_rem.get("remaining_usd"),
+        "pct_remaining": apify_rem.get("pct_remaining"),
+        "reset_at": apify_rem.get("reset_at") or "",
+        "status_text": apify_rem.get("status_text") if apify_cfg else "Not set",
+        "http_code": apify_rem.get("http_code", 200 if apify_cfg else 0),
+        "health": apify_rem.get("health", "healthy" if apify_cfg else "unconfigured"),
+    })
+
+    # 2. Gemini AI
+    gem_cfg = bool(s.get("gemini_api_key"))
+    gem_lbl, gem_code, gem_health = _last_state("gemini", "Active")
+    providers_out.append({
+        "key": "gemini",
+        "label": "Gemini AI",
+        "configured": gem_cfg,
+        "calls_today": int(usage.get("gemini", 0)),
+        "billing_url": "https://aistudio.google.com/app/plan_information",
+        "model": s.get("gemini_model") or "gemini-3.5-flash-lite",
+        "status_text": gem_lbl if gem_cfg else "Not set",
+        "http_code": gem_code if gem_cfg else 0,
+        "health": gem_health if gem_cfg else "unconfigured",
+    })
+
+    # 3. Serper.dev
+    serp_cfg = bool(s.get("serper_api_key"))
+    serp_rem = dict(cached_remote.get("serper") or {})
+    providers_out.append({
+        "key": "serper",
+        "label": "Serper.dev",
+        "configured": serp_cfg,
+        "calls_today": int(usage.get("serper", 0)),
+        "billing_url": "https://serper.dev/dashboard",
+        "remaining_credits": serp_rem.get("remaining_credits"),
+        "limit_credits": serp_rem.get("limit_credits"),
+        "pct_remaining": serp_rem.get("pct_remaining"),
+        "status_text": serp_rem.get("status_text") if serp_cfg else "Not set",
+        "http_code": serp_rem.get("http_code", 200 if serp_cfg else 0),
+        "health": serp_rem.get("health", "healthy" if serp_cfg else "unconfigured"),
+    })
+
+    # 4. Tavily
+    tav_cfg = bool(s.get("tavily_api_key"))
+    tav_rem = dict(cached_remote.get("tavily") or {})
+    providers_out.append({
+        "key": "tavily",
+        "label": "Tavily",
+        "configured": tav_cfg,
+        "calls_today": int(usage.get("tavily", 0)),
+        "billing_url": "https://app.tavily.com",
+        "used_credits": tav_rem.get("used_credits"),
+        "limit_credits": tav_rem.get("limit_credits"),
+        "remaining_credits": tav_rem.get("remaining_credits"),
+        "pct_remaining": tav_rem.get("pct_remaining"),
+        "status_text": tav_rem.get("status_text") if tav_cfg else "Not set",
+        "http_code": tav_rem.get("http_code", 200 if tav_cfg else 0),
+        "health": tav_rem.get("health", "healthy" if tav_cfg else "unconfigured"),
+    })
+
+    # 5. Brave Search
+    brv_cfg = bool(s.get("brave_api_key"))
+    brv_lbl, brv_code, brv_health = _last_state("brave", "Active")
+    with _API_STATE_LOCK:
+        brv_rem_val = _BRAVE_RATE_LIMIT.get("remaining")
+        brv_lim_val = _BRAVE_RATE_LIMIT.get("limit")
+    brv_pct = None
+    if brv_cfg and brv_rem_val is not None:
+        brv_status_txt = f"{brv_rem_val:,} left"
+        if brv_lim_val and brv_lim_val > 0:
+            brv_pct = round((brv_rem_val / brv_lim_val) * 100.0, 1)
+            if brv_rem_val <= 0:
+                brv_health = "error"
+            elif brv_pct < 20.0:
+                brv_health = "low"
+    else:
+        brv_status_txt = brv_lbl if brv_cfg else "Not set"
+    providers_out.append({
+        "key": "brave",
+        "label": "Brave Search",
+        "configured": brv_cfg,
+        "calls_today": int(usage.get("brave", 0)),
+        "billing_url": "https://api-dashboard.search.brave.com",
+        "remaining_credits": brv_rem_val if brv_cfg else None,
+        "limit_credits": brv_lim_val if brv_cfg else None,
+        "pct_remaining": brv_pct,
+        "status_text": brv_status_txt,
+        "http_code": brv_code if brv_cfg else 0,
+        "health": brv_health if brv_cfg else "unconfigured",
+    })
+
+    # 6. Custom API
+    cust_cfg = bool(s.get("custom_api_url"))
+    cust_lbl, cust_code, cust_health = _last_state("custom_api", "Active")
+    providers_out.append({
+        "key": "custom_api",
+        "label": "Custom API",
+        "configured": cust_cfg,
+        "calls_today": int(usage.get("custom_api", 0)),
+        "billing_url": "",
+        "status_text": cust_lbl if cust_cfg else "Not set",
+        "http_code": cust_code if cust_cfg else 0,
+        "health": cust_health if cust_cfg else "unconfigured",
+    })
+
+    # 7. Reddit OAuth
+    red_oauth = bool(s.get("reddit_client_id") and s.get("reddit_client_secret"))
+    red_lbl, red_code, red_health = _last_state("reddit", "Active")
+    providers_out.append({
+        "key": "reddit",
+        "label": "Reddit OAuth" if red_oauth else "Reddit",
+        "configured": red_oauth,
+        "calls_today": int(usage.get("reddit", 0)),
+        "billing_url": "https://www.reddit.com/prefs/apps",
+        "status_text": red_lbl if red_oauth else "Free RSS Mode",
+        "http_code": red_code if red_oauth else 200,
+        "health": red_health if red_oauth else "healthy",
+    })
+
+    total_calls_today = sum(int(v or 0) for v in usage.values())
+    return {
+        "success": True,
+        "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+        "total_calls_today": total_calls_today,
+        "providers": providers_out,
+    }
 
 
 class ScanManager:
@@ -2681,7 +3669,7 @@ class ScanManager:
                         candidates.append(lead)
 
                     if candidates and not cancel_ev.is_set():
-                        screen_leads_with_ai(candidates, ctx.settings)
+                        screen_leads_with_ai(candidates, ctx.settings, skip_already_approved=True)
 
                     for lead in candidates:
                         if cancel_ev.is_set():
@@ -2691,12 +3679,17 @@ class ScanManager:
                             matched += 1
                             if is_saved:
                                 new += 1
-                                if len(newly_saved_leads) < 5:
+                                if len(newly_saved_leads) < 10:
                                     newly_saved_leads.append({
                                         "title": lead.get("title", ""),
+                                        "content": lead.get("content", ""),
                                         "source": lead.get("source", ""),
                                         "url": lead.get("url", ""),
                                         "intent": lead.get("intent", ""),
+                                        "kind": lead.get("kind", "post"),
+                                        "matched_keyword": lead.get("matched_keyword", ""),
+                                        "posted_at": lead.get("posted_at", ""),
+                                        "status": lead.get("status", "new"),
                                     })
                     self._update(key, seq=seq, status=res["status"], message=res["message"],
                                  fetched=res["fetched"], matched=matched, new=new)
@@ -2704,15 +3697,19 @@ class ScanManager:
                         if seq == self._scan_seq:
                             self.state["new_total"] += new
                             self.state["matched_total"] += matched
-                            self.state["latest_new"] = list(newly_saved_leads)
+                            self.state["latest_new"] = list(newly_saved_leads[:5])
                     if res["status"] in ("error", "partial"):
                         print(f"[scan] {key}: {res['message']}")
         finally:
             self.last_finished_epoch = time.time()
             self._update(seq=seq, running=False, finished_at=utc_now_sql())
-            if newly_saved_leads and not cancel_ev.is_set() and ctx.settings.get("alert_webhook_url"):
+            has_alert_channel = bool(
+                ctx.settings.get("alert_webhook_url")
+                or (ctx.settings.get("telegram_bot_token") and ctx.settings.get("telegram_chat_id"))
+            )
+            if newly_saved_leads and not cancel_ev.is_set() and has_alert_channel and ctx.trigger == "auto":
                 threading.Thread(
-                    target=send_webhook_notification,
-                    args=(ctx.settings["alert_webhook_url"], newly_saved_leads, ctx.trigger),
+                    target=send_hot_lead_alerts,
+                    args=(ctx.settings, newly_saved_leads, ctx.trigger),
                     daemon=True,
                 ).start()

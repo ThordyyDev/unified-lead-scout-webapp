@@ -12,6 +12,7 @@ import sys
 import threading
 import time
 import urllib.parse
+from datetime import datetime, timedelta, timezone
 
 import database
 import scanners
@@ -238,6 +239,12 @@ class LeadScoutHandler(http.server.BaseHTTPRequestHandler):
             self.send_json(load_config())
             return
 
+        if path == "/api/credits":
+            force = query.get("refresh", ["0"])[0] in ("1", "true", "yes")
+            cfg = load_config()
+            self.send_json(scanners.get_api_credits_status(cfg, force=force))
+            return
+
         self.send_response(404)
         self.end_headers()
 
@@ -346,6 +353,64 @@ class LeadScoutHandler(http.server.BaseHTTPRequestHandler):
                 self.send_json({"error": "Missing id"}, 400)
             return
 
+        if path == "/api/lead/followup":
+            lead_id = payload.get("id")
+            if not lead_id:
+                self.send_json({"error": "Missing id"}, 400)
+                return
+            days = payload.get("days")
+            raw_at = payload.get("followup_at")
+            if raw_at is not None and str(raw_at).strip():
+                target_ts = str(raw_at).strip()
+            elif days not in (None, "", 0, "0"):
+                n_days = max(1, min(90, _safe_int(days, 1)))
+                target_ts = (datetime.now(timezone.utc) + timedelta(days=n_days)).strftime("%Y-%m-%d %H:%M:%S")
+            else:
+                target_ts = None
+            database.update_lead_followup(lead_id, target_ts)
+            self.send_json({"success": True, "followup_at": target_ts, "stats": database.get_stats()})
+            return
+
+        if path == "/api/lead/mine-comments":
+            lead_id = payload.get("id")
+            if not lead_id:
+                self.send_json({"error": "Missing id"}, 400)
+                return
+            lead_row = database.get_lead_by_id(lead_id)
+            if not lead_row:
+                self.send_json({"error": "Lead not found"}, 404)
+                return
+            cfg = load_config()
+            max_comments = max(5, min(100, _safe_int(payload.get("max_comments", 35), 35)))
+            res = scanners.mine_facebook_post_comments(lead_row, cfg, max_comments=max_comments)
+            if not res.get("success"):
+                self.send_json(res, 400)
+                return
+            raw_plats = payload.get("platforms")
+            platforms = [str(p).strip() for p in raw_plats if str(p).strip()] if isinstance(raw_plats, list) and raw_plats else None
+            res["stats"] = database.get_stats(platforms=platforms)
+            self.send_json(res)
+            return
+
+        if path == "/api/lead/ai-draft":
+            lead_id = payload.get("id")
+            tone = str(payload.get("tone") or "friendly").strip().lower()
+            if not lead_id:
+                self.send_json({"error": "Missing id"}, 400)
+                return
+            lead_row = database.get_lead_by_id(lead_id)
+            if not lead_row:
+                self.send_json({"error": "Lead not found"}, 404)
+                return
+            cfg = load_config()
+            settings = scanners.get_settings(cfg)
+            res = scanners.generate_ai_reply_draft(lead_row, tone=tone, settings=settings)
+            if not res.get("success"):
+                self.send_json(res, 400)
+                return
+            self.send_json(res)
+            return
+
         if path == "/api/lead/delete":
             lead_id = payload.get("id")
             if lead_id:
@@ -400,16 +465,26 @@ class LeadScoutHandler(http.server.BaseHTTPRequestHandler):
 
         if path == "/api/alerts/test":
             cfg = load_config()
-            s_cfg = cfg.get("search_settings") if isinstance(cfg.get("search_settings"), dict) else {}
-            wh_url = str(payload.get("webhook_url") or s_cfg.get("alert_webhook_url") or cfg.get("alert_webhook_url") or "").strip()
+            settings = scanners.get_settings(cfg)
+            wh_url = str(payload.get("webhook_url") or settings.get("alert_webhook_url") or "").strip()
+            tg_token = str(payload.get("telegram_bot_token") or settings.get("telegram_bot_token") or "").strip()
+            tg_chat = str(payload.get("telegram_chat_id") or settings.get("telegram_chat_id") or "").strip()
             sample = [{
-                "title": "Test Alert: Urgent hiring barista / jobseeker lead in Cebu",
+                "title": "Test Alert: Cebu Jobseeker ready to start ASAP",
+                "content": "Looking for kitchen helper / dishwasher work in Mandaue, Cebu.",
                 "source": "Unified Lead Scout (Test)",
                 "url": "http://localhost:5050",
                 "intent": "seeker",
             }]
-            sent = scanners.send_webhook_notification(wh_url, sample, trigger="test") if wh_url else False
-            self.send_json({"success": True, "webhook_configured": bool(wh_url), "webhook_sent": sent})
+            wh_sent = scanners.send_webhook_notification(wh_url, sample, trigger="test") if wh_url else False
+            tg_sent = scanners.send_telegram_notification(tg_token, tg_chat, sample, trigger="test") if (tg_token and tg_chat) else False
+            self.send_json({
+                "success": True,
+                "webhook_configured": bool(wh_url),
+                "webhook_sent": wh_sent,
+                "telegram_configured": bool(tg_token and tg_chat),
+                "telegram_sent": tg_sent,
+            })
             return
 
         if path == "/api/leads/reclassify":
