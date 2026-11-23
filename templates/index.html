@@ -36,70 +36,93 @@
   <style>
     :root {
       color-scheme: light;
-      --bg-sidebar: #F6F7F9;
-      --bg-sidebar-glass: rgba(246, 247, 249, 0.86);
+      --bg-sidebar: #FAFAFA;
+      --bg-sidebar-glass: rgba(250, 250, 250, 0.88);
       --bg-canvas: #FFFFFF;
-      --bg-header-glass: rgba(255, 255, 255, 0.84);
-      --bg-elevated: #F8F9FB;
-      --bg-input: #F3F4F7;
-      --bg-chip: #EFF1F5;
-      --bg-hover: rgba(15, 23, 42, 0.04);
-      --bg-active: rgba(15, 23, 42, 0.065);
-      --border-hairline: rgba(15, 23, 42, 0.08);
-      --border-hover: rgba(15, 23, 42, 0.15);
-      --ink-primary: #18191B;
-      --ink-body: #32363E;
-      --ink-secondary: #5E646F;
-      --ink-muted: #848B96;
-      --ink-section: #6E7480;
-      --pill-bg: rgba(15, 23, 42, 0.04);
-      --pill-border: rgba(15, 23, 42, 0.08);
-      --pill-ink: #3B4049;
+      --bg-header-glass: rgba(255, 255, 255, 0.88);
+      --bg-elevated: #FAFAFA;
+      --bg-input: #F4F4F5;
+      --bg-chip: #F4F4F5;
+      --bg-hover: #F4F4F5;
+      --bg-active: #ECECEF;
+      --border-hairline: #E4E4E7;
+      --border-subtle: #E4E4E7;
+      --border-hover: #D4D4D8;
+      --ink-primary: #141518;
+      --ink-body: #27272A;
+      --ink-secondary: #52525B;
+      --ink-muted: #71717A;
+      --ink-section: #71717A;
+      --pill-bg: #F4F4F5;
+      --pill-border: #E4E4E7;
+      --pill-ink: #3F3F46;
       --accent: #5E6AD2;
       --accent-hover: #4F5BC4;
-      --btn-sec-bg: #F1F3F6;
-      --btn-sec-hover: #E7EAF0;
-      --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 6px 16px rgba(15, 23, 42, 0.04);
+      --btn-primary-bg: #141518;
+      --btn-primary-hover: #23252B;
+      --btn-primary-ink: #FAFAFA;
+      --btn-primary-border: rgba(20, 21, 24, 0.16);
+      --btn-primary-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+      --btn-sec-bg: #F4F4F5;
+      --btn-sec-hover: #E4E4E7;
+      --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.03);
       --shadow-modal: 0 1px 2px rgba(15, 23, 42, 0.05), 0 18px 44px rgba(15, 23, 42, 0.14);
       --shadow-toast: 0 2px 6px rgba(15, 23, 42, 0.06), 0 10px 26px rgba(15, 23, 42, 0.12);
-      --kw-bg: rgba(94, 106, 210, 0.14);
+      --kw-bg: rgba(94, 106, 210, 0.12);
       --kw-ink: #3730A3;
-      --skel-a: rgba(15, 23, 42, 0.05);
-      --skel-b: rgba(15, 23, 42, 0.10);
+      --skel-a: rgba(24, 24, 27, 0.05);
+      --skel-b: rgba(24, 24, 27, 0.10);
     }
 
     html.dark {
       color-scheme: dark;
       --bg-sidebar: #111214;
-      --bg-sidebar-glass: rgba(17, 18, 20, 0.86);
+      --bg-sidebar-glass: rgba(17, 18, 20, 0.88);
       --bg-canvas: #17181B;
-      --bg-header-glass: rgba(23, 24, 27, 0.84);
+      --bg-header-glass: rgba(23, 24, 27, 0.88);
       --bg-elevated: #1C1D22;
       --bg-input: #1C1D22;
       --bg-chip: #22242A;
-      --bg-hover: rgba(255, 255, 255, 0.04);
-      --bg-active: rgba(255, 255, 255, 0.07);
-      --border-hairline: rgba(255, 255, 255, 0.065);
-      --border-hover: rgba(255, 255, 255, 0.12);
+      --bg-hover: rgba(255, 255, 255, 0.045);
+      --bg-active: rgba(255, 255, 255, 0.075);
+      --border-hairline: rgba(255, 255, 255, 0.07);
+      --border-subtle: rgba(255, 255, 255, 0.085);
+      --border-hover: rgba(255, 255, 255, 0.14);
       --ink-primary: #EEEFF1;
       --ink-body: #CFD3DA;
       --ink-secondary: #9BA1A6;
-      --ink-muted: #5F6570;
+      --ink-muted: #676D78;
       --ink-section: #6E7480;
       --pill-bg: rgba(255, 255, 255, 0.04);
       --pill-border: rgba(255, 255, 255, 0.08);
       --pill-ink: #C8CDD3;
       --accent: #5E6AD2;
       --accent-hover: #6C78E0;
+      --btn-primary-bg: #E6E8EC;
+      --btn-primary-hover: #F4F5F7;
+      --btn-primary-ink: #111214;
+      --btn-primary-border: rgba(255, 255, 255, 0.16);
+      --btn-primary-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
       --btn-sec-bg: #23252C;
       --btn-sec-hover: #2A2D36;
-      --shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.045), 0 4px 14px rgba(0, 0, 0, 0.26);
+      --shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.045), 0 4px 14px rgba(0, 0, 0, 0.24);
       --shadow-modal: inset 0 1px 0 rgba(255, 255, 255, 0.055), 0 24px 64px rgba(0, 0, 0, 0.62);
       --shadow-toast: inset 0 1px 0 rgba(255, 255, 255, 0.055), 0 12px 32px rgba(0, 0, 0, 0.55);
-      --kw-bg: rgba(94, 106, 210, 0.24);
+      --kw-bg: rgba(94, 106, 210, 0.22);
       --kw-ink: #C7D2FE;
       --skel-a: rgba(255, 255, 255, 0.045);
       --skel-b: rgba(255, 255, 255, 0.09);
+    }
+
+    /* Uniform 1.5px stroke Lucide icons */
+    .lucide-ic {
+      display: inline-block;
+      flex-shrink: 0;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
 
     * {
@@ -461,23 +484,139 @@
       color: #EEEFF1;
     }
 
-    /* Linear signature buttons (never blinding pure white) */
+    /* Vercel / Linear monochrome primary button */
     .btn-primary {
-      background-color: var(--accent);
-      color: #FFFFFF;
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 1px 2px rgba(0, 0, 0, 0.14);
-      border-radius: 6px;
+      background-color: var(--btn-primary-bg);
+      color: var(--btn-primary-ink);
+      border: 1px solid var(--btn-primary-border);
+      box-shadow: var(--btn-primary-shadow);
+      border-radius: 7px;
       font-weight: 500;
-      transition: background-color 150ms cubic-bezier(0.16, 1, 0.3, 1), transform 110ms cubic-bezier(0.16, 1, 0.3, 1), opacity 120ms ease;
+      transition: background-color 140ms cubic-bezier(0.16, 1, 0.3, 1), transform 110ms cubic-bezier(0.16, 1, 0.3, 1), opacity 120ms ease;
     }
     .btn-primary:hover:not(:disabled) {
-      background-color: var(--accent-hover);
+      background-color: var(--btn-primary-hover);
     }
     .btn-primary:active:not(:disabled) {
       transform: scale(0.98);
     }
     .btn-primary:disabled {
+      opacity: 0.48;
+      cursor: not-allowed;
+    }
+
+    /* Sleek 2px top scan progress hairline */
+    @keyframes scanBarSlide {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(350%); }
+    }
+    .scan-hairline-track {
+      position: relative;
+      height: 2px;
+      width: 100%;
+      overflow: hidden;
+      background-color: transparent;
+      flex-shrink: 0;
+    }
+    .scan-hairline-bar {
+      position: absolute;
+      inset: 0;
+      width: 32%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      animation: scanBarSlide 1.25s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+
+    /* Compact feed density mode */
+    .feed-compact .inbox-row {
+      padding: 6px 10px;
+    }
+    .feed-compact .row-preview-text {
+      display: none;
+    }
+    .feed-compact .row-title-line {
+      margin-bottom: 3px;
+    }
+
+    /* Restrained Gemini AI summary strip (above post body) */
+    .ai-summary-strip {
+      border: 1px solid var(--border-subtle);
+      border-left: 2px solid rgba(94, 106, 210, 0.65);
+      background-color: var(--bg-elevated);
+      border-radius: 8px;
+      box-shadow: var(--shadow-card);
+    }
+    .ai-summary-strip.is-filtered {
+      border-left-color: rgba(244, 63, 94, 0.75);
+      background-color: rgba(244, 63, 94, 0.06);
+      border-color: rgba(244, 63, 94, 0.22);
+    }
+
+    /* Notion-style borderless private note */
+    .note-autosave {
+      background: transparent;
+      border: 0;
+      color: var(--ink-body);
+      resize: none;
+      width: 100%;
+      padding: 2px 0;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .note-autosave:focus {
+      outline: none;
+    }
+    .note-autosave::placeholder {
+      color: var(--ink-muted);
+    }
+
+    /* Active filter dismissible chip */
+    .active-filter-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      height: 21px;
+      padding: 0 7px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 500;
+      background-color: var(--pill-bg);
+      border: 1px solid var(--pill-border);
+      color: var(--ink-secondary);
+      transition: background-color 110ms ease, color 110ms ease, border-color 110ms ease;
+    }
+    .active-filter-chip:hover {
+      background-color: var(--bg-active);
+      border-color: var(--border-hover);
+      color: var(--ink-primary);
+    }
+
+    /* Workspace dropdown menu popover */
+    .ws-menu {
+      background-color: var(--bg-canvas);
+      border: 1px solid var(--border-hover);
+      border-radius: 10px;
+      box-shadow: var(--shadow-modal);
+      animation: modalSettle 140ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .ws-menu-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      width: 100%;
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--ink-secondary);
+      transition: background-color 100ms ease, color 100ms ease;
+    }
+    .ws-menu-item:hover:not(:disabled) {
+      background-color: var(--bg-hover);
+      color: var(--ink-primary);
+    }
+    .ws-menu-item:disabled {
       opacity: 0.5;
       cursor: not-allowed;
     }
@@ -738,6 +877,26 @@
       .rb-stepper { display: none !important; }
     }
 
+    /* Compact Status Select (Zero awkward gap between label & custom chevron) */
+    #readerStatusSelect {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      field-sizing: content;
+    }
+
+    /* Composer Container-Query Narrow-Pane Protection (Zero Overlap at Any Zoom/Width) */
+    #composerContainer {
+      container-type: inline-size;
+      container-name: composerbar;
+    }
+    @container composerbar (max-width: 420px) {
+      .comp-open-host { display: none !important; }
+    }
+    @container composerbar (max-width: 340px) {
+      .comp-intent-hint { display: none !important; }
+    }
+
     /* Smooth Accordion for Reach Out Composer & Feed Filter Section */
     .composer-body-wrap,
     .filters-collapse-wrap {
@@ -766,25 +925,25 @@
 <body class="h-screen overflow-hidden flex flex-col">
 
   <!-- MOBILE TOP BAR (< lg) -->
-  <header class="lg:hidden h-[44px] shrink-0 border-b border-hair px-3 flex items-center justify-between gap-2 z-30" style="background-color: var(--bg-sidebar);">
+  <header class="lg:hidden h-[44px] shrink-0 border-b border-hair px-3 flex items-center justify-between gap-2 z-30 glass-sidebar-header">
     <div class="flex items-center gap-2 min-w-0">
       <button type="button" onclick="toggleMobileSidebar(true)" class="btn-ghost w-7 h-7 flex items-center justify-center" aria-label="Open Menu">
-        <i class="fa-solid fa-bars text-xs"></i>
+        <svg class="lucide-ic w-4 h-4" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
       </button>
       <span class="w-[18px] h-[18px] rounded-[5px] bg-[#5E6AD2] text-white flex items-center justify-center shrink-0">
-        <i class="fa-solid fa-crosshairs text-[9px]"></i>
+        <svg class="lucide-ic w-3 h-3" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="22" x2="18" y1="12" y2="12"/><line x1="6" x2="2" y1="12" y2="12"/><line x1="12" x2="12" y1="6" y2="2"/><line x1="12" x2="12" y1="22" y2="18"/></svg>
       </span>
       <span class="text-[13px] font-medium tracking-tight truncate">Lead Scout</span>
     </div>
     <div class="flex items-center gap-1 shrink-0">
-      <button type="button" onclick="focusSearch()" class="btn-ghost w-7 h-7 flex items-center justify-center" title="Search">
-        <i class="fa-solid fa-magnifying-glass text-[11px]"></i>
+      <button type="button" onclick="focusSearch()" class="btn-ghost w-7 h-7 flex items-center justify-center" title="Search (/)">
+        <svg class="lucide-ic w-3.5 h-3.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
       </button>
       <button type="button" onclick="openAddModal()" class="btn-ghost w-7 h-7 flex items-center justify-center" title="Log Manual Lead">
-        <i class="fa-regular fa-pen-to-square text-[11px]"></i>
+        <svg class="lucide-ic w-3.5 h-3.5" viewBox="0 0 24 24"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.375 2.625a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4Z"/></svg>
       </button>
       <button type="button" onclick="toggleTheme()" class="btn-ghost w-7 h-7 flex items-center justify-center" title="Toggle Theme">
-        <i class="theme-icon fa-solid fa-sun text-[11px]"></i>
+        <span class="theme-icon inline-flex items-center justify-center"></span>
       </button>
     </div>
   </header>
@@ -796,16 +955,19 @@
   <div class="flex-1 min-h-0 flex relative overflow-hidden">
 
     <!-- ================================================================
-         PANE 1: SLIM LINEAR SIDEBAR (224px on desktop, zero cutoff at 720p)
+         PANE 1: SLIM LINEAR SIDEBAR (238px, Spacious Pipeline Focus + Workspace Menu)
          ================================================================ -->
     <aside id="leftSidebar" class="fixed lg:static inset-y-0 left-0 z-50 lg:z-20 w-[238px] shrink-0 border-r border-hair flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-200" style="background-color: var(--bg-sidebar);">
-      <!-- 44px Top Header (Brand + Ghost Location Trigger + Search & Compose Icons) -->
-      <div class="glass-sidebar-header h-[44px] px-2.5 border-b border-hair flex items-center justify-between gap-1 shrink-0">
-        <div class="flex items-center gap-1.5 min-w-0">
-          <div class="w-[18px] h-[18px] rounded-[5px] bg-[#5E6AD2] text-white flex items-center justify-center shrink-0">
-            <i class="fa-solid fa-crosshairs text-[9px]"></i>
-          </div>
-          <span class="text-[13px] font-medium tracking-tight shrink-0" style="color: var(--ink-primary);">Scout</span>
+      <!-- 44px Top Header (Workspace Menu Trigger + Location + Search/Compose) -->
+      <div class="glass-sidebar-header h-[44px] px-2.5 border-b border-hair flex items-center justify-between gap-1 shrink-0 relative">
+        <div class="flex items-center gap-1 min-w-0">
+          <button type="button" id="workspaceMenuBtn" onclick="toggleWorkspaceMenu(event)" class="btn-ghost h-7 px-1.5 inline-flex items-center gap-1.5 shrink-0" title="Workspace actions &amp; tools" aria-haspopup="menu" aria-expanded="false">
+            <span class="w-[18px] h-[18px] rounded-[5px] bg-[#5E6AD2] text-white flex items-center justify-center shrink-0">
+              <svg class="lucide-ic w-2.5 h-2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="22" x2="18" y1="12" y2="12"/><line x1="6" x2="2" y1="12" y2="12"/><line x1="12" x2="12" y1="6" y2="2"/><line x1="12" x2="12" y1="22" y2="18"/></svg>
+            </span>
+            <span class="text-[13px] font-medium tracking-tight shrink-0" style="color: var(--ink-primary);">Scout</span>
+            <svg class="lucide-ic w-3 h-3 opacity-60 shrink-0" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
           <span class="text-[11px] shrink-0" style="color: var(--ink-muted);">/</span>
           <select id="searchLocation" onchange="updateLocationBadge()" title="Target Location" class="ghost-select h-6 pl-1 pr-0.5 text-[12px] font-medium min-w-0">
             <option value="Cebu" selected>Cebu</option>
@@ -814,30 +976,80 @@
         </div>
 
         <div class="flex items-center gap-0.5 shrink-0">
-          <button type="button" onclick="focusSearch()" class="hidden lg:flex btn-ghost w-7 h-7 items-center justify-center" title="Search leads (⌘K)">
-            <i class="fa-solid fa-magnifying-glass text-[11px]"></i>
+          <button type="button" onclick="focusSearch()" class="hidden lg:flex btn-ghost w-7 h-7 items-center justify-center" title="Search leads (⌘K or /)">
+            <svg class="lucide-ic w-3.5 h-3.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           </button>
           <button type="button" onclick="openAddModal()" class="hidden lg:flex btn-ghost w-7 h-7 items-center justify-center" title="Log Manual Lead">
-            <i class="fa-regular fa-pen-to-square text-[11px]"></i>
+            <svg class="lucide-ic w-3.5 h-3.5" viewBox="0 0 24 24"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.375 2.625a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4Z"/></svg>
           </button>
           <button type="button" onclick="toggleMobileSidebar(false)" class="lg:hidden btn-ghost w-7 h-7 flex items-center justify-center" aria-label="Close Sidebar">
-            <i class="fa-solid fa-xmark text-[11px]"></i>
+            <svg class="lucide-ic w-3.5 h-3.5" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+
+        <!-- Lead Scout Workspace Popover Menu (z-[70]) -->
+        <div id="workspaceMenuPopover" role="menu" class="ws-menu hidden absolute left-2 top-[46px] w-[220px] p-1.5 z-[70] space-y-0.5">
+          <button type="button" id="btnRunAiAudit" onclick="closeWorkspaceMenu(); runAiAuditOnStoredLeads();" class="ws-menu-item" title="Run Gemini AI + Rant Filter across stored leads">
+            <span class="flex items-center gap-2 min-w-0">
+              <span id="aiAuditIcon" class="inline-flex items-center justify-center w-3.5 h-3.5 shrink-0 text-[#8B5CF6] dark:text-[#A78BFA]">
+                <svg class="lucide-ic w-3.5 h-3.5" viewBox="0 0 24 24"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+              </span>
+              <span id="aiAuditLabel" class="truncate">AI Audit Stored Leads</span>
+            </span>
+          </button>
+
+          <button type="button" id="btnExportCsv" onclick="closeWorkspaceMenu(); exportLeadsCsv();" class="ws-menu-item">
+            <span class="flex items-center gap-2">
+              <svg class="lucide-ic w-3.5 h-3.5 opacity-75" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+              <span>Export CSV</span>
+            </span>
+          </button>
+
+          <button type="button" id="btnNoiseGuard" onclick="closeWorkspaceMenu(); openSettingsModal('scanner');" class="ws-menu-item" title="Noise Guard settings">
+            <span class="flex items-center gap-2 min-w-0">
+              <svg class="lucide-ic w-3.5 h-3.5 opacity-75" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+              <span id="noiseGuardText" class="truncate">Noise Guard</span>
+            </span>
+            <span class="w-1.5 h-1.5 rounded-full bg-[#4ADE80] shrink-0"></span>
+          </button>
+
+          <div class="my-1 border-t border-hair"></div>
+
+          <button type="button" onclick="closeWorkspaceMenu(); openSettingsModal('scanner');" class="ws-menu-item">
+            <span class="flex items-center gap-2">
+              <svg class="lucide-ic w-3.5 h-3.5 opacity-75" viewBox="0 0 24 24"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></svg>
+              <span>Scanner Settings</span>
+            </span>
+          </button>
+
+          <button type="button" onclick="closeWorkspaceMenu(); openSettingsModal('api');" class="ws-menu-item">
+            <span class="flex items-center gap-2">
+              <svg class="lucide-ic w-3.5 h-3.5 text-[#F59E0B]" viewBox="0 0 24 24"><path d="M2 18v3c0 .6.4 1 1 1h4v-3h3v-3h2l1.4-1.4a6.5 6.5 0 1 0-4-4Z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/></svg>
+              <span>API Keys</span>
+            </span>
+          </button>
+
+          <button type="button" onclick="closeWorkspaceMenu(); openShortcutsModal();" class="ws-menu-item">
+            <span class="flex items-center gap-2">
+              <svg class="lucide-ic w-3.5 h-3.5 opacity-75" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="M6 8h.001"/><path d="M10 8h.001"/><path d="M14 8h.001"/><path d="M18 8h.001"/><path d="M8 12h.001"/><path d="M12 12h.001"/><path d="M16 12h.001"/><path d="M7 16h10"/></svg>
+              <span>Shortcuts</span>
+            </span>
+            <kbd class="code-chip !text-[10px] !py-0">?</kbd>
           </button>
         </div>
       </div>
 
-      <!-- Scrollable Middle (Pipeline Views) -->
-      <div class="flex-1 overflow-y-auto px-2 py-2.5 min-h-0">
-        <!-- Pipeline -->
+      <!-- Scrollable Middle (Spacious Pipeline Focus) -->
+      <div class="flex-1 overflow-y-auto px-2 py-3 min-h-0">
         <div>
-          <div class="px-2 mb-1 flex items-center justify-between">
+          <div class="px-2 mb-1.5 flex items-center justify-between">
             <span class="text-[11.5px] font-medium" style="color: var(--ink-section);">Pipeline</span>
             <span id="targetLoc" class="mono-tag text-[10px]" style="color: var(--ink-muted);">Cebu</span>
           </div>
           <nav class="space-y-0.5" aria-label="Pipeline Views">
             <button type="button" id="tab-all" onclick="setFilter('all')" class="nav-item active-nav">
               <span class="flex items-center gap-2">
-                <i class="fa-solid fa-inbox w-3.5 text-center text-[11.5px] opacity-75"></i>
+                <svg class="lucide-ic w-3.5 h-3.5 opacity-80" viewBox="0 0 24 24"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
                 <span>All Leads</span>
               </span>
               <span id="count-all" class="mono-tag text-[11px] tabular-nums" style="color: var(--ink-section);">0</span>
@@ -861,7 +1073,7 @@
 
             <button type="button" id="tab-contacted" onclick="setFilter('contacted')" class="nav-item">
               <span class="flex items-center gap-2">
-                <i class="fa-regular fa-paper-plane w-3.5 text-center text-[11px] opacity-70"></i>
+                <svg class="lucide-ic w-3.5 h-3.5 opacity-75" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
                 <span>Contacted</span>
               </span>
               <span id="count-contacted" class="mono-tag text-[11px] tabular-nums" style="color: var(--ink-section);">0</span>
@@ -869,7 +1081,7 @@
 
             <button type="button" id="tab-closed" onclick="setFilter('closed')" class="nav-item">
               <span class="flex items-center gap-2">
-                <i class="fa-regular fa-circle-check w-3.5 text-center text-[11px] opacity-70"></i>
+                <svg class="lucide-ic w-3.5 h-3.5 opacity-75" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
                 <span>Closed</span>
               </span>
               <span id="count-closed" class="mono-tag text-[11px] tabular-nums" style="color: var(--ink-section);">0</span>
@@ -877,7 +1089,7 @@
 
             <button type="button" id="tab-ai_filtered" onclick="setFilter('ai_filtered')" class="nav-item">
               <span class="flex items-center gap-2">
-                <i class="fa-solid fa-wand-magic-sparkles w-3.5 text-center text-[11px] text-[#A78BFA]/85"></i>
+                <svg class="lucide-ic w-3.5 h-3.5 text-[#8B5CF6] dark:text-[#A78BFA]" viewBox="0 0 24 24"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
                 <span>AI Filtered</span>
               </span>
               <span id="count-ai_filtered" class="mono-tag text-[11px] tabular-nums" style="color: var(--ink-section);">0</span>
@@ -885,7 +1097,7 @@
 
             <button type="button" id="tab-archived" onclick="setFilter('archived')" class="nav-item">
               <span class="flex items-center gap-2">
-                <i class="fa-solid fa-box-archive w-3.5 text-center text-[11px] opacity-60"></i>
+                <svg class="lucide-ic w-3.5 h-3.5 opacity-65" viewBox="0 0 24 24"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
                 <span>Archived</span>
               </span>
               <span id="count-archived" class="mono-tag text-[11px] tabular-nums" style="color: var(--ink-section);">0</span>
@@ -894,53 +1106,24 @@
         </div>
       </div>
 
-      <!-- Minimal Flat Bottom Footer (Compact ~118px total) -->
-      <div class="px-2 py-2 border-t border-hair space-y-0.5 shrink-0" style="background-color: var(--bg-sidebar);">
-        <button type="button" id="btnRunAiAudit" onclick="runAiAuditOnStoredLeads()" class="nav-item text-[12.5px]" title="Run Gemini AI + Rant Filter across stored leads">
-          <span class="flex items-center gap-2 min-w-0">
-            <i id="aiAuditIcon" class="fa-solid fa-wand-magic-sparkles w-3.5 text-center text-[11px] text-[#A78BFA]/85 shrink-0"></i>
-            <span id="aiAuditLabel" class="truncate">AI Audit</span>
-          </span>
+      <!-- Quiet Minimal Single-Row Footer (Secondary utilities live in Scout ▾ menu) -->
+      <div class="px-2.5 py-2 border-t border-hair flex items-center justify-between gap-1 shrink-0 text-[11px]" style="background-color: var(--bg-sidebar); color: var(--ink-muted);">
+        <button type="button" onclick="toggleAutoScanQuick()" id="btnAutoScanToggle" class="btn-ghost h-7 px-2 text-[11px] flex items-center gap-1.5" title="Toggle Background Auto-Scan">
+          <span id="autoScanDot" class="w-1.5 h-1.5 rounded-full bg-[#5F6570] shrink-0"></span>
+          <span>Auto</span>
+          <span id="autoScanLabel" class="mono-tag">Off</span>
         </button>
 
-        <button type="button" id="btnExportCsv" onclick="exportLeadsCsv()" class="nav-item text-[12.5px]">
-          <span class="flex items-center gap-2">
-            <i class="fa-solid fa-download w-3.5 text-center text-[11px] opacity-70"></i>
-            <span>Export CSV</span>
-          </span>
-        </button>
-
-        <div class="flex items-center gap-0.5">
-          <button type="button" onclick="openSettingsModal('scanner')" class="nav-item text-[12.5px] flex-1 min-w-0">
-            <span class="flex items-center gap-2 min-w-0">
-              <i class="fa-solid fa-sliders w-3.5 text-center text-[11px] opacity-70 shrink-0"></i>
-              <span class="truncate">Settings &amp; API Keys</span>
-            </span>
+        <div class="flex items-center gap-0.5 shrink-0">
+          <button type="button" onclick="openSettingsModal('scanner')" class="btn-ghost w-7 h-7 flex items-center justify-center" title="Settings &amp; API Keys" aria-label="Settings">
+            <svg class="lucide-ic w-3.5 h-3.5" viewBox="0 0 24 24"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></svg>
           </button>
-          <button type="button" onclick="openSettingsModal('api')" class="btn-ghost w-7 h-7 flex items-center justify-center shrink-0" title="Open API Keys directly">
-            <i class="fa-solid fa-key text-[10.5px] text-[#F59E0B]/85"></i>
+          <button type="button" id="btnShortcutsHelp" onclick="openShortcutsModal()" class="btn-ghost w-7 h-7 flex items-center justify-center text-[11px] font-medium" title="Keyboard Shortcuts (?)" aria-label="Keyboard Shortcuts">
+            <span class="mono-tag">?</span>
           </button>
-        </div>
-
-        <!-- Subtle Status Strip: Noise Guard dot + Auto-Scan toggle + Light/Dark toggle -->
-        <div class="pt-1 mt-1 border-t border-hair px-1.5 flex items-center justify-between gap-1 text-[11px]" style="color: var(--ink-muted);">
-          <button type="button" id="btnNoiseGuard" onclick="openSettingsModal('scanner')" class="flex items-center gap-1.5 min-w-0 hover:opacity-100 opacity-85 transition" title="Noise Guard settings">
-            <span class="w-1.5 h-1.5 rounded-full bg-[#4ADE80] shrink-0"></span>
-            <span id="noiseGuardText" class="truncate">Noise Guard</span>
+          <button type="button" id="btnThemeToggle" onclick="toggleTheme()" class="btn-ghost w-7 h-7 flex items-center justify-center" title="Switch Light / Dark Mode" aria-label="Toggle Theme">
+            <span class="theme-icon inline-flex items-center justify-center"></span>
           </button>
-
-          <div class="flex items-center gap-0.5 shrink-0">
-            <button type="button" onclick="toggleAutoScanQuick()" id="btnAutoScanToggle" class="btn-ghost h-6 px-1.5 text-[10.5px] flex items-center gap-1" title="Toggle Background Auto-Scan">
-              <span id="autoScanDot" class="w-1.5 h-1.5 rounded-full bg-[#5F6570]"></span>
-              <span id="autoScanLabel" class="mono-tag">Off</span>
-            </button>
-            <button type="button" id="btnShortcutsHelp" onclick="openShortcutsModal()" class="btn-ghost w-6 h-6 flex items-center justify-center text-[11px] font-medium" title="Keyboard Shortcuts (?)" aria-label="Keyboard Shortcuts">
-              <span class="mono-tag">?</span>
-            </button>
-            <button type="button" id="btnThemeToggle" onclick="toggleTheme()" class="btn-ghost w-6 h-6 flex items-center justify-center" title="Switch Light / Dark Mode" aria-label="Toggle Theme">
-              <i class="theme-icon fa-solid fa-sun text-[10.5px]"></i>
-            </button>
-          </div>
         </div>
       </div>
     </aside>
@@ -948,23 +1131,28 @@
     <!-- ================================================================
          PANE 2: MIDDLE LEAD STREAM (350px–360px, Calm & Scannable)
          ================================================================ -->
-    <section id="feedPane" class="w-full lg:w-[360px] shrink-0 min-w-0 overflow-hidden flex flex-col min-h-0" style="background-color: var(--bg-canvas);">
+    <section id="feedPane" class="w-full lg:w-[360px] shrink-0 min-w-0 overflow-hidden flex flex-col min-h-0 relative" style="background-color: var(--bg-canvas);">
+      <!-- 2px Top Animated Scan Progress Hairline -->
+      <div id="scanHairlineBar" class="scan-hairline-track hidden" aria-hidden="true">
+        <div class="scan-hairline-bar"></div>
+      </div>
+
       <!-- Streamlined Sticky Search & Scan Header -->
       <div class="glass-header px-3 pt-2.5 pb-2 border-b border-hair shrink-0">
         <!-- 32px Search Input + Right-Side Minimize / Maximize Filters Button -->
         <div class="flex items-center gap-1.5">
           <div class="relative flex items-center flex-1 min-w-0">
-            <i class="fa-solid fa-magnifying-glass absolute left-2.5 text-[11px] pointer-events-none" style="color: var(--ink-muted);"></i>
+            <svg class="lucide-ic w-3.5 h-3.5 absolute left-2.5 pointer-events-none" style="color: var(--ink-muted);" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
             <input
               id="searchQuery"
               type="text"
               placeholder="Filter or scan keyword..."
               onkeydown="if(event.key === 'Enter') triggerLiveSearch()"
               oninput="toggleClearBtn()"
-              class="ui-input w-full h-[32px] pl-8 pr-14 text-[12.5px] placeholder-[#5F6570]"
+              class="ui-input w-full h-[32px] pl-8 pr-14 text-[12.5px] placeholder-[#71717A]"
             >
-            <button type="button" onclick="clearSearchInput()" id="btnClearInput" title="Clear search" class="hidden absolute right-9 text-xs px-1 transition hover:opacity-100 opacity-70" style="color: var(--ink-secondary);">
-              <i class="fa-solid fa-xmark"></i>
+            <button type="button" onclick="clearSearchInput()" id="btnClearInput" title="Clear search" class="hidden absolute right-9 p-1 transition hover:opacity-100 opacity-70 inline-flex items-center justify-center" style="color: var(--ink-secondary);">
+              <svg class="lucide-ic w-3.5 h-3.5" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
             </button>
             <kbd class="mono-tag hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] rounded border border-hair absolute right-2 pointer-events-none" style="color: var(--ink-muted); background-color: var(--bg-chip);">⌘K</kbd>
           </div>
@@ -979,10 +1167,13 @@
             aria-label="Minimize or maximize filters"
             aria-expanded="true"
           >
-            <i id="filtersToggleIcon" class="fa-solid fa-chevron-up text-[11px] transition-transform duration-200"></i>
+            <svg id="filtersToggleIcon" data-icon="chevron-up" class="lucide-ic lucide-chevron-up w-3.5 h-3.5 transition-transform duration-200" viewBox="0 0 24 24"><path d="m18 15-6-6-6 6"/></svg>
             <span id="filtersActiveDot" class="hidden absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#4ADE80] ring-2 ring-[var(--bg-canvas)]"></span>
           </button>
         </div>
+
+        <!-- Active Filter Summary Chips (Visible when filters are collapsed) -->
+        <div id="activeFilterChips" class="hidden mt-1.5 flex flex-wrap items-center gap-1"></div>
 
         <!-- Smoothly Collapsible Filter Controls (Category, Platforms, Recency, Sort & Scan) -->
         <div id="filtersCollapseWrap" class="filters-collapse-wrap">
@@ -991,7 +1182,7 @@
               <!-- Category Selector (Right after Filter Keyword) -->
               <div class="flex items-center gap-2">
                 <label for="searchIntent" class="text-[11.5px] font-medium shrink-0" style="color: var(--ink-section);">Category</label>
-                <select id="searchIntent" onchange="loadLeads()" class="ui-input flex-1 min-w-0 h-[28px] px-2 text-[12px] font-medium cursor-pointer">
+                <select id="searchIntent" onchange="onFilterParamChanged()" class="ui-input flex-1 min-w-0 h-[28px] px-2 text-[12px] font-medium cursor-pointer">
                   <option value="seeker,employer" selected>Jobs: Seekers &amp; Employers</option>
                   <option value="seeker">Jobseekers Only</option>
                   <option value="employer">Employers Hiring</option>
@@ -1018,7 +1209,7 @@
 
                   <label class="platform-row">
                     <input type="checkbox" id="plat_reddit_comments" value="reddit_comments" onchange="onPlatformToggle()" class="plat-cb sr-only">
-                    <i class="fa-regular fa-comments text-[11px]" style="color:#C4B5FD"></i>
+                    <svg class="lucide-ic w-3 h-3" style="color:#A78BFA" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                     <span>Reddit Comments</span>
                     <span class="plat-dot"></span>
                   </label>
@@ -1032,7 +1223,7 @@
 
                   <label class="platform-row">
                     <input type="checkbox" id="plat_tiktok" value="tiktok" onchange="onPlatformToggle()" class="plat-cb sr-only">
-                    <i class="fa-brands fa-tiktok text-[11px]" style="color:#F472B6"></i>
+                    <i class="fa-brands fa-tiktok text-[11.5px]" style="color:#F472B6"></i>
                     <span>TikTok</span>
                     <span class="plat-dot"></span>
                   </label>
@@ -1046,17 +1237,17 @@
 
                   <label class="platform-row">
                     <input type="checkbox" id="plat_public_web" value="public_web" onchange="onPlatformToggle()" class="plat-cb sr-only">
-                    <i class="fa-solid fa-globe text-[11px]" style="color:#38BDF8"></i>
+                    <svg class="lucide-ic w-3 h-3" style="color:#38BDF8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
                     <span>Public Web</span>
                     <span class="plat-dot"></span>
                   </label>
                 </div>
               </div>
 
-              <!-- Compact Single Row: Recency + Sort + Scan / Cancel -->
+              <!-- Compact Single Row: Recency + Sort + Monochrome Scan / Cancel -->
               <div class="flex items-center justify-between gap-1.5">
                 <div class="flex items-center gap-0.5 min-w-0">
-                  <select id="searchRecency" onchange="loadLeads()" title="Posted Recency" class="ghost-select h-[30px] px-1.5 text-[12px] font-medium shrink-0">
+                  <select id="searchRecency" onchange="onFilterParamChanged()" title="Posted Recency" class="ghost-select h-[30px] px-1.5 text-[12px] font-medium shrink-0">
                     <option value="1">24h</option>
                     <option value="3">3d</option>
                     <option value="7" selected>7d</option>
@@ -1073,13 +1264,15 @@
                 </div>
 
                 <div class="flex items-center gap-1.5 shrink-0">
-                  <button type="button" onclick="triggerLiveSearch()" id="btnLiveSearch" class="btn-primary h-[30px] px-3 text-[12px] flex items-center justify-center gap-1.5 whitespace-nowrap">
-                    <i class="fa-solid fa-bolt text-[10.5px]" id="searchBtnIcon"></i>
+                  <button type="button" onclick="triggerLiveSearch()" id="btnLiveSearch" class="btn-primary h-[30px] px-3 rounded-[7px] text-[12px] font-medium flex items-center justify-center gap-1.5 whitespace-nowrap">
+                    <span id="searchBtnIcon" class="inline-flex items-center justify-center">
+                      <svg class="lucide-ic w-3.5 h-3.5" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                    </span>
                     <span>Scan</span>
                   </button>
 
-                  <button type="button" onclick="cancelLiveSearch()" id="btnCancelSearch" class="hidden h-[30px] px-2.5 rounded-[6px] bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 text-[12px] font-medium flex items-center gap-1 transition">
-                    <i class="fa-solid fa-xmark text-[10.5px]"></i>
+                  <button type="button" onclick="cancelLiveSearch()" id="btnCancelSearch" class="hidden h-[30px] px-2.5 rounded-[7px] bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 dark:text-rose-400 border border-rose-500/25 text-[12px] font-medium flex items-center gap-1 transition">
+                    <svg class="lucide-ic w-3.5 h-3.5" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                     <span>Cancel</span>
                   </button>
                 </div>
@@ -1088,7 +1281,7 @@
           </div>
         </div>
 
-        <!-- Thin Subtle Meta Line -->
+        <!-- Thin Subtle Meta Line (+ Density Toggle) -->
         <div class="mt-2 flex items-center justify-between gap-2 text-[11.5px]" style="color: var(--ink-muted);">
           <div class="flex items-center gap-1.5 min-w-0">
             <span id="visibleLeadCount" class="mono-tag text-[11px] truncate tabular-nums">0 leads</span>
@@ -1098,10 +1291,15 @@
               <span>hot</span>
             </button>
           </div>
-          <div class="flex items-center gap-2 shrink-0">
-            <button type="button" onclick="toggleQuickTry()" id="btnToggleQuickTry" class="hover:text-[var(--ink-primary)] transition flex items-center gap-1">
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button type="button" onclick="toggleFeedDensity()" id="btnDensityToggle" class="hover:text-[var(--ink-primary)] transition inline-flex items-center gap-1" title="Toggle Comfortable / Compact density">
+              <svg class="lucide-ic w-3 h-3 opacity-75" viewBox="0 0 24 24"><line x1="3" x2="21" y1="6" y2="6"/><line x1="3" x2="21" y1="12" y2="12"/><line x1="3" x2="21" y1="18" y2="18"/></svg>
+              <span id="densityLabel">Comfort</span>
+            </button>
+            <span>&middot;</span>
+            <button type="button" onclick="toggleQuickTry()" id="btnToggleQuickTry" class="hover:text-[var(--ink-primary)] transition flex items-center gap-0.5">
               <span>Quick Try</span>
-              <i id="quickTryChevron" class="fa-solid fa-chevron-down text-[9px] transition-transform"></i>
+              <svg id="quickTryChevron" class="lucide-ic w-3 h-3 transition-transform" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
             </button>
             <span>&middot;</span>
             <button type="button" onclick="resetSearch()" class="hover:text-[var(--ink-primary)] transition">Reset</button>
@@ -1133,37 +1331,42 @@
           </button>
         </div>
 
-        <!-- Inline Scan Progress Strip -->
+        <!-- Compact Clickable Scan Status Pill (Expands per-platform details on click) -->
         <div id="scanProgressPanel" class="hidden mt-2 pt-2 border-t border-hair space-y-1.5">
           <div class="flex items-center justify-between gap-2 text-[11.5px]">
-            <div id="searchStatusText" class="font-medium flex items-center gap-1.5 min-w-0 truncate" style="color: var(--ink-secondary);"></div>
+            <button type="button" id="btnToggleScanDetails" onclick="toggleScanDetails()" class="flex items-center gap-1.5 min-w-0 flex-1 text-left rounded-[6px] px-1.5 py-0.5 -mx-1.5 hover:bg-[var(--bg-hover)] transition" title="Show / hide platform details">
+              <div id="searchStatusText" class="font-medium flex items-center gap-1.5 min-w-0 truncate" style="color: var(--ink-secondary);"></div>
+              <svg id="scanDetailsChevron" class="lucide-ic w-3 h-3 shrink-0 transition-transform" style="color: var(--ink-muted);" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
             <div class="flex items-center gap-1 shrink-0">
               <button type="button" onclick="cancelLiveSearch()" id="btnCancelPanel" class="hidden px-2 py-0.5 rounded bg-rose-500/10 text-rose-500 dark:text-rose-400 border border-rose-500/25 text-[11px] font-medium">Cancel</button>
-              <button type="button" onclick="document.getElementById('scanProgressPanel').classList.add('hidden')" class="btn-ghost w-5 h-5 flex items-center justify-center text-xs" title="Dismiss">&times;</button>
+              <button type="button" onclick="dismissScanProgress()" class="btn-ghost w-5 h-5 flex items-center justify-center" title="Dismiss">
+                <svg class="lucide-ic w-3 h-3" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              </button>
             </div>
           </div>
-          <div id="adapterStatusGrid" class="flex flex-wrap gap-1 max-h-[58px] sm:max-h-none overflow-y-auto"></div>
+          <div id="adapterStatusGrid" class="hidden flex flex-wrap gap-1 max-h-[68px] sm:max-h-none overflow-y-auto pt-0.5"></div>
         </div>
       </div>
 
-      <!-- Scrollable Inbox List (Inset Linear rows) -->
+      <!-- Scrollable Inbox List (Serene 3-Element Linear rows) -->
       <div id="leadsListScroll" class="flex-1 overflow-y-auto min-h-0 px-1.5 py-1.5">
         <div id="leadsContainer" role="listbox" aria-label="Leads Inbox" class="space-y-0.5"></div>
 
         <div id="emptyState" class="hidden px-5 py-14 text-center">
           <div class="w-10 h-10 rounded-[10px] border border-hair mx-auto mb-3 flex items-center justify-center surface-card" style="background-color: var(--bg-elevated); color: var(--ink-muted);">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <svg class="lucide-ic w-4 h-4" viewBox="0 0 24 24">
               <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/>
               <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
             </svg>
           </div>
-          <h3 class="text-[13px] font-medium" style="color: var(--ink-primary);">No leads match this filter</h3>
-          <p class="text-[12px] mt-1 leading-relaxed max-w-[240px] mx-auto" style="color: var(--ink-muted);">
-            Select a platform above and run a live scan, or clear active filters.
+          <h3 class="text-[13px] font-medium" style="color: var(--ink-primary);">No leads match right now</h3>
+          <p class="text-[12px] mt-1 leading-relaxed max-w-[250px] mx-auto" style="color: var(--ink-muted);">
+            Pick one or more platforms above and run a live scan, or expand your date range.
           </p>
           <div class="mt-4 flex flex-wrap items-center justify-center gap-2">
-            <button type="button" onclick="triggerLiveSearch()" class="btn-primary h-[28px] px-3 text-[11.5px] inline-flex items-center gap-1.5">
-              <i class="fa-solid fa-bolt text-[10px]"></i>
+            <button type="button" onclick="triggerLiveSearch()" class="btn-primary h-[28px] px-3 rounded-[7px] text-[11.5px] inline-flex items-center gap-1.5">
+              <svg class="lucide-ic w-3 h-3" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
               <span>Scan Selected Platforms</span>
             </button>
             <button type="button" onclick="resetSearch()" class="btn-secondary h-[28px] px-3 text-[11.5px] inline-flex items-center gap-1.5">
@@ -1180,7 +1383,7 @@
     <!-- ================================================================
          PANE 3: RIGHT READING PANE & EMBEDDED REPLY BOX (Linear Issue View)
          ================================================================ -->
-    <main id="readerPane" class="hidden lg:flex flex-1 min-w-0 flex-col min-h-0 relative" style="background-color: var(--bg-canvas);">
+    <main id="readerPane" class="hidden lg:flex flex-1 min-w-0 lg:min-w-[380px] flex-col min-h-0 relative" style="background-color: var(--bg-canvas);">
       <!-- Calm Empty Reader State -->
       <div id="readerEmptyState" class="flex-1 flex flex-col items-center justify-center p-8 text-center">
         <div class="w-11 h-11 rounded-[10px] border border-hair flex items-center justify-center mb-3.5 surface-card" style="background-color: var(--bg-elevated); color: var(--ink-muted);">
@@ -1214,7 +1417,7 @@
         <div id="readerTopBar" class="glass-header h-[44px] px-2.5 sm:px-5 border-b border-hair flex items-center justify-between gap-1.5 sm:gap-2 shrink-0">
           <!-- Mobile Back Button (Always Protected, Never Clipped or Overlapped) -->
           <button type="button" onclick="closeMobileReader()" class="lg:hidden btn-ghost h-7 px-1.5 sm:px-2 text-xs inline-flex items-center gap-1 shrink-0 whitespace-nowrap">
-            <i class="fa-solid fa-arrow-left text-[10px]"></i>
+            <svg class="lucide-ic w-3.5 h-3.5" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
             <span>Back</span>
           </button>
 
@@ -1226,86 +1429,91 @@
             <span id="readerBreadcrumbTitle" class="rb-title text-[12.5px] min-w-0 flex-1 truncate" style="color: var(--ink-primary);">Lead title</span>
           </div>
 
-          <!-- Right: 1 / 51 ↑ ↓ Stepper + Ghost Actions + Big Pop-Up / Close Controls -->
+          <!-- Right: 1 / 51 ↑ ↓ Stepper + Ghost Actions + Big Pop-Up / Close Controls (No duplicate Open link) -->
           <div class="flex items-center gap-0.5 sm:gap-1 shrink-0">
             <div class="rb-stepper flex items-center gap-0.5 mr-0.5">
               <span id="readerPositionCounter" class="rb-counter mono-tag text-[11.5px] tabular-nums mr-1 whitespace-nowrap" style="color: var(--ink-muted);">0 / 0</span>
               <button type="button" id="btnPrevLead" onclick="stepLeadSelection(-1)" class="btn-ghost w-[26px] h-[26px] flex items-center justify-center" title="Previous Lead (K / ↑)">
-                <i class="fa-solid fa-chevron-up text-[10px]"></i>
+                <svg class="lucide-ic w-3.5 h-3.5" viewBox="0 0 24 24"><path d="m18 15-6-6-6 6"/></svg>
               </button>
               <button type="button" id="btnNextLead" onclick="stepLeadSelection(1)" class="btn-ghost w-[26px] h-[26px] flex items-center justify-center" title="Next Lead (J / ↓)">
-                <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                <svg class="lucide-ic w-3.5 h-3.5" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
               </button>
             </div>
 
             <span class="rb-divider h-3.5 w-px mx-1 hidden sm:inline-block" style="background-color: var(--border-hairline);"></span>
 
             <label for="readerStatusSelect" class="sr-only">Pipeline Status</label>
-            <select id="readerStatusSelect" onchange="changeSelectedLeadStatus(this.value)" class="ghost-select h-7 px-1 sm:px-1.5 text-[12px] font-medium max-w-[92px] sm:max-w-none truncate">
-              <option value="new">New</option>
-              <option value="followup">Follow-Up</option>
-              <option value="contacted">Contacted</option>
-              <option value="closed">Closed</option>
-              <option value="archived">Archived</option>
-              <option value="ai_filtered">AI Filtered</option>
-            </select>
+            <div class="relative inline-flex items-center shrink-0">
+              <select id="readerStatusSelect" onchange="changeSelectedLeadStatus(this.value)" class="ghost-select appearance-none h-[28px] pl-2.5 pr-6 text-[12px] font-medium w-auto cursor-pointer">
+                <option value="new">New</option>
+                <option value="followup">Follow-Up</option>
+                <option value="contacted">Contacted</option>
+                <option value="closed">Closed</option>
+                <option value="archived">Archived</option>
+                <option value="ai_filtered">AI Filtered</option>
+              </select>
+              <svg class="lucide-ic w-3 h-3 pointer-events-none absolute right-2" style="color: var(--ink-muted);" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+            </div>
 
             <button type="button" id="readerApproveBtn" onclick="approveSelectedLead()" class="hidden h-7 px-1.5 sm:px-2 rounded-[6px] bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-[#4ADE80] border border-emerald-500/25 text-[11.5px] font-medium flex items-center gap-1 transition shrink-0" title="Approve lead">
-              <i class="fa-solid fa-check text-[10px]"></i>
+              <svg class="lucide-ic w-3.5 h-3.5" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
               <span class="rb-label">Approve</span>
             </button>
 
             <button type="button" id="readerMuteBtn" onclick="muteSelectedLeadAuthor()" class="btn-ghost h-7 px-1.5 sm:px-2 text-[12px] inline-flex items-center gap-1" title="Mute all posts from this author">
-              <i class="fa-solid fa-user-slash text-[10.5px] opacity-80"></i>
+              <svg class="lucide-ic w-3.5 h-3.5 opacity-80" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" x2="22" y1="8" y2="13"/><line x1="22" x2="17" y1="8" y2="13"/></svg>
               <span class="rb-label">Mute</span>
             </button>
 
             <button type="button" id="readerDeleteBtn" onclick="deleteSelectedLead()" class="btn-ghost h-7 px-1.5 sm:px-2 text-[12px] inline-flex items-center gap-1 hover:text-rose-400" title="Delete lead">
-              <i class="fa-regular fa-trash-can text-[11px]"></i>
+              <svg class="lucide-ic w-3.5 h-3.5 opacity-80" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
               <span class="rb-label">Delete</span>
             </button>
 
             <span class="rb-divider h-3.5 w-px mx-0.5 hidden lg:inline-block" style="background-color: var(--border-hairline);"></span>
 
             <button type="button" id="btnMaximizeReader" onclick="handleReaderMaximize()" class="btn-ghost w-[26px] h-[26px] hidden lg:inline-flex items-center justify-center" title="Maximize as big focus pop-up">
-              <i id="maximizeReaderIcon" class="fa-solid fa-up-right-and-down-left-from-center text-[10.5px]"></i>
+              <span id="maximizeReaderIcon" class="inline-flex items-center justify-center">
+                <svg class="lucide-ic w-3.5 h-3.5" viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" x2="14" y1="3" y2="10"/><line x1="3" x2="10" y1="21" y2="14"/></svg>
+              </span>
             </button>
 
             <button type="button" id="btnCloseReader" onclick="setReaderViewMode('closed')" class="btn-ghost w-[26px] h-[26px] hidden lg:inline-flex items-center justify-center" title="Hide preview pane">
-              <i class="fa-solid fa-xmark text-[11.5px]"></i>
+              <svg class="lucide-ic w-3.5 h-3.5" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
             </button>
           </div>
         </div>
 
         <!-- Generous Editorial Reading Canvas -->
         <div id="readerBodyScroll" class="flex-1 overflow-y-auto px-3.5 sm:px-6 lg:px-10 py-5 sm:py-7 min-h-0">
-          <div id="readerArticle" class="max-w-[700px] space-y-5">
+          <div id="readerArticle" class="max-w-[700px] w-full min-w-0 space-y-5">
             <!-- Populated dynamically by renderReader(lead) -->
           </div>
         </div>
 
-        <!-- Refined Embedded Reach Out Composer Card (Smooth Minimize / Maximize Accordion) -->
+        <!-- Expand-on-Focus Reach Out Bar (Compact by default like Linear Reply...) -->
         <div id="composerContainer" class="px-3.5 sm:px-6 lg:px-10 pb-3 sm:pb-4 pt-2 sm:pt-2.5 border-t border-hair shrink-0 transition-all duration-200" style="background-color: var(--bg-canvas);">
-          <div id="composerCard" class="surface-card max-w-[700px] rounded-[10px] border border-hair overflow-hidden transition focus-within:border-[var(--border-hover)]" style="background-color: var(--bg-elevated);">
-            <!-- Always-visible Composer Header Bar (Click to Minimize/Maximize Reply Box) -->
-            <div onclick="toggleComposerCollapse()" class="h-[34px] px-3 sm:px-3.5 flex items-center justify-between gap-2 cursor-pointer select-none hover:bg-[var(--bg-hover)] transition">
-              <div class="flex items-center gap-1.5 sm:gap-2 min-w-0 text-[12px]">
-                <i class="fa-regular fa-paper-plane text-[10.5px] shrink-0" style="color: var(--ink-section);"></i>
-                <span class="font-medium whitespace-nowrap shrink-0" style="color: var(--ink-primary);">Reply / Reach Out</span>
-                <span class="text-[11px] shrink-0" style="color: var(--ink-muted);">&middot;</span>
-                <span id="composerIntentHint" class="text-[11.5px] truncate min-w-0" style="color: var(--ink-muted);">Tailored reply</span>
+          <div id="composerCard" class="surface-card max-w-[700px] w-full min-w-0 rounded-[10px] border border-hair overflow-hidden transition focus-within:border-[var(--border-hover)]" style="background-color: var(--bg-elevated);">
+            <!-- Always-visible 1-Line Docked Bar (Click anywhere to expand & focus reply) -->
+            <div onclick="handleComposerBarClick()" class="h-[38px] px-3 sm:px-3.5 flex items-center justify-between gap-2 cursor-pointer select-none hover:bg-[var(--bg-hover)] transition min-w-0">
+              <div class="flex items-center gap-2 flex-1 min-w-0 overflow-hidden text-[12.5px]">
+                <svg class="lucide-ic w-3.5 h-3.5 shrink-0" style="color: var(--ink-section);" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+                <span id="composerBarLabel" class="font-medium truncate min-w-0" style="color: var(--ink-primary);">Reply to lead...</span>
+                <span id="composerIntentHint" class="comp-intent-hint hidden sm:inline text-[11px] truncate min-w-0" style="color: var(--ink-muted);">Tailored reply</span>
               </div>
-              <div class="flex items-center gap-1 shrink-0" onclick="event.stopPropagation()">
-                <a id="btnMiniComposerOpen" href="#" target="_blank" rel="noopener noreferrer" class="hidden btn-ghost h-6 px-2 text-[11px] flex items-center gap-1" title="Open original post (O)">
-                  <span>Open</span>
-                  <i class="fa-solid fa-arrow-up-right-from-square text-[9px] opacity-80"></i>
-                </a>
-                <button type="button" id="btnMiniComposerCopy" onclick="copyComposerMessage()" class="hidden btn-ghost h-6 px-2 text-[11px] flex items-center gap-1" title="Copy message (C)">
-                  <i class="fa-regular fa-copy text-[10px]"></i>
+              <div class="flex items-center gap-1.5 shrink-0" onclick="event.stopPropagation()">
+                <button type="button" id="btnMiniComposerCopy" onclick="copyComposerMessage(true)" class="hidden btn-ghost h-7 px-2 text-[11.5px] inline-flex items-center gap-1 whitespace-nowrap" title="Copy message (C)">
+                  <svg class="lucide-ic w-3.5 h-3.5" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
                   <span>Copy</span>
                 </button>
-                <button type="button" id="btnToggleComposer" onclick="toggleComposerCollapse()" class="btn-ghost w-6 h-6 flex items-center justify-center" title="Minimize / Expand Reply Box">
-                  <i id="composerChevron" class="fa-solid fa-chevron-down text-[10px]"></i>
+                <a id="btnMiniComposerOpen" href="#" target="_blank" rel="noopener noreferrer" class="hidden btn-secondary h-7 px-2 text-[11.5px] inline-flex items-center gap-1 whitespace-nowrap" title="Open original post (O)">
+                  <span>Open</span>
+                  <span id="miniOpenHost" class="comp-open-host mono-tag text-[10px] opacity-70 hidden sm:inline max-w-[90px] truncate">link</span>
+                  <svg class="lucide-ic w-3 h-3 opacity-80 shrink-0" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+                </a>
+                <button type="button" id="btnToggleComposer" onclick="toggleComposerCollapse()" class="btn-ghost w-7 h-7 flex items-center justify-center shrink-0" title="Expand / Minimize Reply Box">
+                  <svg id="composerChevron" class="lucide-ic w-3.5 h-3.5" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
                 </button>
               </div>
             </div>
@@ -1326,10 +1534,10 @@
                 <textarea
                   id="composerPitchText"
                   rows="3"
-                  placeholder="Reply / Reach Out... (⌘↵ to Copy &amp; Mark Contacted)"
+                  placeholder="Write your reply... (⌘↵ to Copy &amp; Mark Contacted)"
                   oninput="updateComposerCharCount()"
                   onkeydown="if((event.metaKey || event.ctrlKey) && event.key === 'Enter'){ event.preventDefault(); copyAndMarkContacted(); }"
-                  class="w-full h-[64px] sm:h-[82px] bg-transparent border-0 focus:outline-none px-3 sm:px-4 pt-2.5 pb-1.5 text-[12.5px] sm:text-[13px] leading-[1.55] resize-none placeholder-[#5F6570]"
+                  class="w-full h-[64px] sm:h-[82px] bg-transparent border-0 focus:outline-none px-3 sm:px-4 pt-2.5 pb-1.5 text-[12.5px] sm:text-[13px] leading-[1.55] resize-none placeholder-[#71717A]"
                   style="color: var(--ink-primary);"
                 ></textarea>
 
@@ -1343,14 +1551,14 @@
                     <a id="composerOpenLink" href="#" target="_blank" rel="noopener noreferrer" class="btn-secondary h-[28px] px-2 sm:px-2.5 text-[11.5px] inline-flex items-center gap-1.5 whitespace-nowrap" title="Open original post (O)">
                       <span id="composerOpenLabel">Open</span>
                       <span id="composerOpenHost" class="mono-tag text-[10px] opacity-70 max-w-[92px] sm:max-w-none truncate">link</span>
-                      <i class="fa-solid fa-arrow-up-right-from-square text-[9.5px] opacity-75 shrink-0"></i>
+                      <svg class="lucide-ic w-3 h-3 opacity-75 shrink-0" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
                     </a>
-                    <button type="button" id="btnComposerCopy" onclick="copyComposerMessage()" class="btn-ghost h-[28px] px-2 sm:px-2.5 text-[11.5px] sm:text-[12px] flex items-center gap-1.5 whitespace-nowrap" title="Copy message (C)">
-                      <i class="fa-regular fa-copy text-[11px]"></i>
+                    <button type="button" id="btnComposerCopy" onclick="copyComposerMessage(true)" class="btn-ghost h-[28px] px-2 sm:px-2.5 text-[11.5px] sm:text-[12px] inline-flex items-center gap-1.5 whitespace-nowrap" title="Copy message (C)">
+                      <svg class="lucide-ic w-3.5 h-3.5" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
                       <span>Copy</span>
                     </button>
-                    <button type="button" id="btnComposerCopyContact" onclick="copyAndMarkContacted()" class="btn-primary h-[28px] px-2.5 sm:px-3 text-[11.5px] sm:text-[12px] flex items-center gap-1.5 whitespace-nowrap" title="Copy &amp; Mark Contacted (⌘↵)">
-                      <i class="fa-solid fa-check text-[10.5px]"></i>
+                    <button type="button" id="btnComposerCopyContact" onclick="copyAndMarkContacted()" class="btn-primary h-[28px] px-2.5 sm:px-3 rounded-[7px] text-[11.5px] sm:text-[12px] inline-flex items-center gap-1.5 whitespace-nowrap" title="Copy &amp; Mark Contacted (⌘↵)">
+                      <svg class="lucide-ic w-3.5 h-3.5" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
                       <span>Copy &amp; Mark Contacted</span>
                     </button>
                   </div>
@@ -1384,16 +1592,18 @@
             <span id="settingsModalEyebrow" class="text-[11.5px] font-medium" style="color: var(--ink-section);">Scanner Configuration</span>
             <h3 id="settingsModalTitle" class="text-[15px] font-medium mt-0.5" style="color: var(--ink-primary);">Scanner Options &amp; Sources</h3>
           </div>
-          <button type="button" onclick="closeModal('settingsModal')" class="btn-ghost w-7 h-7 flex items-center justify-center text-sm">&times;</button>
+          <button type="button" onclick="closeModal('settingsModal')" class="btn-ghost w-7 h-7 flex items-center justify-center" aria-label="Close">
+            <svg class="lucide-ic w-4 h-4" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
         </div>
 
         <div class="inline-flex p-1 rounded-[8px] border border-hair w-full sm:w-auto gap-0.5 overflow-hidden" style="background-color: var(--bg-sidebar);">
-          <button type="button" id="settingsTabScanner" onclick="switchSettingsTab('scanner')" class="seg-tab active-tab flex-1 sm:flex-initial flex items-center justify-center gap-1 sm:gap-1.5 whitespace-nowrap">
-            <i class="fa-solid fa-sliders text-[10.5px] sm:text-[11px] shrink-0"></i>
+          <button type="button" id="settingsTabScanner" onclick="switchSettingsTab('scanner')" class="seg-tab active-tab flex-1 sm:flex-initial flex items-center justify-center gap-1.5 whitespace-nowrap">
+            <svg class="lucide-ic w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></svg>
             <span>Scanner Options</span>
           </button>
-          <button type="button" id="settingsTabApi" onclick="switchSettingsTab('api')" class="seg-tab flex-1 sm:flex-initial flex items-center justify-center gap-1 sm:gap-1.5 whitespace-nowrap">
-            <i class="fa-solid fa-key text-[10.5px] sm:text-[11px] text-[#F59E0B] shrink-0"></i>
+          <button type="button" id="settingsTabApi" onclick="switchSettingsTab('api')" class="seg-tab flex-1 sm:flex-initial flex items-center justify-center gap-1.5 whitespace-nowrap">
+            <svg class="lucide-ic w-3.5 h-3.5 text-[#F59E0B] shrink-0" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg>
             <span>API Keys</span>
             <span id="apiKeysConfiguredBadge" class="code-chip !text-[9.5px] sm:!text-[10px] !py-0 !px-1 sm:!px-1.5 tabular-nums whitespace-nowrap shrink-0">0 set</span>
           </button>
@@ -1618,7 +1828,9 @@
           <span class="text-[11px] font-medium" style="color: var(--ink-section);">Manual Entry</span>
           <h3 class="text-[15px] font-medium" style="color: var(--ink-primary);">Log Manual Lead</h3>
         </div>
-        <button type="button" onclick="closeModal('addModal')" class="btn-ghost w-7 h-7 flex items-center justify-center text-sm shrink-0">&times;</button>
+        <button type="button" onclick="closeModal('addModal')" class="btn-ghost w-7 h-7 flex items-center justify-center shrink-0" aria-label="Close">
+          <svg class="lucide-ic w-4 h-4" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
       </div>
 
       <div class="p-4 sm:p-5 space-y-3.5 text-[12.5px] overflow-y-auto flex-1 min-h-0">
@@ -1677,7 +1889,9 @@
           <span class="text-[11px] font-medium" style="color: var(--ink-section);">Speed Triage</span>
           <h3 class="text-[15px] font-medium" style="color: var(--ink-primary);">Keyboard Shortcuts</h3>
         </div>
-        <button type="button" onclick="closeModal('shortcutsModal')" class="btn-ghost w-7 h-7 flex items-center justify-center text-sm shrink-0">&times;</button>
+        <button type="button" onclick="closeModal('shortcutsModal')" class="btn-ghost w-7 h-7 flex items-center justify-center shrink-0" aria-label="Close">
+          <svg class="lucide-ic w-4 h-4" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
       </div>
       <div class="p-4 sm:p-5 space-y-2.5 text-[12.5px] overflow-y-auto flex-1 min-h-0">
         <div class="flex items-center justify-between gap-3 py-1 border-b border-hair">
@@ -1720,7 +1934,7 @@
     <div class="flex items-center justify-between gap-2.5">
       <div class="flex items-start gap-2.5 min-w-0">
         <div class="w-7 h-7 rounded-[6px] border border-hair flex items-center justify-center shrink-0 mt-0.5" style="background-color: var(--bg-chip); color: var(--ink-primary);">
-          <i class="fa-regular fa-bell text-[11px]"></i>
+          <svg class="lucide-ic w-3.5 h-3.5" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
         </div>
         <div class="min-w-0">
           <h4 id="toastAlertTitle" class="text-[12.5px] font-medium truncate" style="color: var(--ink-primary);">Notification</h4>
@@ -1729,7 +1943,9 @@
       </div>
       <div class="flex items-center gap-1 shrink-0">
         <button type="button" id="toastUndoBtn" onclick="undoLastStatusChange()" class="hidden btn-secondary h-7 px-2.5 text-[11.5px] whitespace-nowrap">Undo</button>
-        <button type="button" onclick="hideLiveToast()" class="btn-ghost w-6 h-6 flex items-center justify-center text-sm shrink-0">&times;</button>
+        <button type="button" onclick="hideLiveToast()" class="btn-ghost w-6 h-6 flex items-center justify-center shrink-0" aria-label="Dismiss">
+          <svg class="lucide-ic w-3.5 h-3.5" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
       </div>
     </div>
   </div>
@@ -1782,12 +1998,34 @@
     ];
 
     /* ================================================================
-       THEME & RESPONSIVE DRAWER
+       UNIFORM 1.5px LUCIDE SVG ICON REGISTRY
+       ================================================================ */
+    const LUCIDE_ICONS = {
+      sun: '<svg class="lucide-ic w-3.5 h-3.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>',
+      moon: '<svg class="lucide-ic w-3.5 h-3.5" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>',
+      zap: '<svg class="lucide-ic w-3.5 h-3.5" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+      spinner: '<svg class="lucide-ic w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>',
+      sparkles: '<svg class="lucide-ic w-3.5 h-3.5" viewBox="0 0 24 24"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>',
+      maximize: '<svg class="lucide-ic w-3.5 h-3.5" viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" x2="14" y1="3" y2="10"/><line x1="3" x2="10" y1="21" y2="14"/></svg>',
+      minimize: '<svg class="lucide-ic w-3.5 h-3.5" viewBox="0 0 24 24"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" x2="21" y1="10" y2="3"/><line x1="3" x2="10" y1="21" y2="14"/></svg>',
+      check: '<svg class="lucide-ic w-3.5 h-3.5 text-[#4ADE80]" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>',
+      checkNeutral: '<svg class="lucide-ic w-3.5 h-3.5" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>',
+      extLink: '<svg class="lucide-ic w-3 h-3" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>',
+      archive: '<svg class="lucide-ic w-3 h-3" viewBox="0 0 24 24"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>',
+      mapPin: '<svg class="lucide-ic w-3 h-3 opacity-70" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>',
+      clock: '<svg class="lucide-ic w-3 h-3 opacity-75" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+      hash: '<svg class="lucide-ic w-3 h-3 opacity-60 mr-0.5" viewBox="0 0 24 24"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg>',
+      flame: '<svg class="lucide-ic w-3 h-3" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>',
+      note: '<svg class="lucide-ic w-3.5 h-3.5 opacity-75" viewBox="0 0 24 24"><path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8Z"/><path d="M15 3v4a2 2 0 0 0 2 2h4"/></svg>',
+    };
+
+    /* ================================================================
+       THEME, WORKSPACE MENU & RESPONSIVE DRAWER
        ================================================================ */
     function syncThemeIcons() {
       const isDark = document.documentElement.classList.contains('dark');
       document.querySelectorAll('.theme-icon').forEach(el => {
-        el.className = isDark ? 'theme-icon fa-solid fa-sun text-[10.5px]' : 'theme-icon fa-solid fa-moon text-[10.5px]';
+        el.innerHTML = isDark ? LUCIDE_ICONS.sun : LUCIDE_ICONS.moon;
       });
     }
 
@@ -1797,12 +2035,39 @@
       syncThemeIcons();
     }
 
+    function toggleWorkspaceMenu(ev) {
+      if (ev) ev.stopPropagation();
+      const menu = document.getElementById('workspaceMenuPopover');
+      const btn = document.getElementById('workspaceMenuBtn');
+      if (!menu) return;
+      const opening = menu.classList.contains('hidden');
+      menu.classList.toggle('hidden', !opening);
+      if (btn) btn.setAttribute('aria-expanded', opening ? 'true' : 'false');
+    }
+
+    function closeWorkspaceMenu() {
+      const menu = document.getElementById('workspaceMenuPopover');
+      const btn = document.getElementById('workspaceMenuBtn');
+      if (menu) menu.classList.add('hidden');
+      if (btn) btn.setAttribute('aria-expanded', 'false');
+    }
+
+    document.addEventListener('click', (ev) => {
+      const menu = document.getElementById('workspaceMenuPopover');
+      const btn = document.getElementById('workspaceMenuBtn');
+      if (!menu || menu.classList.contains('hidden')) return;
+      if (!menu.contains(ev.target) && (!btn || !btn.contains(ev.target))) {
+        closeWorkspaceMenu();
+      }
+    });
+
     function toggleMobileSidebar(open) {
       const sb = document.getElementById('leftSidebar');
       const bd = document.getElementById('mobileSidebarBackdrop');
       if (!sb || !bd) return;
       sb.classList.toggle('-translate-x-full', !open);
       bd.classList.toggle('hidden', !open);
+      if (!open) closeWorkspaceMenu();
     }
 
     function openMobileReader() {
@@ -1838,7 +2103,7 @@
     }
 
     let readerViewMode = 'docked'; // 'docked' | 'maximized' | 'closed'
-    let composerCollapsed = false;
+    let composerCollapsed = true; // Collapsed by default for generous ~80% reading space
 
     function setReaderViewMode(mode) {
       const reader = document.getElementById('readerPane');
@@ -1856,18 +2121,18 @@
 
       if (mode === 'maximized') {
         reader.classList.add('is-maximized');
-        if (maxIcon) maxIcon.className = 'fa-solid fa-down-left-and-up-right-to-center text-[10.5px]';
+        if (maxIcon) maxIcon.innerHTML = LUCIDE_ICONS.minimize;
         if (maxBtn) maxBtn.title = 'Restore split reading pane (Esc)';
       } else if (mode === 'closed') {
         reader.classList.add('is-closed');
-        if (maxIcon) maxIcon.className = 'fa-solid fa-up-right-and-down-left-from-center text-[10.5px]';
+        if (maxIcon) maxIcon.innerHTML = LUCIDE_ICONS.maximize;
       } else {
         // 'docked'
         if (prevMode !== 'docked') {
           void reader.offsetWidth;
           reader.classList.add('is-dock-animating');
         }
-        if (maxIcon) maxIcon.className = 'fa-solid fa-up-right-and-down-left-from-center text-[10.5px]';
+        if (maxIcon) maxIcon.innerHTML = LUCIDE_ICONS.maximize;
         if (maxBtn) maxBtn.title = 'Maximize as big focus pop-up';
       }
     }
@@ -1885,6 +2150,15 @@
       const sidebar = document.getElementById('leftSidebar');
       const reader = document.getElementById('readerPane');
       const popGrip = document.getElementById('popoutResizeHandle');
+
+      const MIN_FEED_W = 240;
+      const MIN_READER_W = 380;
+
+      const getMaxFeedWidth = () => {
+        const sidebarW = sidebar && window.innerWidth >= 1024 ? sidebar.getBoundingClientRect().width : 0;
+        const available = window.innerWidth - sidebarW - MIN_READER_W;
+        return Math.max(MIN_FEED_W, Math.floor(available));
+      };
 
       const clampFeedPaneWidth = () => {
         if (!feed) return;
@@ -1904,19 +2178,21 @@
           reader.classList.remove('flex');
         }
         if (readerViewMode === 'closed') return;
-        const sidebarW = sidebar ? sidebar.getBoundingClientRect().width : 238;
-        const maxAllowed = Math.max(240, window.innerWidth - sidebarW - 380);
+        const maxAllowed = getMaxFeedWidth();
         let targetW = 360;
         try {
           const savedW = parseInt(localStorage.getItem('uls_feed_width') || '', 10);
-          if (savedW >= 240 && savedW <= 900) targetW = savedW;
+          if (savedW >= MIN_FEED_W && savedW <= 900) targetW = savedW;
         } catch (e) {}
-        feed.style.width = `${Math.round(Math.min(targetW, maxAllowed))}px`;
+        feed.style.width = `${Math.round(Math.max(MIN_FEED_W, Math.min(targetW, maxAllowed)))}px`;
       };
 
       // 1. Restore & clamp split width on desktop and on every browser zoom / resize
       clampFeedPaneWidth();
       window.addEventListener('resize', clampFeedPaneWidth);
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', clampFeedPaneWidth);
+      }
 
       // 2. Restore saved big pop-up size
       try {
@@ -1933,9 +2209,8 @@
         const onMove = (e) => {
           if (!dragging) return;
           const sidebarW = sidebar && window.innerWidth >= 1024 ? sidebar.getBoundingClientRect().width : 0;
-          const minW = 240;
-          const maxW = Math.max(320, window.innerWidth - sidebarW - 360);
-          const nextW = Math.round(Math.min(maxW, Math.max(minW, e.clientX - sidebarW)));
+          const maxW = getMaxFeedWidth();
+          const nextW = Math.round(Math.min(maxW, Math.max(MIN_FEED_W, e.clientX - sidebarW)));
           feed.style.width = `${nextW}px`;
         };
         const onUp = () => {
@@ -1946,8 +2221,8 @@
           window.removeEventListener('pointermove', onMove);
           window.removeEventListener('pointerup', onUp);
           try {
-            const curW = Math.round(feed.getBoundingClientRect().width);
-            if (curW >= 240) localStorage.setItem('uls_feed_width', String(curW));
+            const curW = Math.round(Math.min(getMaxFeedWidth(), feed.getBoundingClientRect().width));
+            if (curW >= MIN_FEED_W) localStorage.setItem('uls_feed_width', String(curW));
           } catch (e) {}
         };
         resizer.addEventListener('pointerdown', (e) => {
@@ -1960,7 +2235,8 @@
           window.addEventListener('pointerup', onUp);
         });
         resizer.addEventListener('dblclick', () => {
-          feed.style.width = '360px';
+          const resetW = Math.min(360, getMaxFeedWidth());
+          feed.style.width = `${resetW}px`;
           try { localStorage.removeItem('uls_feed_width'); } catch (e) {}
         });
       }
@@ -2016,12 +2292,130 @@
     initPaneResizers();
 
     let filtersCollapsed = false;
+    let feedDensity = 'comfortable';
+    try {
+      const savedDensity = localStorage.getItem('uls_feed_density');
+      if (savedDensity === 'compact' || savedDensity === 'comfortable') feedDensity = savedDensity;
+    } catch (e) {}
+
+    function applyFeedDensity(mode) {
+      feedDensity = mode === 'compact' ? 'compact' : 'comfortable';
+      const scroller = document.getElementById('leadsListScroll');
+      const lbl = document.getElementById('densityLabel');
+      if (scroller) scroller.classList.toggle('feed-compact', feedDensity === 'compact');
+      if (lbl) lbl.innerText = feedDensity === 'compact' ? 'Compact' : 'Comfort';
+    }
+
+    function toggleFeedDensity() {
+      applyFeedDensity(feedDensity === 'compact' ? 'comfortable' : 'compact');
+      try { localStorage.setItem('uls_feed_density', feedDensity); } catch (e) {}
+    }
 
     function updateFiltersActiveDot() {
       const dot = document.getElementById('filtersActiveDot');
       if (!dot) return;
       const activeCount = Array.from(document.querySelectorAll('.plat-cb')).filter(cb => cb.checked).length;
       dot.classList.toggle('hidden', !(filtersCollapsed && activeCount > 0));
+    }
+
+    function renderActiveFilterChips() {
+      const host = document.getElementById('activeFilterChips');
+      if (!host) return;
+      if (!filtersCollapsed) {
+        host.classList.add('hidden');
+        host.innerHTML = '';
+        return;
+      }
+
+      const chips = [];
+      const locEl = document.getElementById('searchLocation');
+      if (locEl && locEl.value) {
+        chips.push({
+          label: locEl.value === 'Cebu' ? 'Cebu' : 'Any PH',
+          removable: locEl.value !== 'Cebu',
+          action: "clearActiveFilterChip('location')"
+        });
+      }
+
+      const recEl = document.getElementById('searchRecency');
+      if (recEl && recEl.value) {
+        const recTxt = recEl.options[recEl.selectedIndex] ? recEl.options[recEl.selectedIndex].text : `${recEl.value}d`;
+        chips.push({
+          label: recTxt,
+          removable: recEl.value !== '7',
+          action: "clearActiveFilterChip('recency')"
+        });
+      }
+
+      const intEl = document.getElementById('searchIntent');
+      if (intEl && intEl.value && intEl.value !== 'seeker,employer') {
+        const intTxt = intEl.options[intEl.selectedIndex] ? intEl.options[intEl.selectedIndex].text : intEl.value;
+        chips.push({
+          label: intTxt,
+          removable: true,
+          action: "clearActiveFilterChip('intent')"
+        });
+      }
+
+      const selectedPlats = Array.from(document.querySelectorAll('.plat-cb')).filter(cb => cb.checked).map(cb => cb.value);
+      selectedPlats.forEach(p => {
+        chips.push({
+          label: PLATFORM_LABELS[p] || p,
+          removable: true,
+          action: `clearActiveFilterChip('platform','${p}')`
+        });
+      });
+
+      if (hotOnlyFilter) {
+        chips.push({
+          label: 'Hot only',
+          removable: true,
+          action: "clearActiveFilterChip('hot')"
+        });
+      }
+
+      if (!chips.length) {
+        host.classList.add('hidden');
+        host.innerHTML = '';
+        return;
+      }
+
+      host.innerHTML = chips.map(ch => ch.removable
+        ? `<button type="button" onclick="${ch.action}" class="active-filter-chip" title="Remove filter"><span>${escapeHtml(ch.label)}</span><span class="opacity-65">&times;</span></button>`
+        : `<span class="active-filter-chip cursor-default">${escapeHtml(ch.label)}</span>`
+      ).join('');
+      host.classList.remove('hidden');
+    }
+
+    function clearActiveFilterChip(kind, value) {
+      if (kind === 'location') {
+        const el = document.getElementById('searchLocation');
+        if (el) el.value = 'Cebu';
+        updateLocationBadge();
+        return;
+      }
+      if (kind === 'recency') {
+        const el = document.getElementById('searchRecency');
+        if (el) el.value = '7';
+      } else if (kind === 'intent') {
+        const el = document.getElementById('searchIntent');
+        if (el) el.value = 'seeker,employer';
+      } else if (kind === 'platform' && value) {
+        const cb = document.getElementById(`plat_${value}`);
+        if (cb) cb.checked = false;
+        onPlatformToggle();
+        return;
+      } else if (kind === 'hot') {
+        hotOnlyFilter = false;
+        syncHotBtn();
+      }
+      renderActiveFilterChips();
+      loadLeads();
+    }
+
+    function onFilterParamChanged() {
+      renderActiveFilterChips();
+      loadLeads();
     }
 
     function applyFiltersCollapseState(collapsed) {
@@ -2036,11 +2430,13 @@
         btn.style.color = filtersCollapsed ? 'var(--ink-primary)' : 'var(--ink-secondary)';
       }
       if (icon) {
-        icon.className = filtersCollapsed
-          ? 'fa-solid fa-chevron-down text-[11px] transition-transform duration-200'
-          : 'fa-solid fa-chevron-up text-[11px] transition-transform duration-200';
+        icon.setAttribute('data-icon', filtersCollapsed ? 'chevron-down' : 'chevron-up');
+        icon.setAttribute('class', `lucide-ic ${filtersCollapsed ? 'lucide-chevron-down' : 'lucide-chevron-up'} w-3.5 h-3.5 transition-transform duration-200`);
+        const path = icon.querySelector('path');
+        if (path) path.setAttribute('d', filtersCollapsed ? 'm6 9 6 6 6-6' : 'm18 15-6-6-6 6');
       }
       updateFiltersActiveDot();
+      renderActiveFilterChips();
       if (typeof syncCancelButtonsVisibility === 'function') syncCancelButtonsVisibility();
     }
 
@@ -2069,16 +2465,30 @@
       if (toggleBtn) toggleBtn.title = composerCollapsed ? 'Expand Reply Box' : 'Minimize Reply Box';
     }
 
+    function handleComposerBarClick() {
+      if (composerCollapsed) {
+        applyComposerCollapseState(false);
+        try { localStorage.setItem('uls_composer_collapsed', '0'); } catch (e) {}
+        setTimeout(() => {
+          const pitch = document.getElementById('composerPitchText');
+          if (pitch) pitch.focus();
+        }, 60);
+      } else {
+        toggleComposerCollapse();
+      }
+    }
+
     function toggleComposerCollapse() {
       applyComposerCollapseState(!composerCollapsed);
       try { localStorage.setItem('uls_composer_collapsed', composerCollapsed ? '1' : '0'); } catch (e) {}
     }
 
     try {
-      if (localStorage.getItem('uls_composer_collapsed') === '1') {
-        applyComposerCollapseState(true);
-      }
-    } catch (e) {}
+      const savedComp = localStorage.getItem('uls_composer_collapsed');
+      applyComposerCollapseState(savedComp === '0' ? false : true);
+    } catch (e) {
+      applyComposerCollapseState(true);
+    }
 
     /* ================================================================
        KEYBOARD NAVIGATION (Cmd+K, /, J/K, O, C, E, ?, Escape)
@@ -2096,6 +2506,7 @@
         return;
       }
       if (e.key === 'Escape') {
+        closeWorkspaceMenu();
         const scModal = document.getElementById('shortcutsModal');
         if (scModal && !scModal.classList.contains('hidden')) {
           closeModal('shortcutsModal');
@@ -2206,6 +2617,7 @@
         toggleBtn.innerText = allChecked ? 'Clear' : 'Select all';
       }
       updateFiltersActiveDot();
+      renderActiveFilterChips();
       if (typeof syncCancelButtonsVisibility === 'function') syncCancelButtonsVisibility();
     }
 
@@ -2250,6 +2662,7 @@
       const loc = document.getElementById('searchLocation').value;
       const el = document.getElementById('targetLoc');
       if (el) el.innerText = loc === 'Cebu' ? 'Cebu' : 'Any PH';
+      renderActiveFilterChips();
       loadLeads();
     }
 
@@ -2276,6 +2689,7 @@
     function toggleHotOnly() {
       hotOnlyFilter = !hotOnlyFilter;
       syncHotBtn();
+      renderActiveFilterChips();
       loadLeads();
     }
 
@@ -2348,18 +2762,39 @@
     }
 
     let isCurrentlyScanning = false;
+    let scanDetailsExpanded = false;
+
+    function toggleScanDetails() {
+      scanDetailsExpanded = !scanDetailsExpanded;
+      const grid = document.getElementById('adapterStatusGrid');
+      const chev = document.getElementById('scanDetailsChevron');
+      if (grid) grid.classList.toggle('hidden', !scanDetailsExpanded);
+      if (chev) chev.style.transform = scanDetailsExpanded ? 'rotate(180deg)' : 'rotate(0deg)';
+    }
+
+    function dismissScanProgress() {
+      const panel = document.getElementById('scanProgressPanel');
+      if (panel) panel.classList.add('hidden');
+      scanDetailsExpanded = false;
+      const grid = document.getElementById('adapterStatusGrid');
+      const chev = document.getElementById('scanDetailsChevron');
+      if (grid) grid.classList.add('hidden');
+      if (chev) chev.style.transform = 'rotate(0deg)';
+    }
 
     function syncCancelButtonsVisibility() {
       const btnSearch = document.getElementById('btnLiveSearch');
       const icon = document.getElementById('searchBtnIcon');
       const btnCancelSearch = document.getElementById('btnCancelSearch');
       const btnCancelPanel = document.getElementById('btnCancelPanel');
+      const hairline = document.getElementById('scanHairlineBar');
 
       if (btnSearch) {
         btnSearch.disabled = isCurrentlyScanning;
         btnSearch.classList.toggle('hidden', isCurrentlyScanning);
       }
-      if (icon) icon.className = isCurrentlyScanning ? 'fa-solid fa-spinner fa-spin text-[10.5px]' : 'fa-solid fa-bolt text-[10.5px]';
+      if (icon) icon.innerHTML = isCurrentlyScanning ? LUCIDE_ICONS.spinner : LUCIDE_ICONS.zap;
+      if (hairline) hairline.classList.toggle('hidden', !isCurrentlyScanning);
       if (btnCancelSearch) btnCancelSearch.classList.toggle('hidden', !isCurrentlyScanning);
       // Only show panel Cancel when the main filter row (with btnCancelSearch) is collapsed — never duplicate!
       if (btnCancelPanel) btnCancelPanel.classList.toggle('hidden', !(isCurrentlyScanning && filtersCollapsed));
@@ -2374,12 +2809,17 @@
       const panel = document.getElementById('scanProgressPanel');
       const text = document.getElementById('searchStatusText');
       const grid = document.getElementById('adapterStatusGrid');
+      const chev = document.getElementById('scanDetailsChevron');
       const row = document.getElementById('platformPillsRow');
 
       setScanningUiState(false);
       if (filtersCollapsed) applyFiltersCollapseState(false);
       if (panel) panel.classList.remove('hidden');
-      if (grid) grid.innerHTML = '';
+      if (grid) {
+        grid.innerHTML = '';
+        grid.classList.add('hidden');
+      }
+      if (chev) chev.classList.add('hidden');
       if (text) {
         text.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-[#F59E0B] shrink-0"></span><span class="truncate">${escapeHtml(message)}</span>`;
       }
@@ -2393,20 +2833,30 @@
       const panel = document.getElementById('scanProgressPanel');
       const text = document.getElementById('searchStatusText');
       const grid = document.getElementById('adapterStatusGrid');
+      const chev = document.getElementById('scanDetailsChevron');
       if (!panel || !text || !grid) return;
       panel.classList.remove('hidden');
       setScanningUiState(Boolean(scan.running));
 
+      const entries = Object.entries(scan.adapters || {});
+      const totalPlats = entries.length;
+      const donePlats = entries.filter(([, a]) => a.status !== 'running' && a.status !== 'queued').length;
+      if (chev) chev.classList.toggle('hidden', totalPlats === 0);
+
       if (scan.running) {
-        text.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-[#4ADE80] animate-pulse shrink-0"></span><span class="truncate">Scanning&hellip; ${scan.matched_total || 0} matched, ${scan.new_total || 0} new</span>`;
+        const progressLabel = totalPlats > 0
+          ? `Scanning ${Math.min(donePlats + 1, totalPlats)}/${totalPlats} platforms…`
+          : 'Scanning platforms…';
+        const extra = (scan.matched_total || 0) > 0 ? ` · ${scan.matched_total} matched` : '';
+        text.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-[#4ADE80] animate-pulse shrink-0"></span><span class="truncate">${escapeHtml(progressLabel + extra)}</span>`;
       } else if (scan.cancelled) {
-        text.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-400 shrink-0"></span><span class="truncate">Cancelled &middot; ${scan.matched_total || 0} matched (${scan.new_total || 0} saved)</span>`;
+        text.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-400 shrink-0"></span><span class="truncate">Scan stopped &middot; ${scan.new_total || 0} new saved</span>`;
       } else {
-        text.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-[#4ADE80] shrink-0"></span><span class="truncate">Complete &middot; ${scan.matched_total || 0} matched (${scan.new_total || 0} new)</span>`;
+        text.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-[#4ADE80] shrink-0"></span><span class="truncate">Done &middot; ${scan.matched_total || 0} matches (${scan.new_total || 0} new)</span>`;
       }
 
       grid.innerHTML = '';
-      Object.entries(scan.adapters || {}).forEach(([key, a]) => {
+      entries.forEach(([key, a]) => {
         const dotColor = a.status === 'ok'
           ? 'bg-[#4ADE80]'
           : a.status === 'running' || a.status === 'queued'
@@ -2414,10 +2864,14 @@
           : 'bg-rose-400';
         const pill = document.createElement('span');
         pill.className = 'code-chip !text-[10px] gap-1.5';
-        pill.title = a.message || '';
-        pill.innerHTML = `<span class="w-1.5 h-1.5 rounded-full ${dotColor}"></span><span>${escapeHtml(a.label)}</span><span style="color:var(--ink-muted)">${a.matched || 0}/${a.fetched || 0}</span>`;
+        pill.title = a.message || `${a.matched || 0} matches (${a.fetched || 0} checked)`;
+        const detailTxt = (a.status === 'running' || a.status === 'queued')
+          ? 'scanning…'
+          : `${a.matched || 0} matches (${a.fetched || 0} checked)`;
+        pill.innerHTML = `<span class="w-1.5 h-1.5 rounded-full ${dotColor} shrink-0"></span><span>${escapeHtml(a.label)}</span><span style="color:var(--ink-muted)">${escapeHtml(detailTxt)}</span>`;
         grid.appendChild(pill);
       });
+      grid.classList.toggle('hidden', !scanDetailsExpanded || totalPlats === 0);
     }
 
     function autoSyncCategoryForQuery(q) {
@@ -2628,10 +3082,23 @@
       const d = new Date(String(ts).replace(' ', 'T') + 'Z');
       if (isNaN(d)) return '';
       const mins = Math.max(0, Math.floor((Date.now() - d.getTime()) / 60000));
+      if (mins < 1) return 'just now';
       if (mins < 60) return `${mins}m ago`;
       const hrs = Math.floor(mins / 60);
       if (hrs < 24) return `${hrs}h ago`;
       return `${Math.floor(hrs / 24)}d ago`;
+    }
+
+    function timeAgoShort(ts) {
+      if (!ts) return '';
+      const d = new Date(String(ts).replace(' ', 'T') + 'Z');
+      if (isNaN(d)) return '';
+      const mins = Math.max(0, Math.floor((Date.now() - d.getTime()) / 60000));
+      if (mins < 1) return 'now';
+      if (mins < 60) return `${mins}m`;
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return `${hrs}h`;
+      return `${Math.floor(hrs / 24)}d`;
     }
 
     function cleanExcerpt(raw) {
@@ -2641,6 +3108,57 @@
         .replace(/https?:\/\/[^\s]{65,}/g, (m) => m.slice(0, 48) + '…')
         .replace(/\s{2,}/g, ' ')
         .trim();
+    }
+
+    /* Smart Title Cleanup for Feed Rows ONLY (Preserves verbatim original text in #readerPane) */
+    const PRESERVE_ACRONYMS = new Set([
+      'IT', 'PH', 'HR', 'VA', 'BPO', 'WFH', 'ASAP', 'PC', 'GPU', 'RAM', 'SSD', 'CPU',
+      'CSR', 'TSR', 'QC', 'BGC', 'SM', 'AI', 'UI', 'UX', 'FB', 'IG', 'QA', 'ESL', 'SEO',
+      'CEO', 'HRD', 'SSS', 'HDMF', 'RTX', 'GTX', 'DDR4', 'DDR5', 'PHP', 'USD', 'DM', 'PM'
+    ]);
+    const PROPER_PLACES = {
+      cebu: 'Cebu', manila: 'Manila', davao: 'Davao', mandaue: 'Mandaue',
+      lapu: 'Lapu', talisay: 'Talisay', consolacion: 'Consolacion', iloilo: 'Iloilo',
+      makati: 'Makati', taguig: 'Taguig', philippines: 'Philippines', visayas: 'Visayas', mindanao: 'Mindanao'
+    };
+
+    function formatFeedTitle(raw) {
+      let s = cleanExcerpt(raw || '');
+      if (!s) return 'Untitled lead';
+      // Strip noisy leading emoji bursts & decorative prefixes (📢🔥💼🚨✨⭐👉⚡📍✅ etc.)
+      s = s.replace(/^(?:[\p{Extended_Pictographic}\uFE0F\u200D\s#*!~•▪▸►»—–\-_|[\]()]+)+/u, '').trim();
+      if (!s) s = cleanExcerpt(raw || '');
+
+      const letters = s.match(/[A-Za-z]/g) || [];
+      const uppers = s.match(/[A-Z]/g) || [];
+      if (letters.length >= 8 && (uppers.length / letters.length) > 0.7) {
+        let lower = s.toLowerCase();
+        // Sentence case at start and after . ! ? :
+        lower = lower.replace(/(^\s*|[.!?]\s+|:\s+)([a-z])/g, (m, p1, p2) => p1 + p2.toUpperCase());
+        // Restore common acronyms and Philippine places
+        lower = lower.replace(/\b([a-z0-9]+)\b/gi, (word) => {
+          const up = word.toUpperCase();
+          if (PRESERVE_ACRONYMS.has(up)) return up;
+          const lo = word.toLowerCase();
+          if (PROPER_PLACES[lo]) return PROPER_PLACES[lo];
+          return word;
+        });
+        s = lower;
+      }
+      return s;
+    }
+
+    function getSereneIntentDotLabel(intent) {
+      if (intent === 'employer') {
+        return '<span class="inline-flex items-center gap-1.5 text-[11px] whitespace-nowrap" style="color: var(--ink-muted);"><span class="label-dot" style="background:#F59E0B"></span>Employer</span>';
+      }
+      if (intent === 'seller') {
+        return '<span class="inline-flex items-center gap-1.5 text-[11px] whitespace-nowrap" style="color: var(--ink-muted);"><span class="label-dot" style="background:#38BDF8"></span>Buy &amp; Sell</span>';
+      }
+      if (intent === 'buyer') {
+        return '<span class="inline-flex items-center gap-1.5 text-[11px] whitespace-nowrap" style="color: var(--ink-muted);"><span class="label-dot" style="background:#38BDF8"></span>Buyer</span>';
+      }
+      return '<span class="inline-flex items-center gap-1.5 text-[11px] whitespace-nowrap" style="color: var(--ink-muted);"><span class="label-dot" style="background:#4ADE80"></span>Jobseeker</span>';
     }
 
     function getHostLabel(urlStr) {
@@ -2931,12 +3449,18 @@
         emptyState.classList.remove('hidden');
         const emptyTitle = emptyState.querySelector('h3');
         const emptySub = emptyState.querySelector('p');
+        const locVal = (document.getElementById('searchLocation') || {}).value || 'Cebu';
+        const locTxt = locVal === 'Cebu' ? 'Cebu' : 'PH';
+        const recEl = document.getElementById('searchRecency');
+        const days = parseInt((recEl && recEl.value) || '7', 10);
+        const daysTxt = days === 1 ? '24 hours' : `${days} days`;
+        const filterLabel = currentFilter === 'all' ? '' : `${(STATUS_META[currentFilter] && STATUS_META[currentFilter].label) || currentFilter} `;
         if (lastTotalStored > 0) {
-          emptyTitle.innerText = `No leads match this filter (${lastTotalStored} stored)`;
-          emptySub.innerText = 'Try resetting your filters or run a fresh scan across your selected platforms.';
+          emptyTitle.innerText = `No ${filterLabel.toLowerCase()}${locTxt} leads in the past ${daysTxt}`;
+          emptySub.innerText = 'Try expanding to 30 days, enabling more platforms, or running a fresh scan.';
         } else {
-          emptyTitle.innerText = 'No leads stored yet';
-          emptySub.innerText = 'Select one or more platforms above and run a live scan to populate your triage inbox.';
+          emptyTitle.innerText = 'Your lead inbox is clear';
+          emptySub.innerText = 'Pick one or more platforms above and click Scan to find fresh leads.';
         }
         selectedLeadId = null;
         lastRenderedLeadId = null;
@@ -2964,12 +3488,12 @@
         items.forEach(l => {
           const leadIdNum = Number(l.id);
           const isSelected = leadIdNum === Number(selectedLeadId);
-          const isComment = l.kind === 'comment' || (l.source || '').toLowerCase().includes('comment');
           const statusKey = l.status || 'new';
           const isSoftened = statusKey === 'contacted' || statusKey === 'archived';
-          const stInfo = STATUS_META[statusKey] || STATUS_META.new;
-          const ago = timeAgo(l.posted_at || l.found_at);
+          const isUnread = statusKey === 'new';
+          const agoShort = timeAgoShort(l.posted_at || l.found_at);
           const excerpt = cleanExcerpt(l.content);
+          const cleanTitle = formatFeedTitle(l.title);
 
           const row = document.createElement('div');
           row.setAttribute('role', 'option');
@@ -2986,45 +3510,42 @@
           };
 
           const platMeta = getPlatformMeta(l);
-          const hasGeminiAi = l.ai_reason && String(l.ai_reason).startsWith('Gemini AI:');
           row.innerHTML = `
             <!-- Desktop Hover Quick-Actions Floating Pill -->
             <div class="row-quick-actions hidden lg:flex" onclick="event.stopPropagation()">
               <button type="button" onclick="openLeadUrlById(${leadIdNum})" class="btn-ghost w-6 h-6 flex items-center justify-center" title="Open Post (O)">
-                <i class="fa-solid fa-arrow-up-right-from-square text-[9.5px]"></i>
+                ${LUCIDE_ICONS.extLink}
               </button>
               <button type="button" onclick="quickUpdateLeadStatus(${leadIdNum}, 'contacted')" class="btn-ghost w-6 h-6 flex items-center justify-center hover:text-[#4ADE80]" title="Mark Contacted (E)">
-                <i class="fa-solid fa-check text-[10px]"></i>
+                ${LUCIDE_ICONS.checkNeutral}
               </button>
               <button type="button" onclick="quickUpdateLeadStatus(${leadIdNum}, 'archived')" class="btn-ghost w-6 h-6 flex items-center justify-center" title="Archive Lead">
-                <i class="fa-solid fa-box-archive text-[9.5px]"></i>
+                ${LUCIDE_ICONS.archive}
               </button>
             </div>
 
-            <!-- Line 1: Emphasized Platform icon + Author + AI dot + Timestamp -->
-            <div class="flex items-center justify-between gap-2 mb-1">
-              <div class="flex items-center gap-1.5 min-w-0 text-[12.5px]">
-                <i class="${platMeta.icon} text-[12px] shrink-0" style="color: ${platMeta.iconColor};" title="${escapeHtml(l.source || platMeta.shortLabel)}"></i>
-                <span class="truncate font-medium" style="color: var(--ink-body);">${escapeHtml(l.author || 'Unknown')}</span>
-                ${hasGeminiAi ? '<i class="fa-solid fa-wand-magic-sparkles text-[10px] text-violet-600 dark:text-[#C4B5FD] shrink-0" title="Verified by Gemini AI"></i>' : ''}
+            <!-- Line 1: Muted platform icon + Author + Short Timestamp (2h, 5d) -->
+            <div class="flex items-center justify-between gap-2 mb-0.5">
+              <div class="flex items-center gap-1.5 min-w-0 text-[12px]">
+                ${isUnread ? '<span class="w-1.5 h-1.5 rounded-full bg-[#4ADE80] shrink-0" title="New lead"></span>' : ''}
+                <i class="${platMeta.icon} text-[11px] shrink-0 opacity-75" style="color: ${platMeta.iconColor};" title="${escapeHtml(l.source || platMeta.shortLabel)}"></i>
+                <span class="truncate font-medium" style="color: var(--ink-secondary);">${escapeHtml(l.author || 'Unknown')}</span>
               </div>
-              <span class="mono-tag text-[11.5px] shrink-0 tabular-nums" style="color: var(--ink-muted);">${escapeHtml(ago)}</span>
+              <span class="mono-tag text-[11px] shrink-0 tabular-nums" style="color: var(--ink-muted);">${escapeHtml(agoShort)}</span>
             </div>
 
-            <!-- Line 2: 1-line Medium Title -->
-            <div class="text-[13px] font-medium truncate leading-snug mb-1.5" style="color: var(--ink-primary);">
-              ${escapeHtml(cleanExcerpt(l.title))}
+            <!-- Line 2: Smart Cleaned Single-Line Title -->
+            <div class="text-[13px] font-medium truncate leading-snug mb-1" style="color: var(--ink-primary);">
+              ${escapeHtml(cleanTitle)}
             </div>
 
-            <!-- Line 3: 1-line Muted Preview + Emphasized Platform/Intent Pills -->
+            <!-- Line 3: Quiet Preview + Single Subtle Dot Label -->
             <div class="flex items-center justify-between gap-2">
-              <span class="text-[12px] truncate min-w-0" style="color: var(--ink-secondary);">
+              <span class="row-preview-text text-[12px] truncate min-w-0" style="color: var(--ink-muted);">
                 ${escapeHtml(excerpt || l.source || '')}
               </span>
               <div class="flex items-center gap-1.5 shrink-0">
-                ${isComment ? '<span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-violet-500/15 text-violet-700 dark:text-violet-300 border border-violet-500/30">Comment</span>' : ''}
-                ${getIntentLabelPill(l.intent)}
-                <span class="w-1.5 h-1.5 rounded-full ${stInfo.dot} shrink-0" title="${escapeHtml(stInfo.label)}"></span>
+                ${getSereneIntentDotLabel(l.intent)}
               </div>
             </div>
           `;
@@ -3148,6 +3669,8 @@
       const compOpenLbl = document.getElementById('composerOpenLabel');
       const compOpenHost = document.getElementById('composerOpenHost');
       const miniOpen = document.getElementById('btnMiniComposerOpen');
+      const miniOpenHost = document.getElementById('miniOpenHost');
+      const barLabel = document.getElementById('composerBarLabel');
       if (compOpen) {
         compOpen.href = safeUrl;
         compOpen.title = `Open on ${hostLabel} (O)`;
@@ -3158,6 +3681,11 @@
         miniOpen.href = safeUrl;
         miniOpen.title = `Open on ${hostLabel} (O)`;
       }
+      if (miniOpenHost) miniOpenHost.innerText = hostLabel;
+      if (barLabel) {
+        const shortAuthor = String(lead.author || 'lead').trim();
+        barLabel.innerText = `Reply to ${shortAuthor}...`;
+      }
 
       const ago = timeAgo(lead.posted_at || lead.found_at);
       const cleanAuthorNorm = String(lead.author || '?').normalize('NFKD').replace(/^(@|u\/)/i, '').trim();
@@ -3165,33 +3693,29 @@
       const rawBody = String(lead.content || '').trim();
       const stInfo = STATUS_META[statusVal] || STATUS_META.new;
 
-      // Linear-Style Vertical Hairline Activity Timeline (Discovery + Gemini AI + Status)
-      let aiTimelineItem = '';
+      // Restrained Gemini AI Summary Strip — Positioned directly ABOVE the post/comment body card
+      let aiSummaryBannerHtml = '';
       if (statusVal === 'ai_filtered' || lead.ai_verdict === 'filtered') {
         const filteredText = lead.ai_reason || 'Post matched keyword but context appears misaligned or non-actionable.';
-        aiTimelineItem = `
-          <div class="relative flex items-start gap-2.5">
-            <span class="w-4 h-4 rounded-full bg-rose-500/15 border border-rose-400/40 flex items-center justify-center shrink-0 mt-0.5">
-              <i class="fa-solid fa-wand-magic-sparkles text-[8.5px] text-rose-500 dark:text-rose-300"></i>
-            </span>
-            <div class="flex-1 min-w-0 rounded-[8px] px-3 py-2 border border-rose-400/30 bg-rose-500/10 flex flex-wrap items-start justify-between gap-2 text-[12px] leading-relaxed">
+        aiSummaryBannerHtml = `
+          <div class="ai-summary-strip is-filtered rounded-[8px] px-3.5 py-2.5 text-[12.5px] leading-relaxed flex flex-wrap items-start justify-between gap-2.5">
+            <div class="flex items-start gap-2 min-w-0 flex-1">
+              <span class="mt-0.5 text-rose-500 dark:text-rose-300 shrink-0">${LUCIDE_ICONS.sparkles}</span>
               <div class="min-w-0 break-words whitespace-normal">
-                <span class="font-semibold text-rose-700 dark:text-rose-200 block">AI Filtered Out (Misaligned / Rant)</span>
-                <span class="text-rose-800/90 dark:text-rose-200/85">${escapeHtml(filteredText)}</span>
+                <span class="font-medium text-rose-700 dark:text-rose-200 block">AI Filtered Out</span>
+                <span style="color: var(--ink-secondary);">${escapeHtml(filteredText)}</span>
               </div>
-              <button type="button" onclick="approveSelectedLead()" class="btn-secondary h-7 px-2.5 text-[11px] shrink-0">Approve Lead</button>
             </div>
+            <button type="button" onclick="approveSelectedLead()" class="btn-secondary h-7 px-2.5 text-[11px] shrink-0">Approve Lead</button>
           </div>
         `;
       } else if (lead.ai_reason && String(lead.ai_reason).startsWith('Gemini AI:')) {
         const cleanAi = String(lead.ai_reason).replace(/^Gemini AI:\s*/i, '');
-        aiTimelineItem = `
-          <div class="relative flex items-start gap-2.5">
-            <span class="w-4 h-4 rounded-full bg-[#a78bfa]/20 border border-[#a78bfa]/40 flex items-center justify-center shrink-0 mt-0.5">
-              <i class="fa-solid fa-wand-magic-sparkles text-[8.5px] text-violet-600 dark:text-[#C4B5FD]"></i>
-            </span>
-            <div class="flex-1 min-w-0 rounded-[8px] px-3 py-2 border border-[#a78bfa]/30 bg-[#a78bfa]/[0.09] text-[12px] leading-relaxed text-violet-900 dark:text-[#DDD6FE] break-words whitespace-normal">
-              <strong class="font-semibold text-violet-950 dark:text-[#F3F0FF]">Gemini AI:</strong> ${escapeHtml(cleanAi)}
+        aiSummaryBannerHtml = `
+          <div class="ai-summary-strip rounded-[8px] px-3.5 py-2.5 text-[12.5px] leading-relaxed flex items-start gap-2">
+            <span class="mt-0.5 shrink-0" style="color: var(--ink-section);">${LUCIDE_ICONS.sparkles}</span>
+            <div class="min-w-0 break-words whitespace-normal" style="color: var(--ink-body);">
+              <span class="font-medium" style="color: var(--ink-primary);">Gemini AI:</span> ${escapeHtml(cleanAi)}
             </div>
           </div>
         `;
@@ -3202,7 +3726,7 @@
         : `<p class="text-[13px] italic" style="color: var(--ink-muted);">No additional post body text captured.</p>`;
 
       article.innerHTML = `
-        <!-- Editorial Headline + Structured Properties Strip -->
+        <!-- Editorial Headline + Structured Properties Strip (Verbatim Original Text Preserved) -->
         <div class="space-y-3">
           <h1 class="text-[20px] font-medium tracking-[-0.02em] leading-[1.35] break-words" style="color: var(--ink-primary);">
             ${highlightMatchedKeyword(lead.title || 'Untitled Lead', lead.matched_keyword)}
@@ -3213,17 +3737,19 @@
             ${getPlatformBadgeHtml(lead, true)}
             ${getIntentLabelPill(lead.intent)}
             ${isComment ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-violet-500/15 text-violet-800 dark:text-[#DDD6FE] border border-violet-500/35">Comment</span>' : ''}
-            ${lead._prio && lead._prio.isHot ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/15 text-amber-800 dark:text-[#FCD34D] border border-amber-500/35"><i class="fa-solid fa-fire text-[9.5px]"></i>${escapeHtml(lead._prio.label)}</span>` : ''}
+            ${lead._prio && lead._prio.isHot ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/15 text-amber-800 dark:text-[#FCD34D] border border-amber-500/35">${LUCIDE_ICONS.flame}<span>${escapeHtml(lead._prio.label)}</span></span>` : ''}
             <span class="inline-flex items-center gap-1.5" style="color: var(--ink-secondary);">
-              <i class="fa-solid fa-location-dot text-[10px] opacity-70"></i>
+              ${LUCIDE_ICONS.mapPin}
               <span>${escapeHtml(lead.location || 'Cebu')}</span>
             </span>
-            ${ago ? `<span class="inline-flex items-center gap-1.5 mono-tag text-[11px] tabular-nums" style="color: var(--ink-muted);"><i class="fa-regular fa-clock text-[10px] opacity-75"></i><span>${escapeHtml(ago)}</span></span>` : ''}
-            ${lead.matched_keyword ? `<span class="code-chip"><i class="fa-solid fa-hashtag text-[9px] mr-1 opacity-60"></i>${escapeHtml(lead.matched_keyword)}</span>` : ''}
+            ${ago ? `<span class="inline-flex items-center gap-1.5 mono-tag text-[11px] tabular-nums" style="color: var(--ink-muted);">${LUCIDE_ICONS.clock}<span>${escapeHtml(ago)}</span></span>` : ''}
+            ${lead.matched_keyword ? `<span class="code-chip">${LUCIDE_ICONS.hash}${escapeHtml(lead.matched_keyword)}</span>` : ''}
           </div>
         </div>
 
-        <!-- Elevated Linear Thread Card (Author Header + Highlighted Body) -->
+        ${aiSummaryBannerHtml}
+
+        <!-- Elevated Linear Thread Card (Author Header + Highlighted Verbatim Body) -->
         <div class="surface-card rounded-[10px] border border-hair p-4 sm:p-5 space-y-3.5" style="background-color: var(--bg-elevated);">
           <div class="flex items-center justify-between gap-2">
             <div class="flex items-center gap-2.5 min-w-0">
@@ -3239,43 +3765,43 @@
           ${bodyContentHtml}
         </div>
 
-        <!-- Linear-Style Vertical Hairline Activity Timeline -->
-        <div class="space-y-2">
+        <!-- Clean Activity Timeline (Capture Source + Pipeline Status Only) -->
+        <div class="space-y-2 min-w-0">
           <div class="text-[11.5px] font-medium" style="color: var(--ink-section);">Activity</div>
-          <div class="relative pl-1 space-y-2.5">
+          <div class="relative pl-1 space-y-2.5 min-w-0">
             <div class="absolute left-[11px] top-2 bottom-2 w-px" style="background-color: var(--border-hairline);"></div>
-            <div class="relative flex items-center gap-2.5 text-[12px]" style="color: var(--ink-secondary);">
-              <span class="w-4 h-4 rounded-full border border-hair flex items-center justify-center shrink-0" style="background-color: var(--bg-elevated);">
+            <div class="relative flex items-start gap-2.5 text-[12px] min-w-0" style="color: var(--ink-secondary);">
+              <span class="w-4 h-4 rounded-full border border-hair flex items-center justify-center shrink-0 mt-0.5" style="background-color: var(--bg-elevated);">
                 <span class="w-1.5 h-1.5 rounded-full bg-[#5E6AD2]"></span>
               </span>
-              <span class="min-w-0 truncate">Captured from <strong class="font-medium" style="color: var(--ink-primary);">${escapeHtml(lead.source || 'Feed')}</strong>${ago ? ` &middot; ${escapeHtml(ago)}` : ''}</span>
+              <span class="min-w-0 flex-1 pr-2 leading-relaxed break-words" title="${escapeHtml(`Captured from ${lead.source || 'Feed'}${ago ? ` · ${ago}` : ''}`)}">Captured from <strong class="font-medium" style="color: var(--ink-primary);">${escapeHtml(lead.source || 'Feed')}</strong>${ago ? ` &middot; ${escapeHtml(ago)}` : ''}</span>
             </div>
-            ${aiTimelineItem}
-            <div class="relative flex items-center gap-2.5 text-[12px]" style="color: var(--ink-secondary);">
-              <span class="w-4 h-4 rounded-full border border-hair flex items-center justify-center shrink-0" style="background-color: var(--bg-elevated);">
+            <div class="relative flex items-start gap-2.5 text-[12px] min-w-0" style="color: var(--ink-secondary);">
+              <span class="w-4 h-4 rounded-full border border-hair flex items-center justify-center shrink-0 mt-0.5" style="background-color: var(--bg-elevated);">
                 <span class="w-1.5 h-1.5 rounded-full ${stInfo.dot}"></span>
               </span>
-              <span>Pipeline status: <strong class="font-medium" style="color: var(--ink-primary);">${escapeHtml(stInfo.label)}</strong></span>
+              <span class="min-w-0 flex-1 pr-2 leading-relaxed break-words" title="${escapeHtml(`Pipeline status: ${stInfo.label}`)}">Pipeline status: <strong class="font-medium" style="color: var(--ink-primary);">${escapeHtml(stInfo.label)}</strong></span>
             </div>
           </div>
         </div>
 
-        <!-- Compact Inline Internal Notes -->
-        <div class="pt-1 space-y-1.5">
+        <!-- Borderless Notion-Style Auto-Saving Private Note -->
+        <div class="pt-1 space-y-1">
           <div class="flex items-center justify-between">
             <label for="readerNotesInput" class="text-[11.5px] font-medium flex items-center gap-1.5" style="color: var(--ink-section);">
-              <i class="fa-regular fa-note-sticky text-[11px]"></i>
-              <span>Notes</span>
+              ${LUCIDE_ICONS.note}
+              <span>Private Note</span>
             </label>
-            <span id="readerNoteSaved" class="hidden text-[11px] font-medium text-[#4ADE80]">Saved ✓</span>
+            <span id="readerNoteSaved" class="text-[11px] font-medium text-[#4ADE80] opacity-0 transition-opacity duration-300 pointer-events-none">Saved ✓</span>
           </div>
           <textarea
             id="readerNotesInput"
             rows="2"
-            placeholder="Add an internal note (auto-saves on blur or ⌘Enter)..."
+            placeholder="Add a private note..."
+            oninput="scheduleNoteAutoSave()"
             onblur="saveSelectedLeadNote()"
             onkeydown="if((event.metaKey || event.ctrlKey) && event.key === 'Enter'){ this.blur(); }"
-            class="ui-input w-full px-3 py-2 text-[12.5px] leading-relaxed resize-y placeholder-[#5F6570]"
+            class="note-autosave"
           >${escapeHtml(lead.notes || '')}</textarea>
         </div>
       `;
@@ -3364,15 +3890,21 @@
     function copyComposerMessage(showToast = false) {
       const pitchEl = document.getElementById('composerPitchText');
       const btn = document.getElementById('btnComposerCopy');
+      const miniBtn = document.getElementById('btnMiniComposerCopy');
       if (!pitchEl) return;
       copyTextSafely(pitchEl.value);
-      if (btn) {
-        const orig = btn.innerHTML;
-        btn.innerHTML = '<i class="fa-solid fa-check text-[10.5px] text-[#4ADE80]"></i><span>Copied</span>';
-        setTimeout(() => { btn.innerHTML = orig; }, 1600);
-      }
+      [btn, miniBtn].forEach(targetBtn => {
+        if (!targetBtn || targetBtn.dataset.copying === '1') return;
+        const orig = targetBtn.innerHTML;
+        targetBtn.dataset.copying = '1';
+        targetBtn.innerHTML = `${LUCIDE_ICONS.check}<span>Copied</span>`;
+        setTimeout(() => {
+          targetBtn.innerHTML = orig;
+          delete targetBtn.dataset.copying;
+        }, 1600);
+      });
       if (showToast) {
-        showLiveToast('Copied to clipboard', 'Reach Out draft is ready to paste.');
+        showLiveToast('Copied to clipboard', 'Reply draft is ready to paste.');
       }
     }
 
@@ -3438,22 +3970,45 @@
       }
     }
 
+    let noteAutoSaveTimer = null;
+    let noteSavedFadeTimer = null;
+
+    function scheduleNoteAutoSave() {
+      if (noteAutoSaveTimer) clearTimeout(noteAutoSaveTimer);
+      noteAutoSaveTimer = setTimeout(() => {
+        noteAutoSaveTimer = null;
+        saveSelectedLeadNote();
+      }, 600);
+    }
+
     async function saveSelectedLeadNote() {
+      if (noteAutoSaveTimer) {
+        clearTimeout(noteAutoSaveTimer);
+        noteAutoSaveTimer = null;
+      }
       if (!selectedLeadId) return;
       const inputEl = document.getElementById('readerNotesInput');
       if (!inputEl) return;
+      const targetId = selectedLeadId;
       const val = inputEl.value.trim();
+      const currentStored = (leadsById[targetId] && leadsById[targetId].notes) ? String(leadsById[targetId].notes).trim() : '';
+      if (val === currentStored) return;
       try {
         await fetch('/api/lead/notes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: selectedLeadId, notes: val })
+          body: JSON.stringify({ id: targetId, notes: val })
         });
-        if (leadsById[selectedLeadId]) leadsById[selectedLeadId].notes = val;
+        if (leadsById[targetId]) leadsById[targetId].notes = val;
         const badge = document.getElementById('readerNoteSaved');
         if (badge) {
-          badge.classList.remove('hidden');
-          setTimeout(() => badge.classList.add('hidden'), 1800);
+          badge.classList.remove('opacity-0');
+          badge.classList.add('opacity-100');
+          if (noteSavedFadeTimer) clearTimeout(noteSavedFadeTimer);
+          noteSavedFadeTimer = setTimeout(() => {
+            badge.classList.remove('opacity-100');
+            badge.classList.add('opacity-0');
+          }, 1800);
         }
       } catch (e) {
         console.error('Save note error', e);
@@ -3522,7 +4077,7 @@
       const activePlats = getActivePlatformScope();
       const scopeLabel = activePlats.length > 0 ? `${formatPlatformScopeLabel(activePlats)} · ` : '';
       if (btn) btn.disabled = true;
-      if (icon) icon.className = 'fa-solid fa-spinner fa-spin w-3.5 text-center text-[11px] text-[#A78BFA] shrink-0';
+      if (icon) icon.innerHTML = LUCIDE_ICONS.spinner;
       if (lbl) lbl.innerText = activePlats.length > 0 ? `Auditing ${formatPlatformScopeLabel(activePlats)}...` : 'Auditing...';
       try {
         const res = await fetch('/api/leads/ai-audit', {
@@ -3537,14 +4092,14 @@
         showLiveToast(
           `AI Audit Complete (${scopeLabel}${data.checked_count || 0} checked)`,
           moved > 0
-            ? `Moved ${moved} misaligned/rant post(s) to AI Filtered.`
+            ? `Moved ${moved} off-topic post(s) to AI Filtered.`
             : 'All active leads passed alignment checks.'
         );
       } catch (e) {
         console.error('AI audit error', e);
       } finally {
         if (btn) btn.disabled = false;
-        if (icon) icon.className = 'fa-solid fa-wand-magic-sparkles w-3.5 text-center text-[11px] text-[#A78BFA]/85 shrink-0';
+        if (icon) icon.innerHTML = LUCIDE_ICONS.sparkles;
         if (lbl) lbl.innerText = 'AI Audit';
       }
     }
@@ -3919,7 +4474,9 @@
     }
 
     syncThemeIcons();
+    applyFeedDensity(feedDensity);
     syncPlatformPills();
+    renderActiveFilterChips();
     initConfigAndAutoScan();
   </script>
 </body>
