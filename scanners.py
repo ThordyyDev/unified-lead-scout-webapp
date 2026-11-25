@@ -11,6 +11,7 @@ import gzip
 import hashlib
 import html as html_lib
 import json
+import math
 import os
 import re
 import threading
@@ -25,7 +26,9 @@ from datetime import datetime, timedelta, timezone
 
 from database import (
     ALLOWED_WEB_DOMAINS,
+    filter_unseen_leads,
     get_api_usage_today,
+    get_latest_fb_posted_at,
     is_buy_sell_keyword,
     is_valid_lead_url,
     parse_search_query,
@@ -196,7 +199,13 @@ def get_settings(config):
     providers = config.get("providers") if isinstance(config.get("providers"), dict) else {}
     raw_mode = str(providers.get("search_mode") or config.get("search_mode") or "auto").strip().lower()
     search_mode = raw_mode if raw_mode in ("auto", "alternative_only", "apify_only") else "auto"
-    cache_mins = _safe_int(providers.get("apify_cache_minutes", config.get("apify_cache_minutes", 10)), 10)
+    cache_mins = _safe_int(providers.get("apify_cache_minutes", config.get("apify_cache_minutes", 30)), 30)
+    incremental_scraping = bool(providers.get("incremental_scraping", s.get("incremental_scraping", config.get("incremental_scraping", True))))
+    scope_selected_fb_group = bool(providers.get("scope_selected_fb_group", s.get("scope_selected_fb_group", config.get("scope_selected_fb_group", True))))
+    pre_gemini_dedupe = bool(providers.get("pre_gemini_dedupe", s.get("pre_gemini_dedupe", config.get("pre_gemini_dedupe", True))))
+    strict_zero_autoscan = bool(providers.get("strict_zero_autoscan", s.get("strict_zero_autoscan", config.get("strict_zero_autoscan", True))))
+    max_apify_runs_per_day = max(0, _safe_int(providers.get("max_apify_runs_per_day", s.get("max_apify_runs_per_day", config.get("max_apify_runs_per_day", 0))), 0))
+    max_gemini_calls_per_day = max(0, _safe_int(providers.get("max_gemini_calls_per_day", s.get("max_gemini_calls_per_day", config.get("max_gemini_calls_per_day", 0))), 0))
     raw_blocked_kw = s.get("blocked_keywords") if "blocked_keywords" in s else config.get("blocked_keywords")
     blocked_keywords = [k.lower() for k in (_as_list(raw_blocked_kw) if raw_blocked_kw is not None else DEFAULT_BLOCKED_KEYWORDS)]
     raw_blocked_authors = s.get("blocked_authors") if "blocked_authors" in s else config.get("blocked_authors")
@@ -270,6 +279,12 @@ def get_settings(config):
         "apify_token": str(os.environ.get("APIFY_TOKEN") or config.get("apify_token") or "").strip(),
         "search_mode": search_mode,
         "apify_cache_seconds": max(60, cache_mins * 60),
+        "incremental_scraping": incremental_scraping,
+        "scope_selected_fb_group": scope_selected_fb_group,
+        "pre_gemini_dedupe": pre_gemini_dedupe,
+        "strict_zero_autoscan": strict_zero_autoscan,
+        "max_apify_runs_per_day": max_apify_runs_per_day,
+        "max_gemini_calls_per_day": max_gemini_calls_per_day,
         "gemini_api_key": str(os.environ.get("GEMINI_API_KEY") or providers.get("gemini_api_key") or config.get("gemini_api_key") or "").strip(),
         "gemini_model": str(providers.get("gemini_model") or config.get("gemini_model") or "gemini-3.5-flash-lite").strip(),
         "ai_filter_enabled": bool(providers.get("ai_filter_enabled", config.get("ai_filter_enabled", True))),
@@ -1184,9 +1199,34 @@ def apify_abort_run(run_id, token):
         pass
 
 
-def apify_run(actor_id, run_input, token, max_wait_s=600, ctx=None):
+def check_daily_safety_cap(provider, settings):
+    """
+    Enforces optional daily safety caps (`max_apify_runs_per_day`, `max_gemini_calls_per_day`).
+    Raises `ScanError` with a human-readable cap message before any paid network request fires.
+    """
+    s = settings if isinstance(settings, dict) else {}
+    prov = str(provider or "").strip().lower()
+    if prov == "apify":
+        cap = _safe_int(s.get("max_apify_runs_per_day"), 0)
+        unit_lbl = "Apify runs"
+    elif prov == "gemini":
+        cap = _safe_int(s.get("max_gemini_calls_per_day"), 0)
+        unit_lbl = "Gemini calls"
+    else:
+        return
+    if cap <= 0:
+        return
+    usage = get_api_usage_today()
+    used = _safe_int(usage.get(prov), 0)
+    if used >= cap:
+        raise ScanError(f"Daily safety cap reached ({used}/{cap} {unit_lbl} today)", code=429)
+
+
+def apify_run(actor_id, run_input, token, max_wait_s=600, ctx=None, settings=None):
     if ctx and ctx.is_cancelled():
         raise ScanCancelled("Cancelled by user.")
+    eff_settings = settings if isinstance(settings, dict) else (ctx.settings if ctx is not None else None)
+    check_daily_safety_cap("apify", eff_settings)
     act = actor_id.replace("/", "~")
     headers = {"Authorization": f"Bearer {token}"}
     try:
@@ -1225,13 +1265,14 @@ def apify_run(actor_id, run_input, token, max_wait_s=600, ctx=None):
 
 class ScanContext:
     def __init__(self, config, query="", location="Cebu", max_age_days=7, intents=None,
-                 trigger="manual", cancel_event=None):
+                 trigger="manual", cancel_event=None, fb_group=""):
         self.settings = get_settings(config)
         self.query = (query or "").strip()
         self.location = location or "Any"
         self.max_age_days = max(1, int(max_age_days or 7))
         self.intents = set(intents or ["seeker", "employer"])
         self.trigger = trigger
+        self.fb_group = str(fb_group or "").strip().lower()
         self.cancel_event = cancel_event or threading.Event()
         self._apify_lock = threading.Lock()
         self._apify_runs = []
@@ -1251,6 +1292,47 @@ class ScanContext:
 
     def since_phrase(self):
         return "1 day" if self.max_age_days == 1 else f"{self.max_age_days} days"
+
+    def effective_fb_groups(self):
+        all_groups = list(self.settings.get("facebook_groups") or [])
+        if not self.fb_group or not self.settings.get("scope_selected_fb_group", True):
+            return all_groups
+        target = self.fb_group
+        matched = [
+            u for u in all_groups
+            if _url_group_key(u) == target or f"/groups/{target}" in str(u).lower()
+        ]
+        if matched:
+            return [matched[0]]
+        if re.match(r"^[a-z0-9._-]+$", target):
+            return [f"https://www.facebook.com/groups/{target}/"]
+        return all_groups
+
+    def incremental_since_phrase(self, target_urls, page_mode=False):
+        if not self.settings.get("incremental_scraping", True):
+            return self.since_phrase()
+        urls = [u for u in (target_urls or []) if str(u or "").strip()]
+        if not urls:
+            return self.since_phrase()
+        latest_map = get_latest_fb_posted_at(urls, page_mode=page_mode)
+        expected_keys = set()
+        for raw_u in urls:
+            u_str = str(raw_u).strip()
+            if page_mode:
+                k = u_str.lower().rstrip("/").split("/")[-1]
+            else:
+                k = _url_group_key(u_str)
+            if k:
+                expected_keys.add(k)
+        if not expected_keys or any(k not in latest_map for k in expected_keys):
+            return self.since_phrase()
+        epochs = [to_epoch(latest_map[k]) for k in expected_keys]
+        if any(ts is None for ts in epochs):
+            return self.since_phrase()
+        oldest_latest_ts = min(epochs)
+        age_days_raw = max(0.0, (time.time() - float(oldest_latest_ts)) / 86400.0)
+        days = max(1, min(self.max_age_days, int(math.ceil(age_days_raw))))
+        return "1 day" if days == 1 else f"{days} days"
 
     def is_recent(self, ts):
         if ts is None:
@@ -1282,12 +1364,14 @@ def _finish(items, fetched, errors, note=""):
 
 
 def item(platform, kind, source, external_id, text, author, url, posted_ts,
-         title="", parent_text="", parent_url="", scoped=False, from_configured_source=False):
+         title="", parent_text="", parent_url="", scoped=False, from_configured_source=False,
+         comments_count=None):
     return {
         "platform": platform, "kind": kind, "source": source, "external_id": external_id,
         "text": text or "", "author": author or "unknown", "url": url, "posted_ts": posted_ts,
         "title": title or "", "parent_text": parent_text or "", "parent_url": parent_url or "",
         "scoped": scoped, "from_configured_source": from_configured_source,
+        "comments_count": comments_count,
     }
 
 
@@ -1371,6 +1455,7 @@ def evaluate_item(it, ctx):
         "content": body[:3000], "author": it["author"], "url": url, "location": loc,
         "posted_at": age_adjusted_sql_ts(ts), "platform": plat, "kind": it["kind"],
         "intent": intent, "matched_keyword": keyword, "parent_url": it.get("parent_url", ""),
+        "comments_count": it.get("comments_count"),
     }
 
 
@@ -1742,27 +1827,29 @@ def _search_custom_api(dork_query, endpoint_url, api_key="", max_age_days=7,
 
 
 def _search_public_index(dork_query, max_age_days=7, platform="", settings=None,
-                         raw_query="", location="", intents=None):
+                         raw_query="", location="", intents=None, trigger="manual"):
     s = settings or {}
+    free_only = (trigger == "auto" and bool(s.get("strict_zero_autoscan", True)))
     providers = []
-    if s.get("custom_api_url"):
-        providers.append(("Custom API", lambda: _search_custom_api(
-            dork_query, s["custom_api_url"], s.get("custom_api_key", ""),
-            max_age_days=max_age_days, platform=platform,
-            raw_query=raw_query, location=location, intents=intents,
-        )))
-    if s.get("serper_api_key"):
-        providers.append(("Serper.dev", lambda: _search_serper(
-            dork_query, s["serper_api_key"], max_age_days=max_age_days, platform=platform,
-        )))
-    if s.get("tavily_api_key"):
-        providers.append(("Tavily", lambda: _search_tavily(
-            dork_query, s["tavily_api_key"], max_age_days=max_age_days, platform=platform,
-        )))
-    if s.get("brave_api_key"):
-        providers.append(("Brave", lambda: _search_brave(
-            dork_query, s["brave_api_key"], max_age_days=max_age_days, platform=platform,
-        )))
+    if not free_only:
+        if s.get("custom_api_url"):
+            providers.append(("Custom API", lambda: _search_custom_api(
+                dork_query, s["custom_api_url"], s.get("custom_api_key", ""),
+                max_age_days=max_age_days, platform=platform,
+                raw_query=raw_query, location=location, intents=intents,
+            )))
+        if s.get("serper_api_key"):
+            providers.append(("Serper.dev", lambda: _search_serper(
+                dork_query, s["serper_api_key"], max_age_days=max_age_days, platform=platform,
+            )))
+        if s.get("tavily_api_key"):
+            providers.append(("Tavily", lambda: _search_tavily(
+                dork_query, s["tavily_api_key"], max_age_days=max_age_days, platform=platform,
+            )))
+        if s.get("brave_api_key"):
+            providers.append(("Brave", lambda: _search_brave(
+                dork_query, s["brave_api_key"], max_age_days=max_age_days, platform=platform,
+            )))
     providers.append(("DuckDuckGo", lambda: _search_duckduckgo_html(dork_query, max_age_days=max_age_days, platform=platform)))
     providers.append(("Yahoo", lambda: _search_yahoo_html(dork_query, max_age_days=max_age_days, platform=platform)))
 
@@ -1824,7 +1911,8 @@ def _scan_public_social(platform, label, dork_prefixes, ctx, extra_note=""):
             return result("cancelled", "Cancelled by user.", items, fetched)
         hits, errs = _search_public_index(
             dork, max_age_days=ctx.max_age_days, platform=platform,
-            settings=ctx.settings, raw_query=ctx.query, location=ctx.location, intents=ctx.intents,
+            settings=ctx.settings, raw_query=ctx.query, location=ctx.location,
+            intents=ctx.intents, trigger=ctx.trigger,
         )
         errors.extend(errs)
         for h in hits:
@@ -2127,12 +2215,25 @@ def _fb_post_item(post, ctx, page_mode=False):
         if m:
             where = m.group(1)
     source = (f"Facebook Page ({where})" if page_mode else f"Facebook Group ({where})") if where else "Facebook"
+    cc_val = None
+    if isinstance(post, dict):
+        for c_field in ("commentsCount", "comments_count", "commentCount"):
+            raw_cc = post.get(c_field)
+            if raw_cc is not None and not isinstance(raw_cc, bool):
+                try:
+                    parsed_cc = int(raw_cc)
+                    if parsed_cc >= 0:
+                        cc_val = parsed_cc
+                        break
+                except (ValueError, TypeError):
+                    pass
     return item(
         "facebook", "post", source, f"fb_post_{pid}", text, author, url,
         to_epoch(pick(post, "time", "timestamp", "date", "creation_time", "publishedAt")),
         title=title,
         scoped=True,
         from_configured_source=True,
+        comments_count=cc_val,
     )
 
 
@@ -2171,15 +2272,17 @@ def _post_matches_configured_groups(post, configured_keys):
     return False
 
 
-def _fb_public_prefixes(settings):
+def _fb_public_prefixes(settings, group_urls=None):
     prefixes = []
-    for g in (settings.get("facebook_groups") or [])[:2]:
+    groups = group_urls if group_urls is not None else (settings.get("facebook_groups") or [])
+    for g in groups[:2]:
         key = _url_group_key(g)
         if key and not key.startswith("http"):
             prefixes.append(f"site:facebook.com/groups/{key}")
-    for p in ("site:facebook.com/groups", "site:facebook.com"):
-        if p not in prefixes:
-            prefixes.append(p)
+    if group_urls is None or not prefixes:
+        for p in ("site:facebook.com/groups", "site:facebook.com"):
+            if p not in prefixes:
+                prefixes.append(p)
     return prefixes
 
 
@@ -2188,10 +2291,12 @@ def _fb_public_prefixes(settings):
                   needs="apify")
 def adapter_facebook(ctx):
     s = ctx.settings
-    if ctx.trigger == "auto" or s.get("search_mode") == "alternative_only" or not s["apify_token"] or not (s["facebook_groups"] or s["facebook_pages"]):
+    active_fb_groups = ctx.effective_fb_groups()
+    active_fb_pages = [] if (ctx.fb_group and s.get("scope_selected_fb_group", True)) else list(s["facebook_pages"] or [])
+    if ctx.trigger == "auto" or s.get("search_mode") == "alternative_only" or not s["apify_token"] or not (active_fb_groups or active_fb_pages):
         return _scan_public_social(
             "facebook", "Facebook",
-            _fb_public_prefixes(s),
+            _fb_public_prefixes(s, active_fb_groups if (ctx.fb_group and s.get("scope_selected_fb_group", True)) else None),
             ctx,
         )
     token = s["apify_token"]
@@ -2201,7 +2306,7 @@ def adapter_facebook(ctx):
     items, errors, fetched, threads = [], [], 0, []
     seen_post_ids = set()
     seen_comment_ids = set()
-    configured_keys = {_url_group_key(u) for u in s["facebook_groups"]}
+    configured_keys = {_url_group_key(u) for u in active_fb_groups}
     used_cache = False
     ran_fresh = False
 
@@ -2231,41 +2336,54 @@ def adapter_facebook(ctx):
                             extracted_here += 1
                             fetched += 1
                             items.append(ci)
-            n_comments = pick(post, "commentsCount", "comments_count")
+            n_comments = post_it.get("comments_count")
+            if n_comments is None:
+                n_comments = pick(post, "commentsCount", "comments_count")
             if (fb_comments_limit > 0 and isinstance(n_comments, int) and n_comments > 0 and ctx.is_recent(post_it["posted_ts"])
                     and ctx.intent_of(f"{post_it['title']} {post_it['text']}", author=post_it.get("author", "")) in ("employer", "seeker", "seller", "buyer")):
                 threads.append(post_it)
 
-    # 1. Only pull cached items that belong to the CURRENTLY configured facebook_groups in Settings!
-    cached_all, latest_age_s = apify_fetch_recent_runs(APIFY_ACTORS["facebook_groups"], token, max_runs=2)
-    cached_matching = [p for p in cached_all if _post_matches_configured_groups(p, configured_keys)]
-    if cached_matching:
-        used_cache = True
-        ingest_fb_posts(cached_matching, page_mode=False)
+    # 1. Only pull cached items that belong to the active target facebook_groups
+    cached_matching = []
+    latest_age_s = float("inf")
+    if active_fb_groups:
+        cached_all, latest_age_s = apify_fetch_recent_runs(APIFY_ACTORS["facebook_groups"], token, max_runs=2)
+        cached_matching = [p for p in cached_all if _post_matches_configured_groups(p, configured_keys)]
+        if cached_matching:
+            used_cache = True
+            ingest_fb_posts(cached_matching, page_mode=False)
 
     covered_keys = {
         _url_group_key(pick(p, "inputUrl", "facebookUrl", "groupUrl", "url"))
         for p in cached_matching
     }
-    missing_groups = [u for u in s["facebook_groups"] if _url_group_key(u) not in covered_keys]
+    missing_groups = [u for u in active_fb_groups if _url_group_key(u) not in covered_keys]
 
     # 2. Run a fresh Apify scrape for any newly added group or if the last run exceeds cache window
     jobs = []
-    if s["facebook_groups"] and (missing_groups or latest_age_s > cache_s or not cached_matching):
-        target_groups = missing_groups if (missing_groups and latest_age_s <= cache_s) else s["facebook_groups"]
+    if active_fb_groups and (missing_groups or latest_age_s > cache_s or not cached_matching):
+        target_groups = missing_groups if (missing_groups and latest_age_s <= cache_s) else active_fb_groups
         grp_input = {
             "startUrls": [{"url": u} for u in target_groups],
             "resultsLimit": fb_posts_limit,
             "viewOption": "CHRONOLOGICAL",
-            "onlyPostsNewerThan": ctx.since_phrase(),
+            "onlyPostsNewerThan": ctx.incremental_since_phrase(target_groups, page_mode=False),
         }
         if fb_comments_limit > 0:
             grp_input["commentsLimit"] = fb_comments_limit
         jobs.append((APIFY_ACTORS["facebook_groups"], False, grp_input))
-    if s["facebook_pages"]:
-        jobs.append((APIFY_ACTORS["facebook_pages"], True, {
-            "startUrls": [{"url": u} for u in s["facebook_pages"]], "resultsLimit": fb_posts_limit,
-            "onlyPostsNewerThan": ctx.since_phrase()}))
+
+    if active_fb_pages:
+        cached_pages, pages_age_s = apify_fetch_recent_runs(APIFY_ACTORS["facebook_pages"], token, max_runs=2)
+        if cached_pages and pages_age_s <= cache_s:
+            used_cache = True
+            ingest_fb_posts(cached_pages, page_mode=True)
+        else:
+            jobs.append((APIFY_ACTORS["facebook_pages"], True, {
+                "startUrls": [{"url": u} for u in active_fb_pages],
+                "resultsLimit": fb_posts_limit,
+                "onlyPostsNewerThan": ctx.incremental_since_phrase(active_fb_pages, page_mode=True),
+            }))
 
     for actor, page_mode, run_input in jobs:
         if ctx.is_cancelled():
@@ -2293,11 +2411,12 @@ def adapter_facebook(ctx):
     if ctx.is_cancelled():
         return result("cancelled", "Cancelled by user.", items, fetched)
 
-    # 3. Only ingest comments whose parent thread is in `threads` (from the currently configured groups)
+    # 3. Only ingest comments whose parent thread is in `threads` (and within cache_s)
     if fb_comments_limit > 0 and threads:
         by_url = {t["url"]: t for t in threads}
         cached_comments, comment_age_s = apify_fetch_recent_runs(APIFY_ACTORS["facebook_comments"], token, max_runs=2)
-        for c in cached_comments:
+        valid_cached_comments = cached_comments if comment_age_s <= cache_s else []
+        for c in valid_cached_comments:
             parent = by_url.get(pick(c, "inputUrl", "facebookUrl", "postUrl"))
             if not parent:
                 continue
@@ -2313,7 +2432,7 @@ def adapter_facebook(ctx):
             threads.sort(
                 key=lambda t: 0 if ctx.intent_of(f"{t['title']} {t['text']}", author=t.get("author", "")) == "employer" else 1
             )
-        scraped_urls = {pick(c, "inputUrl", "facebookUrl", "postUrl") for c in cached_comments}
+        scraped_urls = {pick(c, "inputUrl", "facebookUrl", "postUrl") for c in valid_cached_comments}
         unscraped_threads = [t for t in threads if t["url"] not in scraped_urls]
         unscraped_threads = unscraped_threads[: s["comment_threads_per_platform"]]
         if unscraped_threads and not ctx.is_cancelled():
@@ -2377,6 +2496,16 @@ def mine_facebook_post_comments(lead_row, config, max_comments=35):
     if not post_url or not is_valid_lead_url("facebook", post_url):
         return {"success": False, "error": "This lead is not a valid Facebook post URL."}
 
+    if isinstance(lead_row.get("comments_count"), int) and not isinstance(lead_row.get("comments_count"), bool) and lead_row.get("comments_count") == 0:
+        return {
+            "success": True,
+            "fetched": 0,
+            "matched": 0,
+            "saved": 0,
+            "seekers_saved": 0,
+            "cached": True,
+        }
+
     settings = get_settings(config)
     token = settings.get("apify_token") or ""
     if not token:
@@ -2420,6 +2549,7 @@ def mine_facebook_post_comments(lead_row, config, max_comments=35):
                 },
                 token,
                 max_wait_s=180,
+                settings=settings,
             )
             with _MINED_POST_LOCK:
                 _MINED_POST_CACHE[norm_key] = (now_ts, list(raw_comments or []))
@@ -2456,12 +2586,13 @@ def mine_facebook_post_comments(lead_row, config, max_comments=35):
         seen_ids.add(evaluated["external_id"])
         candidates.append(evaluated)
 
-    if candidates:
-        screen_leads_with_ai(candidates, settings, skip_already_approved=True)
+    unseen_candidates = filter_unseen_leads(candidates) if settings.get("pre_gemini_dedupe", True) else candidates
+    if unseen_candidates:
+        screen_leads_with_ai(unseen_candidates, settings, skip_already_approved=True)
 
     saved = 0
     seekers_saved = 0
-    for ld in candidates:
+    for ld in unseen_candidates:
         is_new = save_lead(**ld)
         if is_new:
             saved += 1
@@ -2734,7 +2865,8 @@ def adapter_public_web(ctx):
         dork = f"site:{site_domain} {loc_q} {q_expr}"
         hits, errs = _search_public_index(
             dork, max_age_days=ctx.max_age_days, platform="web",
-            settings=ctx.settings, raw_query=ctx.query, location=ctx.location, intents=ctx.intents,
+            settings=ctx.settings, raw_query=ctx.query, location=ctx.location,
+            intents=ctx.intents, trigger=ctx.trigger,
         )
         errors.extend(errs)
         now_ts = get_reference_now()
@@ -3011,6 +3143,11 @@ def generate_ai_reply_draft(lead_row, tone="friendly", settings=None):
         "input": prompt,
     }
     try:
+        check_daily_safety_cap("gemini", s)
+    except ScanError as cap_err:
+        return {"success": False, "error": str(cap_err)}
+
+    try:
         resp = http_request(
             "https://generativelanguage.googleapis.com/v1beta/interactions",
             method="POST",
@@ -3036,14 +3173,15 @@ def generate_ai_reply_draft(lead_row, tone="friendly", settings=None):
         return {"success": False, "error": "Gemini AI draft request failed unexpectedly."}
 
 
-def screen_leads_with_ai(leads_list, settings, skip_already_approved=False):
+def screen_leads_with_ai(leads_list, settings, skip_already_approved=False, allow_paid_gemini=True):
     """
     Screens a list of lead dicts in-place:
     1. Runs deterministic intent check (Comment-Only Guard, Employer Veto, Corporate Author) on non-manual leads.
     2. Runs contextual rant/misaligned heuristic check.
-    3. Gemini Credit Saver: skips obvious short individual seeker comments (< 100 chars) and already-evaluated leads.
-    4. If ai_filter_enabled and gemini_api_key is configured, batches remaining leads to Gemini
-       and applies BOTH keep/filter verdict AND Gemini's corrected intent category.
+    3. Gemini Credit Saver: skips obvious short individual seeker comments (< 100 chars), already-evaluated leads,
+       and manually user-approved leads ('Approved by user').
+    4. If ai_filter_enabled, allow_paid_gemini, and gemini_api_key is configured, batches remaining leads to Gemini
+       (respecting max_gemini_calls_per_day) and applies BOTH keep/filter verdict AND Gemini's corrected intent category.
     """
     if not leads_list:
         return leads_list
@@ -3061,9 +3199,11 @@ def screen_leads_with_ai(leads_list, settings, skip_already_approved=False):
                 if det_kw and not ld.get("matched_keyword"):
                     ld["matched_keyword"] = det_kw
 
-        ai_rsn = str(ld.get("ai_reason") or "")
+        ai_rsn = str(ld.get("ai_reason") or "").strip()
         if skip_already_approved and ld.get("ai_verdict") in ("approved", "filtered") and (
-            ai_rsn.startswith("Gemini AI:") or ai_rsn.startswith("Fast-verified:")
+            ai_rsn.startswith("Gemini AI:")
+            or ai_rsn.startswith("Fast-verified:")
+            or ai_rsn == "Approved by user"
         ):
             continue
         aligned, reason = detect_rant_or_misaligned_heuristic(ld)
@@ -3079,8 +3219,13 @@ def screen_leads_with_ai(leads_list, settings, skip_already_approved=False):
             ld["ai_reason"] = ld.get("ai_reason") or reason
             to_gemini.append(ld)
 
-    if ai_enabled and api_key and to_gemini:
+    if ai_enabled and allow_paid_gemini and api_key and to_gemini:
         for i in range(0, len(to_gemini), 15):
+            try:
+                check_daily_safety_cap("gemini", s)
+            except ScanError as cap_err:
+                print(f"[gemini] {cap_err}")
+                break
             chunk = to_gemini[i : i + 15]
             try:
                 verdicts = gemini_screen_leads_batch(chunk, api_key, model=model)
@@ -3648,7 +3793,7 @@ class ScanManager:
             self.state = {
                 "running": True, "cancelled": False, "trigger": trigger,
                 "started_at": utc_now_sql(), "finished_at": None,
-                "params": {k: params.get(k) for k in ("query", "location", "max_age_days", "intents")},
+                "params": {k: params.get(k) for k in ("query", "location", "max_age_days", "intents", "fb_group")},
                 "adapters": {k: {"label": PLATFORM_ADAPTERS[k]["label"], "status": "queued",
                                  "message": "", "fetched": 0, "matched": 0, "new": 0} for k in platforms},
                 "new_total": 0, "matched_total": 0, "latest_new": [],
@@ -3679,7 +3824,8 @@ class ScanManager:
     def _run(self, config, params, platforms, seq, cancel_ev):
         ctx = ScanContext(config, params.get("query", ""), params.get("location", "Cebu"),
                           params.get("max_age_days", 7), params.get("intents"),
-                          trigger=self.state.get("trigger", "manual"), cancel_event=cancel_ev)
+                          trigger=self.state.get("trigger", "manual"), cancel_event=cancel_ev,
+                          fb_group=params.get("fb_group", ""))
         with self._lock:
             if seq == self._scan_seq:
                 self._active_ctx = ctx
@@ -3714,13 +3860,25 @@ class ScanManager:
                         seen.add(lead["external_id"])
                         candidates.append(lead)
 
-                    if candidates and not cancel_ev.is_set():
-                        screen_leads_with_ai(candidates, ctx.settings, skip_already_approved=True)
+                    use_pre_dedupe = bool(ctx.settings.get("pre_gemini_dedupe", True))
+                    to_screen = filter_unseen_leads(candidates) if (candidates and use_pre_dedupe) else candidates
+                    skip_paid_gemini = (ctx.trigger == "auto" and bool(ctx.settings.get("strict_zero_autoscan", True)))
+                    if to_screen and not cancel_ev.is_set():
+                        screen_leads_with_ai(
+                            to_screen,
+                            ctx.settings,
+                            skip_already_approved=True,
+                            allow_paid_gemini=not skip_paid_gemini,
+                        )
 
+                    unseen_ext_ids = {ld["external_id"] for ld in to_screen} if use_pre_dedupe else None
                     for lead in candidates:
                         if cancel_ev.is_set():
                             break
-                        is_saved = save_lead(**lead)
+                        if unseen_ext_ids is not None and lead["external_id"] not in unseen_ext_ids:
+                            is_saved = False
+                        else:
+                            is_saved = save_lead(**lead)
                         if lead.get("status") != "ai_filtered" and lead_matches_active_filters(lead, ctx):
                             matched += 1
                             if is_saved:

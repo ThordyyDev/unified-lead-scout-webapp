@@ -327,6 +327,7 @@ class LeadScoutHandler(http.server.BaseHTTPRequestHandler):
             status_filter = str(payload.get("status") or "all")
             kind_filter = str(payload.get("kind") or "all").strip().lower()
             max_age_days = _safe_int(payload.get("max_age_days", s_cfg.get("max_age_days", 7)), 7)
+            fb_group = str(payload.get("fb_group") or "").strip()
 
             params = {
                 "query": query_kw,
@@ -334,6 +335,7 @@ class LeadScoutHandler(http.server.BaseHTTPRequestHandler):
                 "intents": intents,
                 "location": location,
                 "max_age_days": max_age_days,
+                "fb_group": fb_group,
             }
             req_trigger = payload.get("trigger") or ("search" if path == "/api/search" else "scan")
             with _RELOAD_LOCK:
@@ -346,7 +348,6 @@ class LeadScoutHandler(http.server.BaseHTTPRequestHandler):
 
             scan_state = SCAN_MANAGER.status()
             is_audit_status = status_filter in ("ai_filtered", "archived")
-            fb_group = str(payload.get("fb_group") or "").strip()
             leads = database.search_leads(
                 query=query_kw,
                 platforms=platforms,

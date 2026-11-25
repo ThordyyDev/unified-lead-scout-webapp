@@ -2040,11 +2040,13 @@
             </div>
             <div>
               <label for="cfgApifyCacheMinutes" class="block text-[11.5px] font-medium mb-1.5" style="color: var(--ink-secondary);">Apify Cache Reuse Window</label>
-              <select id="cfgApifyCacheMinutes" class="ui-input w-full h-9 px-2.5 text-[12.5px]">
-                <option value="10">10 minutes (Default)</option>
-                <option value="30">30 minutes (Save Credits)</option>
+              <select id="cfgApifyCacheMinutes" onchange="onManualScanSettingEdit()" class="ui-input w-full h-9 px-2.5 text-[12.5px]">
+                <option value="10">10 minutes</option>
+                <option value="30">30 minutes (Optimal)</option>
                 <option value="60">1 hour (High Savings)</option>
-                <option value="360">6 hours (Max Cache)</option>
+                <option value="360">6 hours</option>
+                <option value="720">12 hours</option>
+                <option value="1440">24 hours (Max Cache)</option>
               </select>
             </div>
           </div>
@@ -2052,21 +2054,93 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
               <label for="cfgFbMaxPosts" class="block text-[11.5px] font-medium mb-1.5" style="color: var(--ink-secondary);">Facebook Posts Per Group</label>
-              <select id="cfgFbMaxPosts" class="ui-input w-full h-9 px-2.5 text-[12.5px]">
-                <option value="20">20 posts (Light)</option>
-                <option value="35">35 posts (Default)</option>
+              <select id="cfgFbMaxPosts" onchange="onManualScanSettingEdit()" class="ui-input w-full h-9 px-2.5 text-[12.5px]">
+                <option value="20">20 posts (Light / Eco)</option>
+                <option value="35">35 posts (Optimal)</option>
                 <option value="50">50 posts (Deep)</option>
-                <option value="80">80 posts (Max Discovery)</option>
+                <option value="80">80 posts (Massive)</option>
               </select>
             </div>
             <div>
               <label for="cfgFbCommentsPerPost" class="block text-[11.5px] font-medium mb-1.5" style="color: var(--ink-secondary);">Facebook Comments Per Post</label>
-              <select id="cfgFbCommentsPerPost" class="ui-input w-full h-9 px-2.5 text-[12.5px]">
+              <select id="cfgFbCommentsPerPost" onchange="onManualScanSettingEdit()" class="ui-input w-full h-9 px-2.5 text-[12.5px]">
                 <option value="0">0 (Off — Save Credits)</option>
+                <option value="5">5 comments (Eco)</option>
                 <option value="10">10 comments</option>
-                <option value="15">15 comments (Default)</option>
-                <option value="30">30 comments (High Recall)</option>
+                <option value="15">15 comments (Optimal)</option>
+                <option value="30">30 comments (Massive)</option>
               </select>
+            </div>
+          </div>
+
+          <!-- Scan Profile & API Credit Saver Section -->
+          <div class="pt-4 border-t border-hair space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <span class="block text-[12px] font-medium" style="color: var(--ink-primary);">Scan Profile &amp; Credit Saver</span>
+                <span id="scanProfileSummary" class="text-[11px]" style="color: var(--ink-muted);">Balanced cache, incremental 24h floor, and zero-waste deduplication.</span>
+              </div>
+              <div id="scanProfileBar" role="group" aria-label="Scan Profile Presets" class="inline-flex flex-wrap items-center p-0.5 rounded-[8px] border border-hair gap-0.5" style="background-color: var(--bg-sidebar);">
+                <button type="button" id="presetBtnEco" data-profile="eco" onclick="applyScanProfilePreset('eco')" class="seg-tab !py-1 !px-2.5 !text-[11px]">Eco (Save Credits)</button>
+                <button type="button" id="presetBtnOptimal" data-profile="optimal" onclick="applyScanProfilePreset('optimal')" class="seg-tab active-tab !py-1 !px-2.5 !text-[11px]">Optimal (Balanced)</button>
+                <button type="button" id="presetBtnMassive" data-profile="massive" onclick="applyScanProfilePreset('massive')" class="seg-tab !py-1 !px-2.5 !text-[11px]">Massive Results</button>
+                <button type="button" id="presetBtnCustom" data-profile="custom" onclick="applyScanProfilePreset('custom')" class="seg-tab !py-1 !px-2.5 !text-[11px]">Custom</button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <label class="ui-input px-3 py-2 flex items-start justify-between gap-2.5 cursor-pointer">
+                <span class="min-w-0">
+                  <span class="block text-[12px] font-medium" style="color: var(--ink-primary);">Smart Incremental Scraping</span>
+                  <span class="block text-[10.5px] leading-snug mt-0.5" style="color: var(--ink-muted);">Skips days already scraped with a 24h min floor; turn OFF for Massive deep scans</span>
+                </span>
+                <input id="cfgIncrementalScraping" type="checkbox" checked onchange="onManualScanSettingEdit()" class="accent-[#5E6AD2] w-4 h-4 mt-0.5 shrink-0">
+              </label>
+
+              <label class="ui-input px-3 py-2 flex items-start justify-between gap-2.5 cursor-pointer">
+                <span class="min-w-0">
+                  <span class="block text-[12px] font-medium" style="color: var(--ink-primary);">Scope Scan to Selected FB Group</span>
+                  <span class="block text-[10.5px] leading-snug mt-0.5" style="color: var(--ink-muted);">When 1 Facebook Group is selected in sidebar, scan only that group</span>
+                </span>
+                <input id="cfgScopeSelectedFbGroup" type="checkbox" checked onchange="onManualScanSettingEdit()" class="accent-[#5E6AD2] w-4 h-4 mt-0.5 shrink-0">
+              </label>
+
+              <label class="ui-input px-3 py-2 flex items-start justify-between gap-2.5 cursor-pointer">
+                <span class="min-w-0">
+                  <span class="block text-[12px] font-medium" style="color: var(--ink-primary);">Pre-Gemini Deduplication</span>
+                  <span class="block text-[10.5px] leading-snug mt-0.5" style="color: var(--ink-muted);">Skip Gemini on already-saved or duplicate cross-posts; still screen 100% of genuinely new posts</span>
+                </span>
+                <input id="cfgPreGeminiDedupe" type="checkbox" checked onchange="onManualScanSettingEdit()" class="accent-[#5E6AD2] w-4 h-4 mt-0.5 shrink-0">
+              </label>
+
+              <label class="ui-input px-3 py-2 flex items-start justify-between gap-2.5 cursor-pointer">
+                <span class="min-w-0">
+                  <span class="block text-[12px] font-medium" style="color: var(--ink-primary);">Strict $0 Auto-Scan</span>
+                  <span class="block text-[10.5px] leading-snug mt-0.5" style="color: var(--ink-muted);">Background Auto-Scan uses free feeds only; manual Scan uses full engines</span>
+                </span>
+                <input id="cfgStrictZeroAutoScan" type="checkbox" checked onchange="onManualScanSettingEdit()" class="accent-[#5E6AD2] w-4 h-4 mt-0.5 shrink-0">
+              </label>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-0.5">
+              <div>
+                <label for="cfgMaxApifyDaily" class="block text-[11.5px] font-medium mb-1" style="color: var(--ink-secondary);">Max Apify Runs / Day (Safety Cap)</label>
+                <select id="cfgMaxApifyDaily" onchange="onManualScanSettingEdit()" class="ui-input w-full h-9 px-2.5 text-[12.5px]">
+                  <option value="0">Unlimited (Default)</option>
+                  <option value="5">5 runs / day</option>
+                  <option value="10">10 runs / day</option>
+                  <option value="20">20 runs / day</option>
+                </select>
+              </div>
+              <div>
+                <label for="cfgMaxGeminiDaily" class="block text-[11.5px] font-medium mb-1" style="color: var(--ink-secondary);">Max Gemini Calls / Day (Safety Cap)</label>
+                <select id="cfgMaxGeminiDaily" onchange="onManualScanSettingEdit()" class="ui-input w-full h-9 px-2.5 text-[12.5px]">
+                  <option value="0">Unlimited (Default)</option>
+                  <option value="50">50 calls / day</option>
+                  <option value="100">100 calls / day</option>
+                  <option value="200">200 calls / day</option>
+                </select>
+              </div>
             </div>
           </div>
 
@@ -3405,6 +3479,7 @@
             status: currentFilter,
             kind: currentKindFilter,
             max_age_days: getMaxAgeDays(),
+            fb_group: activeFbGroupKey || '',
             wait_seconds: 2
           })
         });
@@ -4528,8 +4603,18 @@
         (lead.platform || '').toLowerCase() === 'facebook' ||
         (lead.source || '').toLowerCase().includes('facebook')
       );
+      const hasKnownCommentsCount = lead.comments_count !== null && lead.comments_count !== undefined && lead.comments_count !== '' && Number.isFinite(Number(lead.comments_count));
+      const knownCommentsCount = hasKnownCommentsCount ? Math.max(0, Math.floor(Number(lead.comments_count))) : null;
+      const isZeroCommentsPost = knownCommentsCount === 0;
+      const mineBtnText = knownCommentsCount !== null ? `Mine Commenters (${knownCommentsCount})` : 'Mine Commenters';
+      const mineBtnTitle = isZeroCommentsPost
+        ? '0 comments reported on this Facebook post — disabled to save Apify credits'
+        : 'Mine commenters on just this Facebook post using Apify (cached to prevent double charges)';
+      const mineBtnStyleClass = isZeroCommentsPost
+        ? 'border-hair opacity-60 cursor-not-allowed'
+        : 'border-[#1877F2]/35 bg-[#1877F2]/10 hover:bg-[#1877F2]/20 text-blue-700 dark:text-[#93C5FD] cursor-pointer';
       const mineCommentersBtnHtml = isFacebookPost
-        ? `<button type="button" id="btnMineComments" onclick="mineSelectedPostComments()" class="inline-flex items-center gap-1.5 h-[24px] px-2.5 rounded-[6px] text-[11px] font-medium border border-[#1877F2]/35 bg-[#1877F2]/10 hover:bg-[#1877F2]/20 text-blue-700 dark:text-[#93C5FD] transition cursor-pointer shrink-0 ml-auto" title="Mine commenters on just this Facebook post using Apify (cached to prevent double charges)"><span id="mineCommentsIcon" class="inline-flex items-center justify-center"><svg class="lucide-ic w-3 h-3" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><span id="mineCommentsLabel">Mine Commenters</span></button>`
+        ? `<button type="button" id="btnMineComments" onclick="mineSelectedPostComments()" aria-disabled="${isZeroCommentsPost ? 'true' : 'false'}" class="inline-flex items-center gap-1.5 h-[24px] px-2.5 rounded-[6px] text-[11px] font-medium border transition shrink-0 ml-auto ${mineBtnStyleClass}" ${isZeroCommentsPost ? 'style="background-color: var(--bg-chip); color: var(--ink-muted);"' : ''} title="${mineBtnTitle}"><span id="mineCommentsIcon" class="inline-flex items-center justify-center"><svg class="lucide-ic w-3 h-3" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><span id="mineCommentsLabel">${mineBtnText}</span></button>`
         : '';
 
       const fm = getFollowupMeta(lead);
@@ -4885,10 +4970,16 @@
 
     async function mineSelectedPostComments() {
       if (!selectedLeadId) return;
+      const curLead = leadsById[selectedLeadId];
+      if (curLead && curLead.comments_count !== null && curLead.comments_count !== undefined && curLead.comments_count !== '' && Number(curLead.comments_count) === 0) {
+        showLiveToast('0 Comments on Post', 'Skipped Apify comment scrape to save your credits (0 comments reported).');
+        return;
+      }
       const btn = document.getElementById('btnMineComments');
       const icon = document.getElementById('mineCommentsIcon');
       const lbl = document.getElementById('mineCommentsLabel');
       const origIcon = icon ? icon.innerHTML : '';
+      const origLabel = lbl ? lbl.innerText : 'Mine Commenters';
       if (btn) btn.disabled = true;
       if (icon) icon.innerHTML = LUCIDE_ICONS.spinner;
       if (lbl) lbl.innerText = 'Mining...';
@@ -4925,7 +5016,7 @@
       } finally {
         if (btn) btn.disabled = false;
         if (icon && origIcon) icon.innerHTML = origIcon;
-        if (lbl) lbl.innerText = 'Mine Commenters';
+        if (lbl && lbl.innerText === 'Mining...') lbl.innerText = origLabel;
       }
     }
 
@@ -5820,6 +5911,139 @@
       }
     }
 
+    const SCAN_PROFILE_PRESETS = {
+      eco: {
+        cacheMins: '60',
+        fbPosts: '20',
+        fbComments: '5',
+        incremental: true,
+        dedupe: true,
+        strictAuto: true,
+        summary: 'Eco: 1h cache · 20 posts/group · 5 comments/post · Incremental ON · Max credit savings.'
+      },
+      optimal: {
+        cacheMins: '30',
+        fbPosts: '35',
+        fbComments: '15',
+        incremental: true,
+        dedupe: true,
+        strictAuto: true,
+        summary: 'Optimal: 30m cache · 35 posts/group · 15 comments/post · Incremental ON (24h floor).'
+      },
+      massive: {
+        cacheMins: '10',
+        fbPosts: '80',
+        fbComments: '30',
+        incremental: false,
+        dedupe: true,
+        strictAuto: true,
+        summary: 'Massive: 10m cache · 80 posts/group · 30 comments/post · Incremental OFF for full deep window.'
+      }
+    };
+
+    let forcedCustomScanProfile = false;
+    let savedCustomScanSnapshot = null;
+
+    function captureScanSettingsSnapshot() {
+      return {
+        cacheMins: (document.getElementById('cfgApifyCacheMinutes') || {}).value || '30',
+        fbPosts: (document.getElementById('cfgFbMaxPosts') || {}).value || '35',
+        fbComments: (document.getElementById('cfgFbCommentsPerPost') || {}).value || '15',
+        incremental: Boolean((document.getElementById('cfgIncrementalScraping') || {}).checked),
+        scopeGroup: Boolean((document.getElementById('cfgScopeSelectedFbGroup') || {}).checked),
+        dedupe: Boolean((document.getElementById('cfgPreGeminiDedupe') || {}).checked),
+        strictAuto: Boolean((document.getElementById('cfgStrictZeroAutoScan') || {}).checked),
+        maxApify: (document.getElementById('cfgMaxApifyDaily') || {}).value || '0',
+        maxGemini: (document.getElementById('cfgMaxGeminiDaily') || {}).value || '0'
+      };
+    }
+
+    function restoreScanSettingsSnapshot(snap) {
+      if (!snap) return;
+      document.getElementById('cfgApifyCacheMinutes').value = snap.cacheMins;
+      document.getElementById('cfgFbMaxPosts').value = snap.fbPosts;
+      document.getElementById('cfgFbCommentsPerPost').value = snap.fbComments;
+      document.getElementById('cfgIncrementalScraping').checked = snap.incremental;
+      document.getElementById('cfgScopeSelectedFbGroup').checked = snap.scopeGroup;
+      document.getElementById('cfgPreGeminiDedupe').checked = snap.dedupe;
+      document.getElementById('cfgStrictZeroAutoScan').checked = snap.strictAuto;
+      document.getElementById('cfgMaxApifyDaily').value = snap.maxApify;
+      document.getElementById('cfgMaxGeminiDaily').value = snap.maxGemini;
+    }
+
+    function detectCurrentScanProfile() {
+      if (forcedCustomScanProfile) return 'custom';
+      const cacheMins = (document.getElementById('cfgApifyCacheMinutes') || {}).value;
+      const fbPosts = (document.getElementById('cfgFbMaxPosts') || {}).value;
+      const fbComments = (document.getElementById('cfgFbCommentsPerPost') || {}).value;
+      const inc = Boolean((document.getElementById('cfgIncrementalScraping') || {}).checked);
+      const dedupe = Boolean((document.getElementById('cfgPreGeminiDedupe') || {}).checked);
+      const strictAuto = Boolean((document.getElementById('cfgStrictZeroAutoScan') || {}).checked);
+      for (const [key, p] of Object.entries(SCAN_PROFILE_PRESETS)) {
+        if (
+          cacheMins === p.cacheMins &&
+          fbPosts === p.fbPosts &&
+          fbComments === p.fbComments &&
+          inc === p.incremental &&
+          dedupe === p.dedupe &&
+          strictAuto === p.strictAuto
+        ) {
+          return key;
+        }
+      }
+      return 'custom';
+    }
+
+    function onManualScanSettingEdit() {
+      forcedCustomScanProfile = false;
+      const detected = detectCurrentScanProfile();
+      if (detected === 'custom') {
+        savedCustomScanSnapshot = captureScanSettingsSnapshot();
+      }
+      syncScanProfilePills();
+    }
+
+    function syncScanProfilePills() {
+      const active = detectCurrentScanProfile();
+      ['eco', 'optimal', 'massive', 'custom'].forEach(k => {
+        const id = `presetBtn${k.charAt(0).toUpperCase() + k.slice(1)}`;
+        const btn = document.getElementById(id);
+        if (btn) btn.classList.toggle('active-tab', active === k);
+      });
+      const sumEl = document.getElementById('scanProfileSummary');
+      if (sumEl) {
+        sumEl.innerText = SCAN_PROFILE_PRESETS[active]
+          ? SCAN_PROFILE_PRESETS[active].summary
+          : 'Custom profile: tailored cache, post depth, and credit-saver switches.';
+      }
+    }
+
+    function applyScanProfilePreset(key) {
+      if (key === 'custom') {
+        forcedCustomScanProfile = true;
+        if (savedCustomScanSnapshot) {
+          restoreScanSettingsSnapshot(savedCustomScanSnapshot);
+        } else {
+          savedCustomScanSnapshot = captureScanSettingsSnapshot();
+        }
+        syncScanProfilePills();
+        return;
+      }
+      const p = SCAN_PROFILE_PRESETS[key];
+      if (!p) return;
+      if (detectCurrentScanProfile() === 'custom') {
+        savedCustomScanSnapshot = captureScanSettingsSnapshot();
+      }
+      forcedCustomScanProfile = false;
+      document.getElementById('cfgApifyCacheMinutes').value = p.cacheMins;
+      document.getElementById('cfgFbMaxPosts').value = p.fbPosts;
+      document.getElementById('cfgFbCommentsPerPost').value = p.fbComments;
+      document.getElementById('cfgIncrementalScraping').checked = p.incremental;
+      document.getElementById('cfgPreGeminiDedupe').checked = p.dedupe;
+      document.getElementById('cfgStrictZeroAutoScan').checked = p.strictAuto;
+      syncScanProfilePills();
+    }
+
     async function openSettingsModal(initialTab = 'scanner') {
       toggleMobileSidebar(false);
       const res = await fetch('/api/config');
@@ -5828,9 +6052,22 @@
       const providers = currentConfig.providers || {};
       const sCfg = currentConfig.search_settings || {};
       document.getElementById('cfgSearchMode').value = providers.search_mode || currentConfig.search_mode || 'auto';
-      document.getElementById('cfgApifyCacheMinutes').value = String(providers.apify_cache_minutes || currentConfig.apify_cache_minutes || 10);
+      const savedCacheMins = String(providers.apify_cache_minutes ?? currentConfig.apify_cache_minutes ?? 30);
+      const cacheSelect = document.getElementById('cfgApifyCacheMinutes');
+      cacheSelect.value = Array.from(cacheSelect.options).some(o => o.value === savedCacheMins) ? savedCacheMins : '30';
       document.getElementById('cfgFbMaxPosts').value = String(social.fb_max_posts_per_group ?? sCfg.fb_max_posts_per_group ?? 35);
       document.getElementById('cfgFbCommentsPerPost').value = String(social.fb_comments_per_post ?? sCfg.fb_comments_per_post ?? 15);
+      document.getElementById('cfgIncrementalScraping').checked = (providers.incremental_scraping ?? sCfg.incremental_scraping) !== false;
+      document.getElementById('cfgScopeSelectedFbGroup').checked = (providers.scope_selected_fb_group ?? sCfg.scope_selected_fb_group) !== false;
+      document.getElementById('cfgPreGeminiDedupe').checked = (providers.pre_gemini_dedupe ?? sCfg.pre_gemini_dedupe) !== false;
+      document.getElementById('cfgStrictZeroAutoScan').checked = (providers.strict_zero_autoscan ?? sCfg.strict_zero_autoscan) !== false;
+      document.getElementById('cfgMaxApifyDaily').value = String(providers.max_apify_runs_per_day ?? sCfg.max_apify_runs_per_day ?? 0);
+      document.getElementById('cfgMaxGeminiDaily').value = String(providers.max_gemini_calls_per_day ?? sCfg.max_gemini_calls_per_day ?? 0);
+      forcedCustomScanProfile = (providers.scan_profile === 'custom');
+      if (detectCurrentScanProfile() === 'custom') {
+        savedCustomScanSnapshot = captureScanSettingsSnapshot();
+      }
+      syncScanProfilePills();
       document.getElementById('cfgBusinessName').value = sCfg.business_name || currentConfig.business_name || '';
       document.getElementById('cfgBusinessContact').value = sCfg.business_contact || currentConfig.business_contact || '';
       document.getElementById('cfgApifyToken').value = currentConfig.apify_token || '';
@@ -5864,7 +6101,14 @@
       currentConfig.apify_token = document.getElementById('cfgApifyToken').value.trim();
       currentConfig.providers = currentConfig.providers || {};
       currentConfig.providers.search_mode = document.getElementById('cfgSearchMode').value || 'auto';
-      currentConfig.providers.apify_cache_minutes = parseInt(document.getElementById('cfgApifyCacheMinutes').value || '10', 10);
+      currentConfig.providers.apify_cache_minutes = parseInt(document.getElementById('cfgApifyCacheMinutes').value || '30', 10);
+      currentConfig.providers.scan_profile = detectCurrentScanProfile();
+      currentConfig.providers.incremental_scraping = document.getElementById('cfgIncrementalScraping').checked;
+      currentConfig.providers.scope_selected_fb_group = document.getElementById('cfgScopeSelectedFbGroup').checked;
+      currentConfig.providers.pre_gemini_dedupe = document.getElementById('cfgPreGeminiDedupe').checked;
+      currentConfig.providers.strict_zero_autoscan = document.getElementById('cfgStrictZeroAutoScan').checked;
+      currentConfig.providers.max_apify_runs_per_day = parseInt(document.getElementById('cfgMaxApifyDaily').value || '0', 10);
+      currentConfig.providers.max_gemini_calls_per_day = parseInt(document.getElementById('cfgMaxGeminiDaily').value || '0', 10);
       currentConfig.providers.gemini_api_key = document.getElementById('cfgGeminiKey').value.trim();
       currentConfig.providers.gemini_model = document.getElementById('cfgGeminiModel').value || 'gemini-3.5-flash-lite';
       currentConfig.providers.ai_filter_enabled = document.getElementById('cfgAiFilterEnabled').checked;

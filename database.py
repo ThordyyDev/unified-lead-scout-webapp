@@ -18,6 +18,7 @@ EXTRA_COLUMNS = {
     "ai_reason": "TEXT DEFAULT ''",
     "updated_at": "TIMESTAMP",
     "followup_at": "TIMESTAMP",
+    "comments_count": "INTEGER DEFAULT NULL",
 }
 
 ALLOWED_WEB_DOMAINS = (
@@ -561,10 +562,166 @@ def lead_content_fingerprint(author, title, content, kind="post"):
     return f"{(kind or 'post').lower()}|{a_norm}|{t_norm[:140]}"
 
 
+def filter_unseen_leads(candidates):
+    """
+    Pre-Gemini credit saver (zero accuracy loss):
+    Checks `leads.db` for existing `external_id` and `lead_content_fingerprint` (for non-manual posts),
+    plus deduplicates identical cross-posts within `candidates` itself.
+    If an already-stored row has a fresh `comments_count` in `candidates`, updates `comments_count`
+    in SQLite without re-sending the lead to Gemini.
+    Returns only genuinely unseen candidate dicts in original order.
+    """
+    if not candidates:
+        return []
+
+    ext_ids = [str(c.get("external_id") or "") for c in candidates if c.get("external_id")]
+    existing_ext_ids = set()
+    existing_fps = set()
+
+    conn = get_db()
+    try:
+        for i in range(0, len(ext_ids), 500):
+            chunk = ext_ids[i : i + 500]
+            if not chunk:
+                continue
+            placeholders = ",".join("?" for _ in chunk)
+            rows = conn.execute(
+                f"SELECT external_id FROM leads WHERE external_id IN ({placeholders})",
+                chunk,
+            ).fetchall()
+            for r in rows:
+                existing_ext_ids.add(str(r["external_id"]))
+
+        # Refresh comments_count on already-stored posts when fresh count is available
+        count_updates = []
+        for c in candidates:
+            eid = str(c.get("external_id") or "")
+            cc = c.get("comments_count")
+            if eid in existing_ext_ids and cc is not None and not isinstance(cc, bool):
+                try:
+                    cc_int = int(cc)
+                    if cc_int >= 0:
+                        count_updates.append((cc_int, eid, cc_int))
+                except (ValueError, TypeError):
+                    pass
+        if count_updates:
+            with conn:
+                conn.executemany(
+                    "UPDATE leads SET comments_count = ? WHERE external_id = ? AND (comments_count IS NULL OR comments_count != ?)",
+                    count_updates,
+                )
+
+        post_authors = list({
+            str(c.get("author") or "")
+            for c in candidates
+            if str(c.get("external_id") or "") not in existing_ext_ids
+            and not str(c.get("external_id") or "").startswith("manual_")
+            and (c.get("kind") or "post") == "post"
+            and c.get("author")
+        })
+        for i in range(0, len(post_authors), 400):
+            chunk = post_authors[i : i + 400]
+            placeholders = ",".join("?" for _ in chunk)
+            rows = conn.execute(
+                f"SELECT author, title, content, kind FROM leads WHERE kind = 'post' AND author IN ({placeholders})",
+                chunk,
+            ).fetchall()
+            for r in rows:
+                fp = lead_content_fingerprint(r["author"], r["title"], r["content"], r["kind"])
+                if fp:
+                    existing_fps.add(fp)
+    finally:
+        conn.close()
+
+    unseen = []
+    batch_ext = set()
+    batch_fps = set()
+    for c in candidates:
+        eid = str(c.get("external_id") or "")
+        if not eid or eid in existing_ext_ids or eid in batch_ext:
+            continue
+        is_post = not eid.startswith("manual_") and (c.get("kind") or "post") == "post"
+        if is_post:
+            fp = lead_content_fingerprint(c.get("author"), c.get("title"), c.get("content"), kind="post")
+            if fp and (fp in existing_fps or fp in batch_fps):
+                continue
+            if fp:
+                batch_fps.add(fp)
+        batch_ext.add(eid)
+        unseen.append(c)
+    return unseen
+
+
+def get_latest_fb_posted_at(target_urls, page_mode=False):
+    """
+    Returns `{target_key: newest_posted_at_sql_str}` for each configured Facebook group or page URL
+    in `target_urls` based on leads already stored in `leads.db`. Missing targets are omitted so
+    callers know if any target has never been scraped yet.
+    """
+    if not target_urls:
+        return {}
+    keys = []
+    for raw_u in target_urls:
+        u_str = str(raw_u or "").strip()
+        if not u_str:
+            continue
+        if page_mode:
+            k = u_str.lower().rstrip("/").split("/")[-1]
+        else:
+            m = re.search(r"/groups/([^/?#]+)", u_str, re.I)
+            k = m.group(1).strip().lower() if m else u_str.lower().rstrip("/").split("/")[-1]
+        if k:
+            keys.append(k)
+    if not keys:
+        return {}
+
+    target_set = set(keys)
+    latest_by_key = {}
+    conn = get_db()
+    try:
+        rows = conn.execute(
+            """
+            SELECT source, url, parent_url, posted_at
+            FROM leads
+            WHERE posted_at IS NOT NULL AND posted_at != ''
+              AND (platform = 'facebook' OR lower(source) LIKE '%facebook%')
+            ORDER BY posted_at DESC
+            LIMIT 1000
+            """
+        ).fetchall()
+    except Exception:
+        rows = []
+    finally:
+        conn.close()
+
+    for r in rows:
+        if len(latest_by_key) == len(target_set):
+            break
+        src = str(r["source"] or "")
+        url = str(r["url"] or "")
+        purl = str(r["parent_url"] or "")
+        pts = str(r["posted_at"] or "").strip()
+        if not pts:
+            continue
+        if page_mode:
+            low_blob = f"{src} {url} {purl}".lower()
+            for tk in target_set:
+                if tk not in latest_by_key and tk in low_blob:
+                    latest_by_key[tk] = pts
+        else:
+            r_key, r_name = extract_fb_group_key_and_name(src, url, purl)
+            for tk in target_set:
+                if tk in latest_by_key:
+                    continue
+                if r_key == tk or r_name.lower() == tk or f"/groups/{tk}" in url.lower() or f"/groups/{tk}" in purl.lower():
+                    latest_by_key[tk] = pts
+    return latest_by_key
+
+
 def save_lead(source, external_id, title, content, author, url, location="",
               posted_at=None, platform="", kind="post", intent="",
               matched_keyword="", parent_url="", status="new",
-              ai_verdict="", ai_reason=""):
+              ai_verdict="", ai_reason="", comments_count=None):
     """Insert a lead after strict domain and URL structure verification."""
     plat = platform or infer_platform(source)
     if not is_valid_lead_url(plat, url, external_id):
@@ -572,6 +729,15 @@ def save_lead(source, external_id, title, content, author, url, location="",
     if not str(external_id or "").startswith("manual_"):
         if not matched_keyword or matched_keyword.lower() in ("seeker", "employer", "group post", "group comment"):
             return False
+
+    c_cnt = None
+    if comments_count is not None and not isinstance(comments_count, bool):
+        try:
+            parsed_cc = int(comments_count)
+            if parsed_cc >= 0:
+                c_cnt = parsed_cc
+        except (ValueError, TypeError):
+            c_cnt = None
 
     conn = get_db()
     try:
@@ -592,15 +758,15 @@ def save_lead(source, external_id, title, content, author, url, location="",
                 """
                 INSERT OR IGNORE INTO leads
                 (source, external_id, title, content, author, url, location, posted_at,
-                 platform, kind, intent, matched_keyword, parent_url, status, ai_verdict, ai_reason, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                 platform, kind, intent, matched_keyword, parent_url, status, ai_verdict, ai_reason, comments_count, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                 """,
                 (source, external_id, title, content, author, url, location, posted_at,
                  plat, kind or "post", intent or "seeker",
                  matched_keyword or "", parent_url or "", status or "new",
-                 ai_verdict or "", ai_reason or ""),
+                 ai_verdict or "", ai_reason or "", c_cnt),
             )
-            if cur.rowcount == 0 and (ai_verdict or status == "ai_filtered" or intent in ("seeker", "employer", "buyer", "seller")):
+            if cur.rowcount == 0 and (ai_verdict or status == "ai_filtered" or intent in ("seeker", "employer", "buyer", "seller") or c_cnt is not None):
                 valid_intent = intent if intent in ("seeker", "employer", "buyer", "seller") else ""
                 conn.execute(
                     """
@@ -609,6 +775,7 @@ def save_lead(source, external_id, title, content, author, url, location="",
                         ai_reason = CASE WHEN status = 'new' AND ? != '' THEN ? ELSE ai_reason END,
                         intent = CASE WHEN external_id NOT LIKE 'manual_%' AND ? != '' THEN ? ELSE intent END,
                         status = CASE WHEN status = 'new' AND (? = 'ai_filtered' OR ? = 'filtered') THEN 'ai_filtered' ELSE status END,
+                        comments_count = COALESCE(?, comments_count),
                         updated_at = CURRENT_TIMESTAMP
                     WHERE external_id = ?
                     """,
@@ -617,6 +784,7 @@ def save_lead(source, external_id, title, content, author, url, location="",
                         ai_reason or "", ai_reason or "",
                         valid_intent, valid_intent,
                         status or "", ai_verdict or "",
+                        c_cnt,
                         external_id,
                     ),
                 )
