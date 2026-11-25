@@ -1093,6 +1093,67 @@ def delete_lead(lead_id):
         conn.close()
 
 
+VALID_BULK_STATUSES = {"new", "contacted", "followup", "closed", "archived", "ai_filtered"}
+VALID_BULK_ACTIONS = VALID_BULK_STATUSES | {"approve", "delete"}
+
+
+def bulk_update_leads(ids, action):
+    """
+    Executes a bulk triage action ('new', 'contacted', 'followup', 'closed',
+    'archived', 'ai_filtered', 'approve', or 'delete') across positive integer `ids`
+    in a single SQLite transaction. Raises ValueError on empty valid IDs or invalid action.
+    """
+    act = str(action or "").strip().lower()
+    if act not in VALID_BULK_ACTIONS:
+        raise ValueError(f"Invalid bulk action: {action!r}")
+    if not isinstance(ids, (list, tuple, set)):
+        raise ValueError("ids must be a list of positive integers")
+
+    clean_ids = []
+    seen = set()
+    for raw in ids:
+        if isinstance(raw, bool):
+            continue
+        val = None
+        if isinstance(raw, int):
+            val = raw
+        elif isinstance(raw, str) and raw.strip().isdigit():
+            val = int(raw.strip())
+        if val is not None and val > 0 and val not in seen:
+            seen.add(val)
+            clean_ids.append(val)
+
+    if not clean_ids:
+        raise ValueError("No valid positive lead IDs provided")
+
+    conn = get_db()
+    affected = 0
+    try:
+        with conn:
+            for i in range(0, len(clean_ids), 500):
+                chunk = clean_ids[i : i + 500]
+                placeholders = ",".join("?" for _ in chunk)
+                if act in VALID_BULK_STATUSES:
+                    cur = conn.execute(
+                        f"UPDATE leads SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN ({placeholders})",
+                        [act, *chunk],
+                    )
+                elif act == "approve":
+                    cur = conn.execute(
+                        f"UPDATE leads SET status = 'new', ai_verdict = 'approved', ai_reason = 'Approved by user', updated_at = CURRENT_TIMESTAMP WHERE id IN ({placeholders})",
+                        chunk,
+                    )
+                else:  # 'delete'
+                    cur = conn.execute(
+                        f"DELETE FROM leads WHERE id IN ({placeholders})",
+                        chunk,
+                    )
+                affected += max(0, cur.rowcount or 0)
+    finally:
+        conn.close()
+    return affected
+
+
 def get_stats(platforms=None):
     conn = get_db()
     try:

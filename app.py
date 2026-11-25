@@ -54,10 +54,25 @@ def ensure_fresh_modules():
         if app_mtime != _MODULE_MTIMES.get("app"):
             _MODULE_MTIMES["app"] = app_mtime
             try:
-                ns = {"__file__": __file__, "__name__": "_app_hot_reload"}
+                ns = {
+                    "__file__": __file__,
+                    "__name__": "_app_hot_reload",
+                }
                 with open(__file__, "r", encoding="utf-8") as f:
-                    code = compile(f.read(), __file__, "exec")
+                    src = f.read()
+                # Preserve singleton SCAN_MANAGER, locks, and mtimes across handler hot-reload
+                src_patched = re.sub(
+                    r"^SCAN_MANAGER\s*=\s*scanners\.ScanManager\(\)",
+                    "SCAN_MANAGER = _SHARED_SCAN_MANAGER",
+                    src,
+                    count=1,
+                    flags=re.M,
+                )
+                ns["_SHARED_SCAN_MANAGER"] = SCAN_MANAGER
+                code = compile(src_patched, __file__, "exec")
                 exec(code, ns)
+                ns["_RELOAD_LOCK"] = _RELOAD_LOCK
+                ns["_MODULE_MTIMES"] = _MODULE_MTIMES
                 new_cls = ns.get("LeadScoutHandler")
                 if new_cls:
                     LeadScoutHandler.do_GET = new_cls.do_GET
@@ -266,7 +281,19 @@ class LeadScoutHandler(http.server.BaseHTTPRequestHandler):
         if path == "/api/credits":
             force = query.get("refresh", ["0"])[0] in ("1", "true", "yes")
             cfg = load_config()
-            self.send_json(scanners.get_api_credits_status(cfg, force=force))
+            try:
+                self.send_json(scanners.get_api_credits_status(cfg, force=force))
+            except Exception:
+                self.send_json({
+                    "success": True,
+                    "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+                    "total_calls_today": 0,
+                    "providers": [],
+                })
+            return
+
+        if path.startswith("/api/"):
+            self.send_json({"error": "Endpoint not found"}, 404)
             return
 
         self.send_response(404)
@@ -448,6 +475,27 @@ class LeadScoutHandler(http.server.BaseHTTPRequestHandler):
                 self.send_json({"error": "Missing id"}, 400)
             return
 
+        if path == "/api/leads/bulk":
+            raw_ids = payload.get("ids")
+            action = str(payload.get("action") or "").strip().lower()
+            raw_plats = payload.get("platforms")
+            platforms = [str(p).strip() for p in raw_plats if str(p).strip()] if isinstance(raw_plats, list) and raw_plats else None
+            if not isinstance(raw_ids, list) or not action:
+                self.send_json({"error": "Missing or invalid ids or action"}, 400)
+                return
+            try:
+                affected = database.bulk_update_leads(raw_ids, action)
+            except ValueError as ve:
+                self.send_json({"error": str(ve)}, 400)
+                return
+            self.send_json({
+                "success": True,
+                "affected": affected,
+                "action": action,
+                "stats": database.get_stats(platforms=platforms),
+            })
+            return
+
         if path == "/api/lead/add":
             title = str(payload.get("title") or "").strip()
             url = str(payload.get("url") or "").strip()
@@ -493,6 +541,30 @@ class LeadScoutHandler(http.server.BaseHTTPRequestHandler):
                 "adapters": scanners.get_registered_adapters(payload),
                 "fb_groups": database.get_facebook_groups_summary(fb_cfg_urls, fb_hidden),
             })
+            return
+
+        if path == "/api/credits":
+            force = bool(payload.get("refresh", False))
+            cfg = load_config()
+            # Allow checking unsaved key edits typed into Settings -> API Keys without persisting them yet
+            overrides = payload.get("overrides") if isinstance(payload.get("overrides"), dict) else {}
+            if overrides:
+                cfg = json.loads(json.dumps(cfg or {}))
+                cfg["providers"] = dict(cfg.get("providers") or {})
+                if "apify_token" in overrides:
+                    cfg["apify_token"] = str(overrides.get("apify_token") or "").strip()
+                for pk in ("gemini_api_key", "gemini_model", "serper_api_key", "tavily_api_key", "brave_api_key", "custom_api_url", "custom_api_key"):
+                    if pk in overrides:
+                        cfg["providers"][pk] = str(overrides.get(pk) or "").strip()
+            try:
+                self.send_json(scanners.get_api_credits_status(cfg, force=force))
+            except Exception:
+                self.send_json({
+                    "success": True,
+                    "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+                    "total_calls_today": 0,
+                    "providers": [],
+                })
             return
 
         if path == "/api/alerts/test":

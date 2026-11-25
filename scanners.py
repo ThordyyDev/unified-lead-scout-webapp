@@ -3239,7 +3239,10 @@ def get_api_credits_status(config, force=False):
     Caches external balance checks for 60s unless `force=True` while always returning fresh `calls_today`.
     """
     s = get_settings(config)
-    usage = get_api_usage_today()
+    try:
+        usage = get_api_usage_today()
+    except Exception:
+        usage = {}
 
     fp_raw = "|".join([
         hashlib.sha256((s.get(k) or "").encode("utf-8")).hexdigest()[:12]
@@ -3287,18 +3290,21 @@ def get_api_credits_status(config, force=False):
                     f"{APIFY_BASE}/users/me/limits",
                     method="GET",
                     headers={"Authorization": f"Bearer {tok}"},
-                    timeout=5,
+                    timeout=8,
                 )
                 _note_provider_call("apify", 200, increment=False)
                 d = resp.get("data") if isinstance(resp, dict) and isinstance(resp.get("data"), dict) else (resp if isinstance(resp, dict) else {})
-                used_usd = round(_safe_float_num(pick(d, "current.monthlyUsageUsd", "currentMonthlyUsageUsd", "usedUsd"), 0.0), 2)
-                limit_usd = round(_safe_float_num(pick(d, "limits.maxMonthlyUsageUsd", "maxMonthlyUsageUsd", "limitUsd"), 5.0), 2)
-                if limit_usd <= 0:
-                    limit_usd = 5.0
-                rem_usd = round(max(0.0, limit_usd - used_usd), 2)
-                pct_rem = round((rem_usd / limit_usd) * 100.0, 1) if limit_usd > 0 else 0.0
+                used_raw = max(0.0, _safe_float_num(pick(d, "current.monthlyUsageUsd", "currentMonthlyUsageUsd", "usedUsd"), 0.0))
+                limit_raw = _safe_float_num(pick(d, "limits.maxMonthlyUsageUsd", "maxMonthlyUsageUsd", "limitUsd"), 5.0)
+                if limit_raw <= 0:
+                    limit_raw = 5.0
+                rem_raw = max(0.0, limit_raw - used_raw)
+                used_usd = round(used_raw, 2)
+                limit_usd = round(limit_raw, 2)
+                rem_usd = round(rem_raw, 2)
+                pct_rem = round((rem_raw / limit_raw) * 100.0, 1) if limit_raw > 0 else 0.0
                 reset_at = str(pick(d, "monthlyUsageCycle.endAt", "nextResetAt") or "")
-                health = "error" if rem_usd <= 0 else ("low" if pct_rem < 20.0 else "healthy")
+                health = "error" if rem_raw <= 0.001 else ("low" if pct_rem < 20.0 else "healthy")
                 remote_results["apify"] = {
                     "used_usd": used_usd,
                     "limit_usd": limit_usd,
@@ -3311,14 +3317,51 @@ def get_api_credits_status(config, force=False):
                 }
             except ScanError as e:
                 code = int(getattr(e, "code", 0) or 0)
-                _note_provider_call("apify", code, increment=False)
+                if code > 0:
+                    _note_provider_call("apify", code, increment=False)
                 remote_results["apify"] = {
-                    "status_text": "Quota 429" if code == 429 else (f"HTTP {code}" if code else "Error"),
+                    "status_text": "Quota 429" if code == 429 else ("Invalid Token" if code in (401, 403) else (f"HTTP {code}" if code else "Configured · Offline")),
                     "http_code": code,
-                    "health": "error",
+                    "health": "error" if code > 0 else "low",
                 }
             except Exception:
-                remote_results["apify"] = {"status_text": "Error", "http_code": 0, "health": "error"}
+                remote_results["apify"] = {"status_text": "Configured · Offline", "http_code": 0, "health": "low"}
+
+        def _fetch_gemini():
+            key = s.get("gemini_api_key") or ""
+            if not key:
+                return
+            model_lbl = s.get("gemini_model") or "gemini-3.5-flash-lite"
+            try:
+                http_request(
+                    "https://generativelanguage.googleapis.com/v1beta/models?pageSize=1",
+                    method="GET",
+                    headers={"x-goog-api-key": key},
+                    timeout=8,
+                )
+                _note_provider_call("gemini", 200, increment=False)
+                remote_results["gemini"] = {
+                    "status_text": f"Active · {model_lbl}",
+                    "http_code": 200,
+                    "health": "healthy",
+                }
+            except ScanError as e:
+                code = int(getattr(e, "code", 0) or 0)
+                prev_lbl, prev_code, _ = _last_state("gemini", "Active")
+                if code == 429:
+                    _note_provider_call("gemini", 429, increment=False)
+                    remote_results["gemini"] = {"status_text": "Quota 429", "http_code": 429, "health": "error"}
+                elif code in (400, 401, 403) and prev_code != 200 and not key.startswith("AQ."):
+                    remote_results["gemini"] = {"status_text": f"Auth {code}", "http_code": code, "health": "error"}
+                else:
+                    # AQ.* keys or transient offline networks stay gracefully Active
+                    remote_results["gemini"] = {
+                        "status_text": f"Active · {model_lbl}" if code != 0 else "Configured",
+                        "http_code": prev_code or 200,
+                        "health": "healthy",
+                    }
+            except Exception:
+                remote_results["gemini"] = {"status_text": "Configured", "http_code": 200, "health": "healthy"}
 
         def _fetch_serper():
             key = s.get("serper_api_key") or ""
@@ -3329,7 +3372,7 @@ def get_api_credits_status(config, force=False):
                     "https://google.serper.dev/account",
                     method="GET",
                     headers={"X-API-KEY": key},
-                    timeout=5,
+                    timeout=8,
                 )
                 _note_provider_call("serper", 200, increment=False)
                 d = resp if isinstance(resp, dict) else {}
@@ -3354,14 +3397,15 @@ def get_api_credits_status(config, force=False):
                 }
             except ScanError as e:
                 code = int(getattr(e, "code", 0) or 0)
-                _note_provider_call("serper", code, increment=False)
+                if code > 0:
+                    _note_provider_call("serper", code, increment=False)
                 remote_results["serper"] = {
-                    "status_text": "Quota 429" if code == 429 else (f"HTTP {code}" if code else "Error"),
+                    "status_text": "Quota 429" if code == 429 else ("Invalid Key" if code in (401, 403) else (f"HTTP {code}" if code else "Configured · Offline")),
                     "http_code": code,
-                    "health": "error",
+                    "health": "error" if code > 0 else "low",
                 }
             except Exception:
-                remote_results["serper"] = {"status_text": "Error", "http_code": 0, "health": "error"}
+                remote_results["serper"] = {"status_text": "Configured · Offline", "http_code": 0, "health": "low"}
 
         def _fetch_tavily():
             key = s.get("tavily_api_key") or ""
@@ -3372,7 +3416,7 @@ def get_api_credits_status(config, force=False):
                     "https://api.tavily.com/usage",
                     method="GET",
                     headers={"Authorization": f"Bearer {key}"},
-                    timeout=5,
+                    timeout=8,
                 )
                 _note_provider_call("tavily", 200, increment=False)
                 d = resp if isinstance(resp, dict) else {}
@@ -3407,20 +3451,21 @@ def get_api_credits_status(config, force=False):
                 }
             except ScanError as e:
                 code = int(getattr(e, "code", 0) or 0)
-                _note_provider_call("tavily", code, increment=False)
+                if code > 0:
+                    _note_provider_call("tavily", code, increment=False)
                 remote_results["tavily"] = {
-                    "status_text": "Quota 429" if code == 429 else (f"HTTP {code}" if code else "Error"),
+                    "status_text": "Quota 429" if code == 429 else ("Invalid Key" if code in (401, 403) else (f"HTTP {code}" if code else "Configured · Offline")),
                     "http_code": code,
-                    "health": "error",
+                    "health": "error" if code > 0 else "low",
                 }
             except Exception:
-                remote_results["tavily"] = {"status_text": "Error", "http_code": 0, "health": "error"}
+                remote_results["tavily"] = {"status_text": "Configured · Offline", "http_code": 0, "health": "low"}
 
-        with ThreadPoolExecutor(max_workers=3) as pool:
-            futs = [pool.submit(fn) for fn in (_fetch_apify, _fetch_serper, _fetch_tavily)]
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            futs = [pool.submit(fn) for fn in (_fetch_apify, _fetch_gemini, _fetch_serper, _fetch_tavily)]
             for f in futs:
                 try:
-                    f.result(timeout=6)
+                    f.result(timeout=9)
                 except Exception:
                     pass
 
@@ -3453,6 +3498,7 @@ def get_api_credits_status(config, force=False):
 
     # 2. Gemini AI
     gem_cfg = bool(s.get("gemini_api_key"))
+    gem_rem = dict(cached_remote.get("gemini") or {})
     gem_lbl, gem_code, gem_health = _last_state("gemini", "Active")
     providers_out.append({
         "key": "gemini",
@@ -3461,9 +3507,9 @@ def get_api_credits_status(config, force=False):
         "calls_today": int(usage.get("gemini", 0)),
         "billing_url": "https://aistudio.google.com/app/plan_information",
         "model": s.get("gemini_model") or "gemini-3.5-flash-lite",
-        "status_text": gem_lbl if gem_cfg else "Not set",
-        "http_code": gem_code if gem_cfg else 0,
-        "health": gem_health if gem_cfg else "unconfigured",
+        "status_text": (gem_rem.get("status_text") or gem_lbl) if gem_cfg else "Not set",
+        "http_code": gem_rem.get("http_code", gem_code) if gem_cfg else 0,
+        "health": gem_rem.get("health", gem_health) if gem_cfg else "unconfigured",
     })
 
     # 3. Serper.dev
