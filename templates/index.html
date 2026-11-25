@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#0F1012">
+  <meta name="theme-color" content="#101114">
   <title>Unified Lead Scout — Triage Inbox</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='ulsBg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%236366F1'/%3E%3Cstop offset='100%25' stop-color='%234338CA'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23ulsBg)'/%3E%3Crect x='0.75' y='0.75' width='30.5' height='30.5' rx='7.25' fill='none' stroke='%23FFFFFF' stroke-opacity='0.18' stroke-width='1.5'/%3E%3Cpath d='M16 25.5A9.5 9.5 0 1 1 25.5 16' fill='none' stroke='%23FFFFFF' stroke-width='2.1' stroke-linecap='round'/%3E%3Cpath d='M16 21A5 5 0 1 1 21 16' fill='none' stroke='%23FFFFFF' stroke-opacity='0.55' stroke-width='1.75' stroke-linecap='round'/%3E%3Cline x1='16' y1='16' x2='22.5' y2='9.5' stroke='%23FFFFFF' stroke-width='2.1' stroke-linecap='round'/%3E%3Ccircle cx='16' cy='16' r='2' fill='%23FFFFFF'/%3E%3Ccircle cx='22.8' cy='9.2' r='2.5' fill='%234ADE80' stroke='%23312E81' stroke-width='1'/%3E%3C/svg%3E">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2318191E'/%3E%3Crect x='0.75' y='0.75' width='30.5' height='30.5' rx='7.25' fill='none' stroke='%23343844' stroke-width='1.5'/%3E%3Cpath d='M16 25A9 9 0 1 1 25 16' fill='none' stroke='%23E4E6EB' stroke-width='2' stroke-linecap='round'/%3E%3Cpath d='M16 20.6A4.6 4.6 0 1 1 20.6 16' fill='none' stroke='%238E95A5' stroke-width='1.75' stroke-linecap='round'/%3E%3Cline x1='16' y1='16' x2='22.2' y2='9.8' stroke='%23E4E6EB' stroke-width='2' stroke-linecap='round'/%3E%3Ccircle cx='16' cy='16' r='1.9' fill='%23E4E6EB'/%3E%3Ccircle cx='22.5' cy='9.5' r='2.1' fill='%239BA1AE'/%3E%3C/svg%3E">
   <script>
     (function () {
       try {
@@ -38,18 +38,20 @@
   <style>
     :root {
       color-scheme: light;
-      --bg-sidebar: #FAFAFA;
-      --bg-sidebar-glass: rgba(250, 250, 250, 0.88);
+      --bg-sidebar: #F6F7F9;
+      --bg-sidebar-glass: rgba(246, 247, 249, 0.88);
+      --bg-feed: #FAFAFC;
+      --bg-feed-glass: rgba(250, 250, 252, 0.88);
       --bg-canvas: #FFFFFF;
       --bg-header-glass: rgba(255, 255, 255, 0.88);
-      --bg-elevated: #FAFAFA;
+      --bg-elevated: #F6F7F9;
       --bg-input: #F4F4F5;
-      --bg-chip: #F4F4F5;
-      --bg-hover: #F4F4F5;
-      --bg-active: #ECECEF;
-      --border-hairline: #E4E4E7;
-      --border-subtle: #E4E4E7;
-      --border-hover: #D4D4D8;
+      --bg-chip: #F1F2F5;
+      --bg-hover: rgba(15, 23, 42, 0.04);
+      --bg-active: rgba(15, 23, 42, 0.07);
+      --border-hairline: #E5E7EB;
+      --border-subtle: #E4E6EB;
+      --border-hover: #D1D5DB;
       --ink-primary: #141518;
       --ink-body: #27272A;
       --ink-secondary: #52525B;
@@ -78,12 +80,14 @@
 
     html.dark {
       color-scheme: dark;
-      --bg-sidebar: #111214;
-      --bg-sidebar-glass: rgba(17, 18, 20, 0.88);
-      --bg-canvas: #17181B;
-      --bg-header-glass: rgba(23, 24, 27, 0.88);
-      --bg-elevated: #1C1D22;
-      --bg-input: #1C1D22;
+      --bg-sidebar: #101114;
+      --bg-sidebar-glass: rgba(16, 17, 20, 0.88);
+      --bg-feed: #131418;
+      --bg-feed-glass: rgba(19, 20, 24, 0.88);
+      --bg-canvas: #16181D;
+      --bg-header-glass: rgba(22, 24, 29, 0.88);
+      --bg-elevated: #1B1D23;
+      --bg-input: #1B1D23;
       --bg-chip: #22242A;
       --bg-hover: rgba(255, 255, 255, 0.045);
       --bg-active: rgba(255, 255, 255, 0.075);
@@ -262,7 +266,7 @@
       background-color: var(--bg-hover);
     }
     .inbox-row.is-softened {
-      opacity: 0.72;
+      opacity: 0.65;
     }
     .inbox-row.is-softened:hover,
     .inbox-row.is-softened.is-selected {
@@ -370,28 +374,21 @@
     .row-bulk-cb.is-checked svg {
       opacity: 1;
     }
-    @media (hover: hover) {
-      .inbox-row:hover .row-plat-wrap {
-        opacity: 0;
-      }
-      .inbox-row:hover .row-bulk-cb {
-        opacity: 1;
-        pointer-events: auto;
-        transform: scale(1);
-      }
-    }
     .row-bulk-cb:focus-visible,
     .inbox-row.is-checked .row-bulk-cb,
+    #leadsContainer.is-shift-held .row-bulk-cb,
     #leadsContainer.has-bulk-selection .row-bulk-cb {
       opacity: 1;
       pointer-events: auto;
       transform: scale(1);
     }
     .inbox-row.is-checked .row-plat-wrap,
+    #leadsContainer.is-shift-held .row-plat-wrap,
     #leadsContainer.has-bulk-selection .row-plat-wrap,
     .row-lead-slot:focus-within .row-plat-wrap {
       opacity: 0;
     }
+    #leadsContainer.is-shift-held .row-quick-actions,
     #leadsContainer.has-bulk-selection .row-quick-actions {
       display: none !important;
     }
@@ -423,7 +420,7 @@
       font-weight: 500;
       letter-spacing: 0.01em;
       color: var(--ink-section);
-      background-color: var(--bg-header-glass);
+      background-color: var(--bg-feed-glass);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
     }
@@ -433,6 +430,9 @@
       background-color: var(--bg-header-glass);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
+    }
+    #feedPane > .glass-header {
+      background-color: var(--bg-feed-glass);
     }
     .glass-sidebar-header {
       background-color: var(--bg-sidebar-glass);
@@ -477,6 +477,13 @@
       border-radius: 4px;
       padding: 0 3px;
       font-weight: 500;
+    }
+    .kw-mark-subtle {
+      background-color: transparent;
+      color: inherit;
+      text-decoration: underline;
+      text-decoration-color: rgba(94, 106, 210, 0.55);
+      text-underline-offset: 3px;
     }
 
     /* Compact pitch tone pill */
@@ -660,9 +667,9 @@
       border-color: rgba(244, 63, 94, 0.22);
     }
 
-    /* Subtle outlined auto-saving private note */
+    /* Soft-outlined auto-saving private note */
     .note-autosave {
-      background-color: var(--bg-input);
+      background-color: transparent;
       border: 1px solid var(--border-hairline);
       border-radius: 8px;
       color: var(--ink-body);
@@ -673,13 +680,19 @@
       line-height: 1.55;
       transition: border-color 140ms ease, background-color 140ms ease, box-shadow 140ms ease;
     }
+    .note-autosave:not(:placeholder-shown) {
+      background-color: var(--bg-elevated);
+      border-color: var(--border-subtle);
+    }
     .note-autosave:hover {
       border-color: var(--border-hover);
+      background-color: var(--bg-hover);
     }
     .note-autosave:focus {
       outline: none;
-      border-color: rgba(94, 106, 210, 0.65);
-      box-shadow: 0 0 0 2px rgba(94, 106, 210, 0.14);
+      background-color: var(--bg-elevated);
+      border-color: rgba(94, 106, 210, 0.55);
+      box-shadow: 0 0 0 2px rgba(94, 106, 210, 0.12);
     }
     .note-autosave::placeholder {
       color: var(--ink-muted);
@@ -1053,21 +1066,12 @@
       <button type="button" onclick="toggleMobileSidebar(true)" class="btn-ghost w-7 h-7 flex items-center justify-center" aria-label="Open Menu">
         <svg class="lucide-ic w-4 h-4" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
       </button>
-      <span class="w-[20px] h-[20px] rounded-[5px] flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
-        <svg class="w-full h-full" viewBox="0 0 32 32" aria-hidden="true">
-          <defs>
-            <linearGradient id="ulsLogoMobile" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#6366F1"/>
-              <stop offset="100%" stop-color="#4338CA"/>
-            </linearGradient>
-          </defs>
-          <rect width="32" height="32" rx="8" fill="url(#ulsLogoMobile)"/>
-          <rect x="0.75" y="0.75" width="30.5" height="30.5" rx="7.25" fill="none" stroke="#FFFFFF" stroke-opacity="0.18" stroke-width="1.5"/>
-          <path d="M16 25.5A9.5 9.5 0 1 1 25.5 16" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/>
-          <path d="M16 21A5 5 0 1 1 21 16" fill="none" stroke="#FFFFFF" stroke-opacity="0.55" stroke-width="1.8" stroke-linecap="round"/>
-          <line x1="16" y1="16" x2="22.5" y2="9.5" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/>
-          <circle cx="16" cy="16" r="2.1" fill="#FFFFFF"/>
-          <circle cx="22.8" cy="9.2" r="2.6" fill="#4ADE80" stroke="#312E81" stroke-width="1"/>
+      <span class="w-[20px] h-[20px] rounded-[5px] border border-hair flex items-center justify-center shrink-0 overflow-hidden" style="background-color: var(--bg-elevated); color: var(--ink-primary);">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" aria-hidden="true">
+          <path d="M12 20a8 8 0 1 1 8-8"/>
+          <path d="M12 16a4 4 0 1 1 4-4" stroke-opacity="0.55"/>
+          <line x1="12" y1="12" x2="17.8" y2="6.2"/>
+          <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>
         </svg>
       </span>
       <span class="text-[13px] font-medium tracking-tight truncate">Lead Scout</span>
@@ -1096,34 +1100,28 @@
          ================================================================ -->
     <aside id="leftSidebar" class="fixed lg:static inset-y-0 left-0 z-50 lg:z-20 w-[238px] shrink-0 border-r border-hair flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-200" style="background-color: var(--bg-sidebar);">
       <!-- 44px Top Header (Workspace Menu Trigger + Location + Search/Compose) -->
-      <div class="glass-sidebar-header h-[44px] px-2.5 border-b border-hair flex items-center justify-between gap-1 shrink-0 relative z-30">
-        <div class="flex items-center gap-1 min-w-0">
-          <button type="button" id="workspaceMenuBtn" onclick="toggleWorkspaceMenu(event)" class="btn-ghost h-7 px-1.5 inline-flex items-center gap-1.5 shrink-0" title="Workspace actions &amp; tools" aria-haspopup="menu" aria-expanded="false">
-            <span class="w-[20px] h-[20px] rounded-[5px] flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
-              <svg class="w-full h-full" viewBox="0 0 32 32" aria-hidden="true">
-                <defs>
-                  <linearGradient id="ulsLogoSidebar" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#6366F1"/>
-                    <stop offset="100%" stop-color="#4338CA"/>
-                  </linearGradient>
-                </defs>
-                <rect width="32" height="32" rx="8" fill="url(#ulsLogoSidebar)"/>
-                <rect x="0.75" y="0.75" width="30.5" height="30.5" rx="7.25" fill="none" stroke="#FFFFFF" stroke-opacity="0.18" stroke-width="1.5"/>
-                <path d="M16 25.5A9.5 9.5 0 1 1 25.5 16" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/>
-                <path d="M16 21A5 5 0 1 1 21 16" fill="none" stroke="#FFFFFF" stroke-opacity="0.55" stroke-width="1.8" stroke-linecap="round"/>
-                <line x1="16" y1="16" x2="22.5" y2="9.5" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/>
-                <circle cx="16" cy="16" r="2.1" fill="#FFFFFF"/>
-                <circle cx="22.8" cy="9.2" r="2.6" fill="#4ADE80" stroke="#312E81" stroke-width="1"/>
+      <div class="glass-sidebar-header h-[44px] px-2 border-b border-hair flex items-center justify-between gap-1 shrink-0 relative z-30">
+        <div class="flex items-center gap-0.5 min-w-0">
+          <button type="button" id="workspaceMenuBtn" onclick="toggleWorkspaceMenu(event)" class="btn-ghost h-7 px-1 inline-flex items-center gap-1.5 shrink-0" title="Workspace actions &amp; tools" aria-haspopup="menu" aria-expanded="false">
+            <span class="w-[20px] h-[20px] rounded-[5px] border border-hair flex items-center justify-center shrink-0 overflow-hidden" style="background-color: var(--bg-elevated); color: var(--ink-primary);">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" aria-hidden="true">
+                <path d="M12 20a8 8 0 1 1 8-8"/>
+                <path d="M12 16a4 4 0 1 1 4-4" stroke-opacity="0.55"/>
+                <line x1="12" y1="12" x2="17.8" y2="6.2"/>
+                <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>
               </svg>
             </span>
             <span class="text-[13px] font-medium tracking-tight shrink-0" style="color: var(--ink-primary);">Scout</span>
             <svg class="lucide-ic w-3 h-3 opacity-60 shrink-0" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
           </button>
           <span class="text-[11px] shrink-0" style="color: var(--ink-muted);">/</span>
-          <select id="searchLocation" onchange="updateLocationBadge()" title="Target Location" class="ghost-select h-6 pl-1 pr-0.5 text-[12px] font-medium min-w-0">
-            <option value="Cebu" selected>Cebu</option>
-            <option value="Any">Any PH</option>
-          </select>
+          <div class="relative inline-flex items-center shrink-0">
+            <select id="searchLocation" onchange="updateLocationBadge()" title="Target Location" class="ghost-select appearance-none h-6 pl-1.5 pr-4 text-[12px] font-medium shrink-0">
+              <option value="Cebu" selected>Cebu</option>
+              <option value="Any">Any PH</option>
+            </select>
+            <svg class="lucide-ic w-2.5 h-2.5 pointer-events-none absolute right-1 opacity-65" style="color: var(--ink-muted);" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
         </div>
 
         <div class="flex items-center gap-0.5 shrink-0">
@@ -1204,7 +1202,6 @@
         <div>
           <div class="px-2 mb-1.5 flex items-center justify-between">
             <span class="text-[11.5px] font-medium" style="color: var(--ink-section);">Pipeline</span>
-            <span id="targetLoc" class="mono-tag text-[10px]" style="color: var(--ink-muted);">Cebu</span>
           </div>
           <nav class="space-y-0.5" aria-label="Pipeline Views">
             <button type="button" id="tab-all" onclick="setFilter('all')" class="nav-item active-nav">
@@ -1320,7 +1317,7 @@
     <!-- ================================================================
          PANE 2: MIDDLE LEAD STREAM (350px–360px, Calm & Scannable)
          ================================================================ -->
-    <section id="feedPane" class="w-full lg:w-[360px] shrink-0 min-w-0 overflow-hidden flex flex-col min-h-0 relative" style="background-color: var(--bg-canvas);">
+    <section id="feedPane" class="w-full lg:w-[360px] shrink-0 min-w-0 overflow-hidden flex flex-col min-h-0 relative" style="background-color: var(--bg-feed);">
       <!-- 2px Top Animated Scan Progress Hairline -->
       <div id="scanHairlineBar" class="scan-hairline-track hidden" aria-hidden="true">
         <div class="scan-hairline-bar"></div>
@@ -2402,6 +2399,7 @@
     let selectedLeadIds = new Set();
     let lastBulkAnchorId = null;
     let bulkActionInFlight = false;
+    let isShiftKeyHeld = false;
     let toastAutoHideTimer = null;
 
     const PLATFORM_LABELS = {
@@ -2755,11 +2753,26 @@
       try { localStorage.setItem('uls_feed_density', feedDensity); } catch (e) {}
     }
 
+    function hasAnyNonDefaultFilter() {
+      const locEl = document.getElementById('searchLocation');
+      const recEl = document.getElementById('searchRecency');
+      const intEl = document.getElementById('searchIntent');
+      const activePlatCount = Array.from(document.querySelectorAll('.plat-cb')).filter(cb => cb.checked).length;
+      return Boolean(
+        activeFbGroupKey ||
+        hotOnlyFilter ||
+        currentKindFilter !== 'all' ||
+        activePlatCount > 0 ||
+        (locEl && locEl.value && locEl.value !== 'Cebu') ||
+        (recEl && recEl.value && recEl.value !== '7') ||
+        (intEl && intEl.value && intEl.value !== 'seeker,employer')
+      );
+    }
+
     function updateFiltersActiveDot() {
       const dot = document.getElementById('filtersActiveDot');
       if (!dot) return;
-      const activeCount = Array.from(document.querySelectorAll('.plat-cb')).filter(cb => cb.checked).length;
-      dot.classList.toggle('hidden', !(filtersCollapsed && (activeCount > 0 || Boolean(activeFbGroupKey))));
+      dot.classList.toggle('hidden', !(filtersCollapsed && hasAnyNonDefaultFilter()));
     }
 
     function renderActiveFilterChips() {
@@ -2780,20 +2793,18 @@
 
       const chips = [];
       const locEl = document.getElementById('searchLocation');
-      if (locEl && locEl.value) {
+      if (locEl && locEl.value && locEl.value !== 'Cebu') {
         chips.push({
-          label: locEl.value === 'Cebu' ? 'Cebu' : 'Any PH',
-          removable: locEl.value !== 'Cebu',
+          label: 'Any PH',
           action: "clearActiveFilterChip('location')"
         });
       }
 
       const recEl = document.getElementById('searchRecency');
-      if (recEl && recEl.value) {
+      if (recEl && recEl.value && recEl.value !== '7') {
         const recTxt = recEl.options[recEl.selectedIndex] ? recEl.options[recEl.selectedIndex].text : `${recEl.value}d`;
         chips.push({
           label: recTxt,
-          removable: recEl.value !== '7',
           action: "clearActiveFilterChip('recency')"
         });
       }
@@ -2803,7 +2814,6 @@
         const intTxt = intEl.options[intEl.selectedIndex] ? intEl.options[intEl.selectedIndex].text : intEl.value;
         chips.push({
           label: intTxt,
-          removable: true,
           action: "clearActiveFilterChip('intent')"
         });
       }
@@ -2811,7 +2821,6 @@
       if (currentKindFilter !== 'all') {
         chips.push({
           label: currentKindFilter === 'comment' ? 'Comments' : 'Posts',
-          removable: true,
           action: "clearActiveFilterChip('kind')"
         });
       }
@@ -2820,7 +2829,6 @@
       selectedPlats.forEach(p => {
         chips.push({
           label: PLATFORM_LABELS[p] || p,
-          removable: true,
           action: `clearActiveFilterChip('platform','${p}')`
         });
       });
@@ -2828,7 +2836,6 @@
       if (hotOnlyFilter) {
         chips.push({
           label: 'Hot only',
-          removable: true,
           action: "clearActiveFilterChip('hot')"
         });
       }
@@ -2838,7 +2845,6 @@
         const gName = gObj ? gObj.name : activeFbGroupKey;
         chips.push({
           label: `FB: ${gName}`,
-          removable: true,
           action: "clearActiveFilterChip('fb_group')"
         });
       }
@@ -2846,14 +2852,15 @@
       if (!chips.length) {
         host.classList.add('hidden');
         host.innerHTML = '';
+        updateFiltersActiveDot();
         return;
       }
 
-      host.innerHTML = chips.map(ch => ch.removable
-        ? `<button type="button" onclick="${ch.action}" class="active-filter-chip" title="Remove filter"><span>${escapeHtml(ch.label)}</span><span class="opacity-65">&times;</span></button>`
-        : `<span class="active-filter-chip cursor-default">${escapeHtml(ch.label)}</span>`
+      host.innerHTML = chips.map(ch =>
+        `<button type="button" onclick="${ch.action}" class="active-filter-chip" title="Remove filter"><span>${escapeHtml(ch.label)}</span><span class="opacity-65">&times;</span></button>`
       ).join('');
       host.classList.remove('hidden');
+      updateFiltersActiveDot();
     }
 
     let currentKindFilter = 'all'; // 'all' | 'post' | 'comment'
@@ -2990,7 +2997,30 @@
       if (modal) modal.classList.remove('hidden');
     }
 
+    function setShiftHeldState(held) {
+      const next = Boolean(held);
+      if (isShiftKeyHeld === next) return;
+      isShiftKeyHeld = next;
+      syncBulkSelectionDom();
+    }
+
+    document.addEventListener('keyup', (e) => {
+      if (e.key === 'Shift' || !e.shiftKey) {
+        setShiftHeldState(false);
+      }
+    });
+    window.addEventListener('blur', () => setShiftHeldState(false));
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) setShiftHeldState(false);
+    });
+    document.addEventListener('pointermove', (e) => {
+      if (isShiftKeyHeld && !e.shiftKey) setShiftHeldState(false);
+    }, { passive: true });
+
     document.addEventListener('keydown', (e) => {
+      if (e.key === 'Shift') {
+        setShiftHeldState(true);
+      }
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         focusSearch();
@@ -3170,9 +3200,6 @@
     }
 
     function updateLocationBadge() {
-      const loc = document.getElementById('searchLocation').value;
-      const el = document.getElementById('targetLoc');
-      if (el) el.innerText = loc === 'Cebu' ? 'Cebu' : 'Any PH';
       renderActiveFilterChips();
       loadLeads();
     }
@@ -3666,16 +3693,37 @@
       return `${Math.floor(hrs / 24)}d`;
     }
 
-    function cleanExcerpt(raw) {
+    function stripRawMarkdownMarkers(raw) {
+      if (!raw) return '';
+      const urls = [];
+      let s = String(raw).replace(/https?:\/\/\S+/gi, (u) => {
+        urls.push(u);
+        return `\uE000URL${urls.length - 1}\uE000`;
+      });
+      s = s.replace(/\*\*+/g, '').replace(/__+/g, '');
+      return s.replace(/\uE000URL(\d+)\uE000/g, (_, i) => urls[Number(i)] || '');
+    }
+
+    function stripLoudFeedSymbols(raw) {
       if (!raw) return '';
       return String(raw)
+        .replace(/(?:‼️|⁉️|❗|❕|📢|📣|🔥|🚨|📍|✨|⚡|💥|🔴|🟢|🟡|⚠️|👉|👇|📌|🔔|💯)+[\uFE0F\u200D]*/gu, ' ')
+        .replace(/"\s+/g, '"')
+        .replace(/\s+"/g, '"')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+    }
+
+    function cleanExcerpt(raw) {
+      if (!raw) return '';
+      return stripRawMarkdownMarkers(String(raw))
         .replace(/https?:\/\/(?:preview|i)\.redd\.it\/[^\s)]+/gi, '')
         .replace(/https?:\/\/[^\s]{65,}/g, (m) => m.slice(0, 48) + '…')
         .replace(/\s{2,}/g, ' ')
         .trim();
     }
 
-    /* Smart Title Cleanup for Feed Rows ONLY (Preserves verbatim original text in #readerPane) */
+    /* Smart Title Cleanup for Feed Rows ONLY (Preserves original content in #readerPane) */
     const PRESERVE_ACRONYMS = new Set([
       'IT', 'PH', 'HR', 'VA', 'BPO', 'WFH', 'ASAP', 'PC', 'GPU', 'RAM', 'SSD', 'CPU',
       'CSR', 'TSR', 'QC', 'BGC', 'SM', 'AI', 'UI', 'UX', 'FB', 'IG', 'QA', 'ESL', 'SEO',
@@ -3688,18 +3736,19 @@
     };
 
     function formatFeedTitle(raw) {
-      let s = cleanExcerpt(raw || '');
+      let s = stripLoudFeedSymbols(cleanExcerpt(raw || ''));
       if (!s) return 'Untitled lead';
-      // Strip noisy leading emoji bursts & decorative prefixes (📢🔥💼🚨✨⭐👉⚡📍✅ etc.)
+      // Strip noisy leading emoji bursts & decorative prefixes
       s = s.replace(/^(?:[\p{Extended_Pictographic}\uFE0F\u200D\s#*!~•▪▸►»—–\-_|[\]()]+)+/u, '').trim();
-      if (!s) s = cleanExcerpt(raw || '');
+      s = s.replace(/(?:[\s#*!~•▪▸►»—–\-_|]+)+$/u, '').trim();
+      if (!s) s = stripLoudFeedSymbols(cleanExcerpt(raw || '')) || 'Untitled lead';
 
       const letters = s.match(/[A-Za-z]/g) || [];
       const uppers = s.match(/[A-Z]/g) || [];
       if (letters.length >= 8 && (uppers.length / letters.length) > 0.7) {
         let lower = s.toLowerCase();
-        // Sentence case at start and after . ! ? :
-        lower = lower.replace(/(^\s*|[.!?]\s+|:\s+)([a-z])/g, (m, p1, p2) => p1 + p2.toUpperCase());
+        // Sentence case at start and after . ! ? : "
+        lower = lower.replace(/(^\s*|[.!?]\s+|:\s+|"\s*)([a-z])/g, (m, p1, p2) => p1 + p2.toUpperCase());
         // Restore common acronyms and Philippine places
         lower = lower.replace(/\b([a-z0-9]+)\b/gi, (word) => {
           const up = word.toUpperCase();
@@ -3711,6 +3760,45 @@
         s = lower;
       }
       return s;
+    }
+
+    function formatCleanSourceLabel(sourceStr) {
+      let label = String(sourceStr || '').trim();
+      if (!label) return '';
+      if (typeof formatSidebarGroupName === 'function') {
+        label = label.replace(/\(([^)]+)\)/, (_, inner) => `(${formatSidebarGroupName(inner)})`);
+      }
+      return label;
+    }
+
+    function formatFeedPreview(lead, cleanTitle) {
+      let p = stripLoudFeedSymbols(cleanExcerpt((lead && lead.content) || ''));
+      p = p.replace(/^(?:[\p{Extended_Pictographic}\uFE0F\u200D\s#*!~•▪▸►»—–\-_|]+)+/u, '').trim();
+      if (!p) return formatCleanSourceLabel(lead && lead.source);
+
+      const candidates = [
+        cleanTitle,
+        stripLoudFeedSymbols(cleanExcerpt((lead && lead.title) || ''))
+          .replace(/^(?:[\p{Extended_Pictographic}\uFE0F\u200D\s#*!~•▪▸►»—–\-_|]+)+/u, '')
+          .replace(/(?:…|\.{2,})+$/, '')
+          .trim()
+      ].filter(t => t && t.length >= 4);
+
+      const pLow = p.toLowerCase();
+      for (const cand of candidates) {
+        const cClean = cand.replace(/(?:…|\.{2,})+$/, '').trim();
+        if (cClean.length < 4) continue;
+        const cLow = cClean.toLowerCase();
+        if (pLow.startsWith(cLow)) {
+          p = p.slice(cClean.length).replace(/^[\s:.,;—–\-|•!?]+/, '').trim();
+          break;
+        }
+      }
+
+      if (!p) {
+        return formatCleanSourceLabel(lead && lead.source);
+      }
+      return p;
     }
 
     function getFollowupMeta(lead) {
@@ -3826,7 +3914,7 @@
           else if (hrs <= 12) score += 1;
         }
       }
-      return { score, isHot: score >= 4, label: reasons[0] || 'Hot' };
+      return { score, isHot: score >= 4, label: 'Hot' };
     }
 
     function getPlatformMeta(l) {
@@ -3836,41 +3924,34 @@
         return {
           icon: 'fa-brands fa-facebook',
           shortLabel: 'Facebook',
-          iconColor: '#60A5FA',
-          pillClass: 'bg-[#1877F2]/12 text-blue-700 dark:text-[#93C5FD] border-[#1877F2]/30'
+          iconColor: '#60A5FA'
         };
       }
       if (srcLower.includes('tiktok')) {
         return {
           icon: 'fa-brands fa-tiktok',
           shortLabel: 'TikTok',
-          iconColor: '#F472B6',
-          pillClass: 'bg-pink-500/12 text-pink-700 dark:text-pink-300 border-pink-500/30'
+          iconColor: '#F472B6'
         };
       }
       if (srcLower.includes('instagram')) {
         return {
           icon: 'fa-brands fa-instagram',
           shortLabel: 'Instagram',
-          iconColor: '#E879F9',
-          pillClass: 'bg-fuchsia-500/12 text-fuchsia-700 dark:text-fuchsia-300 border-fuchsia-500/30'
+          iconColor: '#E879F9'
         };
       }
       if (srcLower.includes('reddit')) {
         return {
           icon: isComment ? 'fa-regular fa-comments' : 'fa-brands fa-reddit',
           shortLabel: 'Reddit',
-          iconColor: isComment ? '#C4B5FD' : '#FB923C',
-          pillClass: isComment
-            ? 'bg-violet-500/12 text-violet-700 dark:text-violet-300 border-violet-500/30'
-            : 'bg-orange-500/12 text-orange-700 dark:text-orange-300 border-orange-500/30'
+          iconColor: isComment ? '#C4B5FD' : '#FB923C'
         };
       }
       return {
         icon: 'fa-solid fa-globe',
         shortLabel: 'Web',
-        iconColor: '#38BDF8',
-        pillClass: 'bg-sky-500/12 text-sky-700 dark:text-sky-300 border-sky-500/30'
+        iconColor: '#38BDF8'
       };
     }
 
@@ -3880,24 +3961,22 @@
 
     function getPlatformBadgeHtml(l, useFullSource = true) {
       const m = getPlatformMeta(l);
-      let label = useFullSource ? (l.source || m.shortLabel) : m.shortLabel;
-      if (useFullSource && typeof formatSidebarGroupName === 'function') {
-        label = String(label).replace(/\(([^)]+)\)/, (_, inner) => `(${formatSidebarGroupName(inner)})`);
-      }
-      return `<span class="inline-flex items-center gap-1.5 h-[22px] px-2 rounded-[6px] text-[11px] font-medium border ${m.pillClass} max-w-[260px] truncate" title="${escapeHtml(l.source || m.shortLabel)}"><i class="${m.icon} text-[10.5px] shrink-0" style="color:${m.iconColor}"></i><span class="truncate">${escapeHtml(label)}</span></span>`;
+      let label = useFullSource ? (formatCleanSourceLabel(l.source) || m.shortLabel) : m.shortLabel;
+      return `<span class="inline-flex items-center gap-1.5 h-[22px] px-2 rounded-[6px] text-[11px] font-medium border max-w-[260px] truncate" style="background-color: var(--bg-elevated); border-color: var(--border-subtle); color: var(--ink-secondary);" title="${escapeHtml(l.source || m.shortLabel)}"><i class="${m.icon} text-[10.5px] shrink-0" style="color: ${m.iconColor};"></i><span class="truncate">${escapeHtml(label)}</span></span>`;
     }
 
     function getIntentLabelPill(intent) {
+      const pillStyle = 'background-color: var(--bg-elevated); border-color: var(--border-subtle); color: var(--ink-secondary);';
       if (intent === 'employer') {
-        return '<span class="inline-flex items-center gap-1.5 h-[22px] px-2 rounded-[6px] text-[11px] font-medium bg-amber-500/15 text-amber-800 dark:text-[#FCD34D] border border-amber-500/35 whitespace-nowrap"><span class="label-dot" style="background:#F59E0B"></span>Employer</span>';
+        return `<span class="inline-flex items-center gap-1.5 h-[22px] px-2 rounded-[6px] text-[11px] font-medium border whitespace-nowrap" style="${pillStyle}"><span class="label-dot" style="background:#F59E0B"></span>Employer</span>`;
       }
       if (intent === 'seller') {
-        return '<span class="inline-flex items-center gap-1.5 h-[22px] px-2 rounded-[6px] text-[11px] font-medium bg-sky-500/15 text-sky-800 dark:text-[#7DD3FC] border border-sky-500/35 whitespace-nowrap"><span class="label-dot" style="background:#38BDF8"></span>Seller</span>';
+        return `<span class="inline-flex items-center gap-1.5 h-[22px] px-2 rounded-[6px] text-[11px] font-medium border whitespace-nowrap" style="${pillStyle}"><span class="label-dot" style="background:#38BDF8"></span>Seller</span>`;
       }
       if (intent === 'buyer') {
-        return '<span class="inline-flex items-center gap-1.5 h-[22px] px-2 rounded-[6px] text-[11px] font-medium bg-cyan-500/15 text-cyan-800 dark:text-[#67E8F9] border border-cyan-500/35 whitespace-nowrap"><span class="label-dot" style="background:#38BDF8"></span>Buyer</span>';
+        return `<span class="inline-flex items-center gap-1.5 h-[22px] px-2 rounded-[6px] text-[11px] font-medium border whitespace-nowrap" style="${pillStyle}"><span class="label-dot" style="background:#38BDF8"></span>Buyer</span>`;
       }
-      return '<span class="inline-flex items-center gap-1.5 h-[22px] px-2 rounded-[6px] text-[11px] font-medium bg-emerald-500/15 text-emerald-800 dark:text-[#6EE7B7] border border-emerald-500/35 whitespace-nowrap"><span class="label-dot" style="background:#4ADE80"></span>Jobseeker</span>';
+      return `<span class="inline-flex items-center gap-1.5 h-[22px] px-2 rounded-[6px] text-[11px] font-medium border whitespace-nowrap" style="${pillStyle}"><span class="label-dot" style="background:#4ADE80"></span>Jobseeker</span>`;
     }
 
     let activePitchTone = 'friendly';
@@ -3951,10 +4030,20 @@
       return 'Older';
     }
 
-    function highlightMatchedKeyword(rawText, keyword) {
-      const safeText = escapeHtml(rawText || '');
+    function highlightMatchedKeyword(rawText, keyword, opts = {}) {
+      const cleanedRaw = stripRawMarkdownMarkers(rawText || '');
+      const safeText = escapeHtml(cleanedRaw);
       const cleanKw = String(keyword || '').trim();
       if (cleanKw.length < 2) return safeText;
+      if (opts && opts.isShortComment && cleanedRaw.trim().length <= 25) {
+        const safeKwSub = escapeHtml(cleanKw);
+        const escapedReSub = safeKwSub.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        try {
+          return safeText.replace(new RegExp(`(${escapedReSub})`, 'gi'), '<mark class="kw-mark-subtle">$1</mark>');
+        } catch (e) {
+          return safeText;
+        }
+      }
       const safeKw = escapeHtml(cleanKw);
       const escapedRe = safeKw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       try {
@@ -4100,10 +4189,9 @@
           const isChecked = selectedLeadIds.has(leadIdNum);
           const statusKey = l.status || 'new';
           const isSoftened = statusKey === 'contacted' || statusKey === 'archived';
-          const isUnread = statusKey === 'new';
           const agoShort = timeAgoShort(l.posted_at || l.found_at);
-          const excerpt = cleanExcerpt(l.content);
           const cleanTitle = formatFeedTitle(l.title);
+          const excerpt = formatFeedPreview(l, cleanTitle);
 
           const row = document.createElement('div');
           row.setAttribute('role', 'option');
@@ -4134,12 +4222,12 @@
               </button>
             </div>
 
-            <!-- Line 1: Hover/Bulk Checkbox + Platform icon + Author + Short Timestamp -->
+            <!-- Line 1: Shift/Bulk Checkbox + Monochrome Platform icon + Author + Short Timestamp -->
             <div class="flex items-center justify-between gap-2 mb-0.5">
               <div class="flex items-center gap-1.5 min-w-0 text-[12px]">
                 <span class="row-lead-slot">
                   <span class="row-plat-wrap">
-                    <i class="${platMeta.icon} text-[11px] shrink-0 opacity-75" style="color: ${platMeta.iconColor};" title="${escapeHtml(l.source || platMeta.shortLabel)}"></i>
+                    <i class="${platMeta.icon} text-[11px] shrink-0 opacity-85" style="color: ${platMeta.iconColor};" title="${escapeHtml(l.source || platMeta.shortLabel)}"></i>
                   </span>
                   <button
                     type="button"
@@ -4153,21 +4241,20 @@
                     <svg class="lucide-ic w-2.5 h-2.5" viewBox="0 0 24 24" style="stroke-width: 2.6;"><path d="M20 6 9 17l-5-5"/></svg>
                   </button>
                 </span>
-                ${isUnread ? '<span class="w-1.5 h-1.5 rounded-full bg-[#4ADE80] shrink-0" title="New lead"></span>' : ''}
                 <span class="truncate font-medium" style="color: var(--ink-secondary);">${escapeHtml(l.author || 'Unknown')}</span>
               </div>
               <span class="mono-tag text-[11px] shrink-0 tabular-nums" style="color: var(--ink-muted);">${escapeHtml(agoShort)}</span>
             </div>
 
             <!-- Line 2: Smart Cleaned Single-Line Title -->
-            <div class="text-[13px] font-medium truncate leading-snug mb-1" style="color: var(--ink-primary);">
+            <div class="text-[13px] font-medium truncate leading-snug mb-1" style="color: ${isSoftened ? 'var(--ink-secondary)' : 'var(--ink-primary)'};">
               ${escapeHtml(cleanTitle)}
             </div>
 
-            <!-- Line 3: Quiet Preview + Single Subtle Dot Label -->
+            <!-- Line 3: Quiet Non-Duplicate Preview + Single Right Intent Dot -->
             <div class="flex items-center justify-between gap-2">
               <span class="row-preview-text text-[12px] truncate min-w-0" style="color: var(--ink-muted);">
-                ${escapeHtml(excerpt || l.source || '')}
+                ${escapeHtml(excerpt)}
               </span>
               <div class="flex items-center gap-1.5 shrink-0">
                 ${getFollowupFeedBadgeHtml(l)}
@@ -4264,6 +4351,7 @@
       const container = document.getElementById('leadsContainer');
       const scroller = document.getElementById('leadsListScroll');
       if (container) {
+        container.classList.toggle('is-shift-held', isShiftKeyHeld);
         container.classList.toggle('has-bulk-selection', count > 0);
         container.querySelectorAll('.inbox-row').forEach(rowEl => {
           const rId = Number(rowEl.dataset.leadId);
@@ -4280,7 +4368,7 @@
         scroller.classList.toggle('pb-16', count > 0);
       }
 
-      // Feed Meta Bar toggles ('3 selected · Select all · Clear')
+      // Feed Meta Bar toggles (hidden until Shift is held or count > 0)
       const selWrap = document.getElementById('bulkMetaSelectedWrap');
       const selTxt = document.getElementById('bulkMetaSelectedText');
       const selAllSep = document.getElementById('bulkMetaSelectSep');
@@ -4294,7 +4382,7 @@
       }
       if (selTxt) selTxt.innerText = `${count} selected`;
 
-      const showSelectAll = totalVisible > 0 && count < totalVisible;
+      const showSelectAll = (isShiftKeyHeld || count > 0) && totalVisible > 0 && count < totalVisible;
       if (selAllSep) selAllSep.classList.toggle('hidden', !showSelectAll);
       if (selAllBtn) selAllBtn.classList.toggle('hidden', !showSelectAll);
 
@@ -4520,7 +4608,7 @@
       const bcTitle = document.getElementById('readerBreadcrumbTitle');
       const dotColor = INTENT_DOT_COLOR[lead.intent] || '#4ADE80';
       if (bcDot) bcDot.style.backgroundColor = dotColor;
-      if (bcSrc) bcSrc.innerText = lead.source || 'Lead';
+      if (bcSrc) bcSrc.innerText = getPlatformMeta(lead).shortLabel;
       if (bcTitle) bcTitle.innerText = cleanExcerpt(lead.title || 'Untitled Lead');
 
       const statusVal = lead.status || 'new';
@@ -4594,7 +4682,7 @@
       }
 
       const bodyContentHtml = rawBody
-        ? `<div class="text-[13.5px] leading-[1.68] whitespace-pre-wrap break-words ${isComment ? 'border-l-2 border-[#A78BFA]/55 pl-3.5' : ''}" style="color: var(--ink-body);">${highlightMatchedKeyword(rawBody, lead.matched_keyword)}</div>`
+        ? `<div class="text-[13.5px] leading-[1.68] whitespace-pre-wrap break-words ${isComment ? 'border-l-2 border-[#A78BFA]/45 pl-3.5' : ''}" style="color: var(--ink-body);">${highlightMatchedKeyword(rawBody, lead.matched_keyword, { isShortComment: isComment })}</div>`
         : `<p class="text-[13px] italic" style="color: var(--ink-muted);">No additional post body text captured.</p>`;
 
       currentLeadExtractedContacts = extractLeadContacts(lead);
@@ -4610,18 +4698,15 @@
       const mineBtnTitle = isZeroCommentsPost
         ? '0 comments reported on this Facebook post — disabled to save Apify credits'
         : 'Mine commenters on just this Facebook post using Apify (cached to prevent double charges)';
-      const mineBtnStyleClass = isZeroCommentsPost
-        ? 'border-hair opacity-60 cursor-not-allowed'
-        : 'border-[#1877F2]/35 bg-[#1877F2]/10 hover:bg-[#1877F2]/20 text-blue-700 dark:text-[#93C5FD] cursor-pointer';
       const mineCommentersBtnHtml = isFacebookPost
-        ? `<button type="button" id="btnMineComments" onclick="mineSelectedPostComments()" aria-disabled="${isZeroCommentsPost ? 'true' : 'false'}" class="inline-flex items-center gap-1.5 h-[24px] px-2.5 rounded-[6px] text-[11px] font-medium border transition shrink-0 ml-auto ${mineBtnStyleClass}" ${isZeroCommentsPost ? 'style="background-color: var(--bg-chip); color: var(--ink-muted);"' : ''} title="${mineBtnTitle}"><span id="mineCommentsIcon" class="inline-flex items-center justify-center"><svg class="lucide-ic w-3 h-3" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><span id="mineCommentsLabel">${mineBtnText}</span></button>`
+        ? `<button type="button" id="btnMineComments" onclick="mineSelectedPostComments()" aria-disabled="${isZeroCommentsPost ? 'true' : 'false'}" class="inline-flex items-center gap-1.5 h-[22px] px-2 rounded-[6px] text-[11px] font-medium border transition shrink-0 ${isZeroCommentsPost ? 'opacity-55 cursor-not-allowed' : 'hover:border-[var(--border-hover)] hover:text-[var(--ink-primary)] cursor-pointer'}" style="background-color: var(--bg-elevated); border-color: var(--border-subtle); color: ${isZeroCommentsPost ? 'var(--ink-muted)' : 'var(--ink-secondary)'};" title="${mineBtnTitle}"><span id="mineCommentsIcon" class="inline-flex items-center justify-center"><svg class="lucide-ic w-3 h-3" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><span id="mineCommentsLabel">${mineBtnText}</span></button>`
         : '';
 
       const fm = getFollowupMeta(lead);
       const showSnoozeBar = statusVal === 'followup' || Boolean(lead.followup_at);
       const followupSnoozeBarHtml = showSnoozeBar
         ? `
-          <div class="flex flex-wrap items-center justify-between gap-2 py-2 px-3 rounded-[9px] border border-hair text-[11.5px]" style="background-color: var(--bg-sidebar); color: var(--ink-secondary);">
+          <div class="flex flex-wrap items-center justify-between gap-2 py-2 px-3 rounded-[9px] border border-hair text-[11.5px]" style="background-color: var(--bg-elevated); color: var(--ink-secondary);">
             <div class="flex items-center gap-1.5 min-w-0">
               ${LUCIDE_ICONS.clock}
               <span class="font-medium" style="color: var(--ink-primary);">Follow-Up</span>
@@ -4642,31 +4727,34 @@
 
       const contactItemsHtml = [
         profileUrl
-          ? `<a href="${escapeHtml(profileUrl)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 h-[24px] px-2.5 rounded-[6px] border border-hair hover:border-[var(--border-hover)] text-[11px] font-medium transition" style="background-color: var(--bg-elevated); color: var(--ink-secondary);" title="Open author profile / search">${LUCIDE_ICONS.userLink}<span>Profile</span>${LUCIDE_ICONS.extLink}</a>`
+          ? `<a href="${escapeHtml(profileUrl)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 h-[22px] px-2 rounded-[6px] border hover:border-[var(--border-hover)] hover:text-[var(--ink-primary)] text-[11px] font-medium transition" style="background-color: var(--bg-elevated); border-color: var(--border-subtle); color: var(--ink-secondary);" title="Open author profile / search">${LUCIDE_ICONS.userLink}<span>Profile</span>${LUCIDE_ICONS.extLink}</a>`
           : '',
         ...currentLeadExtractedContacts.map((c, idx) =>
-          `<button type="button" onclick="copyExtractedContact(${idx})" class="inline-flex items-center gap-1.5 h-[24px] px-2.5 rounded-[6px] border border-hair hover:border-[var(--border-hover)] text-[11px] transition cursor-pointer" style="background-color: var(--bg-elevated); color: var(--ink-secondary);" title="Click to copy ${c.type}">${c.type === 'email' ? LUCIDE_ICONS.mail : LUCIDE_ICONS.phone}<span class="mono-tag text-[11px]">${escapeHtml(c.value)}</span></button>`
+          `<button type="button" onclick="copyExtractedContact(${idx})" class="inline-flex items-center gap-1.5 h-[22px] px-2 rounded-[6px] border hover:border-[var(--border-hover)] hover:text-[var(--ink-primary)] text-[11px] transition cursor-pointer" style="background-color: var(--bg-elevated); border-color: var(--border-subtle); color: var(--ink-secondary);" title="Click to copy ${c.type}">${c.type === 'email' ? LUCIDE_ICONS.mail : LUCIDE_ICONS.phone}<span class="mono-tag text-[11px]">${escapeHtml(c.value)}</span></button>`
         )
       ].filter(Boolean).join('');
 
       const hasActionOrContactRow = Boolean(contactItemsHtml || mineCommentersBtnHtml);
+      const neutralPillStyle = 'background-color: var(--bg-elevated); border-color: var(--border-subtle); color: var(--ink-secondary);';
+      const cleanSourceLabel = formatCleanSourceLabel(lead.source) || 'Feed';
+      const authorDisplay = lead.author
+        ? (/^(@|u\/)/i.test(String(lead.author).trim()) ? String(lead.author).trim() : String(lead.author).trim())
+        : 'Unknown';
 
       article.innerHTML = `
-        <!-- Editorial Headline + Harmonized 2-Tier Properties Card (Verbatim Original Text Preserved) -->
-        <div class="space-y-3">
+        <!-- Editorial Headline + Flat Inline Properties Strip -->
+        <div class="space-y-3 border-b pb-4" style="border-color: var(--border-subtle);">
           <h1 class="text-[20px] font-medium tracking-[-0.02em] leading-[1.35] break-words" style="color: var(--ink-primary);">
             ${highlightMatchedKeyword(lead.title || 'Untitled Lead', lead.matched_keyword)}
           </h1>
 
-          <!-- Harmonized Properties & Actions Card -->
-          <div class="rounded-[9px] border border-hair overflow-hidden text-[11.5px]" style="background-color: var(--bg-elevated); color: var(--ink-secondary);">
-            <!-- Row 1: Classification Badges (Left) + Quiet Context Metadata (Right) -->
-            <div class="px-3 py-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+          <div class="space-y-2 text-[11.5px]" style="color: var(--ink-secondary);">
+            <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
               <div class="flex flex-wrap items-center gap-1.5 min-w-0">
                 ${getPlatformBadgeHtml(lead, true)}
                 ${getIntentLabelPill(lead.intent)}
-                ${isComment ? '<span class="inline-flex items-center gap-1 h-[22px] px-2 rounded-[6px] text-[11px] font-medium bg-violet-500/15 text-violet-800 dark:text-[#DDD6FE] border border-violet-500/35">Comment</span>' : ''}
-                ${lead._prio && lead._prio.isHot ? `<span class="inline-flex items-center gap-1 h-[22px] px-2 rounded-[6px] text-[11px] font-medium bg-amber-500/15 text-amber-800 dark:text-[#FCD34D] border border-amber-500/35">${LUCIDE_ICONS.flame}<span>${escapeHtml(lead._prio.label)}</span></span>` : ''}
+                ${isComment ? `<span class="inline-flex items-center gap-1.5 h-[22px] px-2 rounded-[6px] text-[11px] font-medium border whitespace-nowrap" style="${neutralPillStyle}"><span class="label-dot" style="background:#A78BFA"></span>Comment</span>` : ''}
+                ${lead._prio && lead._prio.isHot ? `<span class="inline-flex items-center gap-1.5 h-[22px] px-2 rounded-[6px] text-[11px] font-medium border whitespace-nowrap" style="${neutralPillStyle}"><span class="label-dot" style="background:#F59E0B"></span>Hot</span>` : ''}
               </div>
 
               <div class="flex flex-wrap items-center gap-2 text-[11px]" style="color: var(--ink-muted);">
@@ -4680,11 +4768,8 @@
             </div>
 
             ${hasActionOrContactRow ? `
-              <!-- Row 2: Dedicated Contacts & Post Actions Bar -->
-              <div class="px-3 py-1.5 border-t border-hair flex flex-wrap items-center justify-between gap-1.5" style="background-color: var(--bg-sidebar);">
-                <div class="flex flex-wrap items-center gap-1.5 min-w-0">
-                  ${contactItemsHtml}
-                </div>
+              <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
+                ${contactItemsHtml}
                 ${mineCommentersBtnHtml}
               </div>
             ` : ''}
@@ -4694,15 +4779,14 @@
 
         ${aiSummaryBannerHtml}
 
-        <!-- Elevated Linear Thread Card (Author Header + Highlighted Verbatim Body) -->
+        <!-- Elevated Linear Thread Card (Author + Timestamp Only, No Duplicate Group String) -->
         <div class="surface-card rounded-[10px] border border-hair p-4 sm:p-5 space-y-3.5" style="background-color: var(--bg-elevated);">
           <div class="flex items-center justify-between gap-2">
             <div class="flex items-center gap-2.5 min-w-0">
               <span class="w-6 h-6 rounded-full border border-hair flex items-center justify-center text-[11px] font-medium shrink-0" style="background-color: var(--bg-chip); color: var(--ink-primary);">
                 ${authorInitial}
               </span>
-              <span class="text-[13px] font-medium truncate" style="color: var(--ink-primary);">${escapeHtml(lead.author || 'Unknown')}</span>
-              <span class="text-[12px] truncate hidden sm:inline" style="color: var(--ink-muted);">${escapeHtml(lead.source || '')}</span>
+              <span class="text-[13px] font-medium truncate" style="color: var(--ink-primary);">${escapeHtml(authorDisplay)}</span>
             </div>
             <span class="mono-tag text-[11.5px] shrink-0 tabular-nums" style="color: var(--ink-muted);">${escapeHtml(ago)}</span>
           </div>
@@ -4710,7 +4794,7 @@
           ${bodyContentHtml}
         </div>
 
-        <!-- Clean Activity Timeline (Capture Source + Pipeline Status Only) -->
+        <!-- Clean Activity Timeline -->
         <div class="space-y-2 min-w-0">
           <div class="text-[11.5px] font-medium" style="color: var(--ink-section);">Activity</div>
           <div class="relative pl-1 space-y-2.5 min-w-0">
@@ -4719,7 +4803,7 @@
               <span class="w-4 h-4 rounded-full border border-hair flex items-center justify-center shrink-0 mt-0.5" style="background-color: var(--bg-elevated);">
                 <span class="w-1.5 h-1.5 rounded-full bg-[#5E6AD2]"></span>
               </span>
-              <span class="min-w-0 flex-1 pr-2 leading-relaxed break-words" title="${escapeHtml(`Captured from ${lead.source || 'Feed'}${ago ? ` · ${ago}` : ''}`)}">Captured from <strong class="font-medium" style="color: var(--ink-primary);">${escapeHtml(lead.source || 'Feed')}</strong>${ago ? ` &middot; ${escapeHtml(ago)}` : ''}</span>
+              <span class="min-w-0 flex-1 pr-2 leading-relaxed break-words" title="${escapeHtml(`Captured from ${lead.source || 'Feed'}${ago ? ` · ${ago}` : ''}`)}">Captured from <strong class="font-medium" style="color: var(--ink-primary);">${escapeHtml(cleanSourceLabel)}</strong>${ago ? ` &middot; ${escapeHtml(ago)}` : ''}</span>
             </div>
             <div class="relative flex items-start gap-2.5 text-[12px] min-w-0" style="color: var(--ink-secondary);">
               <span class="w-4 h-4 rounded-full border border-hair flex items-center justify-center shrink-0 mt-0.5" style="background-color: var(--bg-elevated);">
@@ -5468,8 +5552,6 @@
       if (intentEl && w.intent) intentEl.value = w.intent;
       if (locEl && w.location) {
         locEl.value = w.location;
-        const badge = document.getElementById('targetLoc');
-        if (badge) badge.innerText = w.location === 'Cebu' ? 'Cebu' : 'Any PH';
       }
       currentKindFilter = w.kind || 'all';
       syncKindFilterPills();
